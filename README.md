@@ -1,10 +1,10 @@
-# OCTI
+# Open Octi
 
 **A fail-closed agent harness for OpenClaw gateways.**
 
-OCTI sits between an AI agent and the systems it can touch. Every plan an agent produces is surfaced to a gate *before* anything executes. If the gate doesn't approve, nothing runs. Not "probably nothing" — nothing. Fail-closed is the design contract, not a feature flag.
+Open Octi sits between an AI agent and the systems it can touch. Every plan an agent produces is surfaced to a gate *before* anything executes. If the gate doesn't approve, nothing runs. Not "probably nothing" — nothing. Fail-closed is the design contract, not a feature flag.
 
-> ⚠️ **Status: early / experimental.** OCTI is under active development. Interfaces will change. Do not point it at production systems you care about. See [Disclaimer](#disclaimer).
+> ⚠️ **Status: early / experimental.** Open Octi is under active development. Interfaces will change. Do not point it at production systems you care about. See [Disclaimer](#disclaimer).
 
 ## Why
 
@@ -34,11 +34,11 @@ Documentation is being prepared as the codebase lands here. Until then, the fast
 
 ## Disclaimer
 
-OCTI is provided **"as is," without warranty of any kind**, express or implied. It is experimental software for gating autonomous agents — a domain where failures can have real consequences. **You use it entirely at your own risk.** The authors and contributors accept no liability for any damage, data loss, or unintended agent behavior arising from its use. Do not deploy it as your only safety control. See [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
+Open Octi is provided **"as is," without warranty of any kind**, express or implied. It is experimental software for gating autonomous agents — a domain where failures can have real consequences. **You use it entirely at your own risk.** The authors and contributors accept no liability for any damage, data loss, or unintended agent behavior arising from its use. Do not deploy it as your only safety control. See [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
 
 ## About the author
 
-OCTI is built and maintained by Carl — thirty years of systems engineering, now shipping in the open. This repository is the front door: issues and discussions are read and answered.
+Open Octi is built and maintained by Carl — thirty years of systems engineering, now shipping in the open. This repository is the front door: issues and discussions are read and answered.
 
 ## License
 
