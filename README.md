@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="340" alt="Open Octi — the gatekeeper octopus">
+</p>
+
 # Open Octi
 
 **A fail-closed agent harness for OpenClaw gateways.**
