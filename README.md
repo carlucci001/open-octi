@@ -6,6 +6,10 @@
 
 **A fail-closed agent harness for OpenClaw gateways.**
 
+**Requires an OpenClaw gateway. OCTI is a plugin, not a standalone runtime.** Open Octi is an independent project and is not affiliated with or endorsed by the OpenClaw project.
+
+Website: [openocti.com](https://openocti.com)
+
 Open Octi sits between an AI agent and the systems it can touch. Every plan an agent produces is surfaced to a gate *before* anything executes. If the gate doesn't approve, nothing runs. Not "probably nothing" — nothing. Fail-closed is the design contract, not a feature flag.
 
 > ⚠️ **Status: early / experimental.** Open Octi is under active development. Interfaces will change. Do not point it at production systems you care about. See [Disclaimer](#disclaimer).
@@ -28,7 +32,13 @@ Agent frameworks are getting very good at *doing things* and much less good at *
 
 ## Quick start
 
-Documentation is being prepared as the codebase lands here. Until then, the fastest way to engage is to [open an issue](../../issues) — questions, skepticism, and design arguments are all welcome.
+OCTI ships as an OpenClaw plugin. The integration seam is three steps:
+
+1. Add `octi` to `plugins.allow` in your OpenClaw gateway config.
+2. Point an agent's model at `octi/<model>`.
+3. Every plan that agent produces now stops at the gate before anything executes. Cancel at the gate and nothing runs — provably. Agents you don't repoint keep running untouched.
+
+See [docs/INTEGRATION.md](docs/INTEGRATION.md) for exactly how OCTI couples to your gateway, so you can verify the blast radius before installing. Questions, skepticism, and design arguments are all welcome — [open an issue](../../issues).
 
 ## Design rules that never change
 
