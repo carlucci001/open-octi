@@ -12,33 +12,37 @@ Website: [openocti.com](https://openocti.com)
 
 Open Octi sits between an AI agent and the systems it can touch. Every plan an agent produces is surfaced to a gate *before* anything executes. If the gate doesn't approve, nothing runs. Not "probably nothing" — nothing. Fail-closed is the design contract, not a feature flag.
 
-> ⚠️ **Status: early / experimental.** Open Octi is under active development. Interfaces will change. Do not point it at production systems you care about. See [Disclaimer](#disclaimer).
+> 🚧 **Status: in development — not yet released.** The plugin isn't publicly installable yet. This page is a preview of what's coming and a place to follow along. **Want early access?** [Open an issue](../../issues) or watch the repo to join the waitlist — I'll post here when there's an installable build. Interfaces will change; don't build on it yet.
 
 ## Why
 
 Agent frameworks are getting very good at *doing things* and much less good at *not doing things*. OCTI inverts the default: an agent's plan is inert until explicitly released. The harness has been adversarially reviewed and hardened around one core property — a cancelled plan executes zero side effects, provably.
 
-## What works today
+## What's built so far (in private development — not yet published here)
+
+These exist and run in the author's own environment; they are **not in this repository yet** and there is nothing to install today. Listed so you can see where it's headed:
 
 - **Harness core** — turn lifecycle with a completion contract (host result + last-assistant reconciliation), hardened through adversarial review.
-- **Plan gating** — agent plans surface to the gate; cancellation at the gate means nothing executed. Verified live against a real gateway.
-- **OpenClaw plugin** — registers OCTI as an agent harness (`agentHarnessId=octi`), bundled with esbuild.
+- **Plan gating** — agent plans surface to the gate; cancellation at the gate means nothing executed, verified against a real gateway in the author's own setup.
+- **OpenClaw plugin registration** — registers OCTI as an agent harness (`agentHarnessId=octi`); packaging for public release is in progress.
 - **Dev-gateway ops scripts** — start/stop scripts built around strict identity checks (a kill guard that refuses ambiguous targets — and has already refused one in the field, exactly as designed).
+
+Native plan synthesis is still proxied to an external research engine; the standalone planner is upcoming (see Roadmap).
 
 ## Roadmap
 
 - **Phase 1** — planner proxy behind PlanGraph (research-agent integration) and a policy gate: standing approvals by plan shape, automation envelopes, deviation re-gates.
 - **Phase 2** — sandboxed lab environment + model-call classifier.
 
-## Quick start
+## Getting it (when it's released)
 
-OCTI ships as an OpenClaw plugin. The integration seam is three steps:
+**There is nothing to install yet** — the plugin build isn't published in this repository. When it's ready, the intended integration seam is three steps, and it's documented now so you can see the blast radius in advance:
 
 1. Add `octi` to `plugins.allow` in your OpenClaw gateway config.
 2. Point an agent's model at `octi/<model>`.
-3. Every plan that agent produces now stops at the gate before anything executes. Cancel at the gate and nothing runs — provably. Agents you don't repoint keep running untouched.
+3. Every plan that agent produces then stops at the gate before anything executes. Cancel at the gate and nothing runs. Agents you don't repoint keep running untouched.
 
-See [docs/INTEGRATION.md](docs/INTEGRATION.md) for exactly how OCTI couples to your gateway, so you can verify the blast radius before installing. Questions, skepticism, and design arguments are all welcome — [open an issue](../../issues).
+See [docs/INTEGRATION.md](docs/INTEGRATION.md) for exactly how OCTI is designed to couple to your gateway. **To be notified when an installable build lands, [open an issue](../../issues) or watch this repo.** Questions, skepticism, and design arguments are all welcome.
 
 ## Design rules that never change
 
