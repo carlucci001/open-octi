@@ -56,4 +56,4 @@ The license ships with the first release (copyleft: use it, modify it, run your 
 
 ## About
 
-OpenOcti is built and maintained by Carl — thirty years of systems engineering, now shipping in the open. Issues and discussions here are read and answered.
+OpenOcti was developed by **Carl Farrington** of **Farrington Development LLC** (Asheville, NC) — thirty years of systems engineering, now shipping in the open. Issues and discussions here are read and answered.
