@@ -1,63 +1,59 @@
 <p align="center">
-  <img src="assets/logo.png" width="340" alt="Open Octi — the gatekeeper octopus">
+  <img src="assets/logo.png" width="340" alt="OpenOcti">
 </p>
 
-# Open Octi
+# OpenOcti
 
-**A fail-closed agent harness for OpenClaw gateways.**
+**The open-source Command Center. Run your whole business from one private console — on your own server.**
 
-**Requires an OpenClaw gateway. OCTI is a plugin, not a standalone runtime.** Open Octi is an independent project and is not affiliated with or endorsed by the OpenClaw project.
+Website: **[openocti.com](https://openocti.com)** · Pro version, installed and run for you: [octicc.com](https://octicc.com)
 
-Website: [openocti.com](https://openocti.com)
+> 🚧 **Coming soon.** The code is being packaged for release right now. Nothing is installable from this repository yet.
+> **[Get notified the day it ships →](https://openocti.com/contact)** — one email with the repo link, nothing else. Or watch this repo.
 
-Open Octi sits between an AI agent and the systems it can touch. Every plan an agent produces is surfaced to a gate *before* anything executes. If the gate doesn't approve, nothing runs. Not "probably nothing" — nothing. Fail-closed is the design contract, not a feature flag.
+## What it is
 
-> 🚧 **Status: in development — not yet released.** The plugin isn't publicly installable yet. This page is a preview of what's coming and a place to follow along. **Want early access?** [Open an issue](../../issues) or watch the repo to join the waitlist — I'll post here when there's an installable build. Interfaces will change; don't build on it yet.
+OpenOcti is the open-source edition of Command Center, a business operating console that runs a real company every day. It is built *out of* AI, not with AI bolted on: the agents are staff with jobs, not a chat window in the corner.
 
-## Why
+- **CRM & revenue** — contacts, accounts, leads, opportunities, visual pipelines, with a dollar trail on every deal
+- **Work management** — projects, tasks, notes, calendar, documents, on the same records that closed the deal
+- **AI staff** — build agents in Agent Labs, test them in the Sandbox and Harness, put them on reception, research, and follow-up; runs on the OpenClaw agent runtime with **your own model key**
+- **Marketing & growth** — Campaign Studio, Content Lab, outreach, social — feeding the same pipeline they fill
+- **Communications** — phone, switchboard, meeting capture, landing on the record they belong to
+- **Platform & ops** — repositories, API lab, provisioning, credentials; software run like infrastructure
 
-Agent frameworks are getting very good at *doing things* and much less good at *not doing things*. OCTI inverts the default: an agent's plan is inert until explicitly released. The harness has been adversarially reviewed and hardened around one core property — a cancelled plan executes zero side effects, provably.
+## How you will run it
 
-## What's built so far (in private development — not yet published here)
+```
+git clone <this repo>
+cp .env.example .env      # add one model-provider key (Anthropic or OpenAI)
+docker compose up
+```
 
-These exist and run in the author's own environment; they are **not in this repository yet** and there is nothing to install today. Listed so you can see where it's headed:
+Docker is the only thing you install. The CRM works with **no keys at all**; add one model key and the AI staff come online. A ~$50/month VPS, a spare machine, any cloud, or your laptop is enough. Your data stays on your server, in your volume, under your keys.
 
-- **Harness core** — turn lifecycle with a completion contract (host result + last-assistant reconciliation), hardened through adversarial review.
-- **Plan gating** — agent plans surface to the gate; cancellation at the gate means nothing executed, verified against a real gateway in the author's own setup.
-- **OpenClaw plugin registration** — registers OCTI as an agent harness (`agentHarnessId=octi`); packaging for public release is in progress.
-- **Dev-gateway ops scripts** — start/stop scripts built around strict identity checks (a kill guard that refuses ambiguous targets — and has already refused one in the field, exactly as designed).
+## Free vs. Octi CC
 
-Native plan synthesis is still proxied to an external research engine; the standalone planner is upcoming (see Roadmap).
+| | **OpenOcti** (this repo) | **Octi CC** ([octicc.com](https://octicc.com)) |
+|---|---|---|
+| Price | Free, open source | Installed and operated for you |
+| Where it runs | Your server | Ours, or yours with us running it |
+| CRM, projects, docs, campaigns, AI staff | ✅ | ✅ |
+| Client portal with a concierge for *your* customers | — | ✅ |
+| Research desk (dossiers, lead briefs, vetting, market, risk) | — | ✅ |
+| Payments and checkout | — | ✅ |
+| Support | Community (Discussions / Issues) | Yes |
 
-## Roadmap
+Same system underneath. Start free, move to Octi CC when the portal would pay for itself.
 
-- **Phase 1** — planner proxy behind PlanGraph (research-agent integration) and a policy gate: standing approvals by plan shape, automation envelopes, deviation re-gates.
-- **Phase 2** — sandboxed lab environment + model-call classifier.
+## Support model
 
-## Getting it (when it's released)
-
-**There is nothing to install yet** — the plugin build isn't published in this repository. When it's ready, the intended integration seam is three steps, and it's documented now so you can see the blast radius in advance:
-
-1. Add `octi` to `plugins.allow` in your OpenClaw gateway config.
-2. Point an agent's model at `octi/<model>`.
-3. Every plan that agent produces then stops at the gate before anything executes. Cancel at the gate and nothing runs. Agents you don't repoint keep running untouched.
-
-See [docs/INTEGRATION.md](docs/INTEGRATION.md) for exactly how OCTI is designed to couple to your gateway. **To be notified when an installable build lands, [open an issue](../../issues) or watch this repo.** Questions, skepticism, and design arguments are all welcome.
-
-## Design rules that never change
-
-1. **Fail closed.** No approval, no execution. Ambiguity is a denial.
-2. **Live systems are read-only** to anything experimental.
-3. **Identity before action.** Processes are verified by owned resources, not by name.
-
-## Disclaimer
-
-Open Octi is provided **"as is," without warranty of any kind**, express or implied. It is experimental software for gating autonomous agents — a domain where failures can have real consequences. **You use it entirely at your own risk.** The authors and contributors accept no liability for any damage, data loss, or unintended agent behavior arising from its use. Do not deploy it as your only safety control. See [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
-
-## About the author
-
-Open Octi is built and maintained by Carl — thirty years of systems engineering, now shipping in the open. This repository is the front door: issues and discussions are read and answered.
+This is a self-supported project. **GitHub Discussions** for questions, **Issues** for reproducible bugs. There is no SLA and no support line for the open edition — that is what Octi CC is for.
 
 ## License
 
-[MIT](LICENSE)
+The license ships with the first release (copyleft: use it, modify it, run your business on it; if you offer it to others as a hosted service, share your changes).
+
+## About
+
+OpenOcti is built and maintained by Carl — thirty years of systems engineering, now shipping in the open. Issues and discussions here are read and answered.

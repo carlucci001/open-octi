@@ -1,22 +1,18 @@
-# Contributing to OCTI
+# Contributing to OpenOcti
 
-Thanks for your interest. This project is young and small — which means your
-input actually moves it.
+Thanks for your interest. The code is not published yet — until it is, the most useful contributions are questions and expectations.
 
-## Ground rules
+## Right now
 
-1. **Fail closed is non-negotiable.** PRs that trade safety for convenience
-   will be declined, kindly.
-2. **Open an issue before a large PR** so effort isn't wasted on a direction
-   that won't merge.
-3. **No secrets, ever.** No API keys, tokens, hostnames, IPs, or
-   infrastructure details in code, tests, fixtures, or history.
+- **Tell us what you would run it on** and what you would need on day one — open a Discussion.
+- **Sign up for the release** at [openocti.com/contact](https://openocti.com/contact).
 
-## How to help right now
+## Once the code ships
 
-- Try to break the plan gate and report how.
-- Review the harness completion contract and argue with it.
-- Improve docs — if something confused you, that's a bug in the docs.
+1. **Open an issue before a large PR** so effort is not wasted on a direction that will not merge.
+2. **No secrets, ever.** No API keys, tokens, hostnames, IPs, or infrastructure details in code, tests, fixtures, or history.
+3. **Reproducible bugs go in Issues; questions go in Discussions.** This is a self-supported project — there is no SLA.
+4. A contributor license agreement will accompany the first release.
 
 ## Conduct
 
