@@ -131,3 +131,6 @@ mcp-server/node_modules/
 # Local-only working dirs (session backups, staging for deletion) — never commit
 _restore-points/
 _to_delete/
+
+# the documented template must ship
+!.env.example
