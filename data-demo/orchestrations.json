@@ -1,0 +1,24 @@
+{
+  "orchestrations": [
+    {
+      "id": "orc_demo_followup",
+      "slug": "demo-follow-up",
+      "name": "Demo follow-up",
+      "description": "A synthetic starter flow.",
+      "status": "draft",
+      "startStepId": "review",
+      "steps": [
+        {
+          "id": "review",
+          "type": "action",
+          "kind": "tasks",
+          "name": "Create review task",
+          "instruction": "Create a task to review the demo lead."
+        }
+      ],
+      "createdAt": "2026-01-01T12:00:00.000Z",
+      "updatedAt": "2026-01-01T12:00:00.000Z"
+    }
+  ],
+  "lastUpdated": "2026-01-01T12:00:00.000Z"
+}

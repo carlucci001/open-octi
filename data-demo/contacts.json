@@ -1,0 +1,13 @@
+{
+  "contacts": [
+    {
+      "id": "ct_demo_contact",
+      "accountId": "ac_demo_company",
+      "firstName": "Demo",
+      "lastName": "Contact",
+      "title": "Operations Lead",
+      "createdAt": "2026-01-01T12:00:00.000Z",
+      "updatedAt": "2026-01-01T12:00:00.000Z"
+    }
+  ]
+}

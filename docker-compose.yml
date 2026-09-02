@@ -1,0 +1,61 @@
+name: openocti
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      CRM_DATA_DIR: /data
+      DATA_BACKEND: ${DATA_BACKEND:-sqlite}
+      FCC_EDITION: ${FCC_EDITION:-openocti}
+      OPENCLAW_HOST: openclaw
+      OPENCLAW_PORT: "18789"
+      OPENCLAW_CONFIG_PATH: /data/openclaw/openclaw.json
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-openocti-local-only}
+      OPENCLAW_API_KEY: ${OPENCLAW_API_KEY:-openocti-local-only}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+    ports:
+      - "${OPENOCTI_PORT:-3000}:3000"
+    volumes:
+      - openocti-data:/data
+    depends_on:
+      openclaw:
+        condition: service_started
+    restart: unless-stopped
+
+  openclaw:
+    build:
+      context: .
+      dockerfile: deploy/openclaw/Dockerfile
+    environment:
+      OPENCLAW_STATE_DIR: /data/openclaw
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-openocti-local-only}
+      OPENCLAW_API_KEY: ${OPENCLAW_API_KEY:-openocti-local-only}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENOCTI_BUSINESS_NAME: ${OPENOCTI_BUSINESS_NAME:-}
+      OPENOCTI_OWNER_NAME: ${OPENOCTI_OWNER_NAME:-}
+    volumes:
+      - openocti-data:/data
+    expose:
+      - "18789"
+    restart: unless-stopped
+
+  deerflow:
+    image: ghcr.io/bytedance/deer-flow@sha256:bd3e961b52095a1cb92762458725c2c49f85a2385b4705b43674d32c9db1fa8a
+    profiles:
+      - research
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "${DEERFLOW_PORT:-8000}:8000"
+    restart: unless-stopped
+
+volumes:
+  openocti-data:

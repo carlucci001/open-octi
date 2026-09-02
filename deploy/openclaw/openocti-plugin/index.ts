@@ -1,0 +1,70 @@
+type PluginConfig = { baseUrl?: string; apiKey?: string; enabled?: boolean }
+
+const TOOL_DESCRIPTIONS: Record<string, string> = {
+  fcc_call: 'Run any OpenOcti agent tool by name.',
+  fcc_list_tools: 'List the OpenOcti agent tools available to this runtime.',
+  fcc_dashboard: 'Read the OpenOcti dashboard summary.',
+  fcc_search: 'Search CRM records and notes.',
+  fcc_list_accounts: 'List CRM accounts.',
+  fcc_get_account: 'Get an account and its related CRM records.',
+  fcc_list_calendar_events: 'List calendar events.',
+  fcc_create_lead: 'Create a CRM lead.',
+  fcc_qualify_lead: 'Update lead qualification.',
+  fcc_create_task: 'Create a task.',
+  fcc_complete_task: 'Complete a task.',
+  fcc_log_activity: 'Record an activity in the CRM timeline.',
+  fcc_read_note: 'Read an internal note.',
+  fcc_write_note: 'Write an internal note.',
+  fcc_send_email: 'Send an email after the configured approval checks.',
+  fcc_send_signature_document: 'Send a document for electronic signature after approval.',
+  fcc_open_record: 'Open a CRM record in the connected interface.',
+  fcc_navigate_to: 'Navigate the connected interface to an OpenOcti module.',
+}
+
+const configSchema = {
+  parse(value: unknown): Required<PluginConfig> {
+    const config = (value || {}) as PluginConfig
+    return {
+      baseUrl: config.baseUrl || 'http://app:3000',
+      apiKey: config.apiKey || '',
+      enabled: config.enabled !== false,
+    }
+  },
+}
+
+function response(payload: unknown) {
+  return { content: [{ type: 'text' as const, text: JSON.stringify(payload, null, 2) }], details: payload }
+}
+
+async function execute(config: Required<PluginConfig>, tool: string, args: Record<string, unknown>) {
+  const result = await fetch(`${config.baseUrl}/api/agent/execute`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-agent-key': config.apiKey },
+    body: JSON.stringify({ tool, args }),
+  })
+  const payload = await result.json().catch(() => ({ error: `OpenOcti returned HTTP ${result.status}` }))
+  if (!result.ok) throw new Error(String(payload?.error || `OpenOcti returned HTTP ${result.status}`))
+  return response(payload)
+}
+
+const openOctiPlugin = {
+  id: 'openocti',
+  name: 'OpenOcti',
+  description: 'Business operations tools for OpenOcti agents.',
+  configSchema,
+  register(api: any) {
+    const config = configSchema.parse(api.pluginConfig)
+    if (!config.enabled) return
+    for (const [name, description] of Object.entries(TOOL_DESCRIPTIONS)) {
+      api.registerTool({
+        name,
+        label: name.replace(/^fcc_/, '').replaceAll('_', ' '),
+        description,
+        parameters: { type: 'object', additionalProperties: true, properties: {} },
+        execute: (_id: string, args: Record<string, unknown> = {}) => execute(config, name, args).catch(error => response({ ok: false, error: error.message })),
+      })
+    }
+  },
+}
+
+export default openOctiPlugin

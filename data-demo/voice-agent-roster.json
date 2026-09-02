@@ -1,0 +1,37 @@
+{
+  "main": {
+    "agentId": "",
+    "voiceId": "",
+    "voiceName": "",
+    "name": "Maggie",
+    "firstName": "Maggie"
+  },
+  "coding": {
+    "agentId": "",
+    "voiceId": "",
+    "voiceName": "",
+    "name": "Craig",
+    "firstName": "Craig"
+  },
+  "social-media": {
+    "agentId": "",
+    "voiceId": "",
+    "voiceName": "",
+    "name": "Sasha",
+    "firstName": "Sasha"
+  },
+  "legal": {
+    "agentId": "",
+    "voiceId": "",
+    "voiceName": "",
+    "name": "Linda",
+    "firstName": "Linda"
+  },
+  "matilda": {
+    "agentId": "",
+    "voiceId": "",
+    "voiceName": "",
+    "name": "Matilda",
+    "firstName": "Matilda"
+  }
+}

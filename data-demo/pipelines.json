@@ -1,0 +1,18 @@
+{
+  "pipelines": [
+    {
+      "id": "sales",
+      "name": "Sales",
+      "description": "Starter sales pipeline",
+      "color": "#2f6fed",
+      "stages": [
+        { "id": "new", "label": "New", "probability": 10 },
+        { "id": "working", "label": "Working", "probability": 50 },
+        { "id": "won", "label": "Won", "probability": 100, "terminal": "won" },
+        { "id": "lost", "label": "Lost", "probability": 0, "terminal": "lost" }
+      ],
+      "createdAt": "2026-01-01T12:00:00.000Z",
+      "updatedAt": "2026-01-01T12:00:00.000Z"
+    }
+  ]
+}

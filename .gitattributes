@@ -1,0 +1,35 @@
+# Line endings are declared here so they stop depending on each machine's
+# core.autocrlf setting. Every text file is stored LF in the repository; the
+# working tree follows the platform. Added 2026-08-05.
+#
+# Verified at the time of adding: all 1174 tracked files were already LF in
+# git, so this file changes no content — it only pins the existing convention.
+
+* text=auto
+
+# Windows script hosts are the exception: these must be CRLF on disk.
+# cmd.exe can mis-parse an LF-only batch file, and WSH is unreliable with LF.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+*.vbs   text eol=crlf
+
+# Shell scripts must be LF everywhere — including when edited on Windows and
+# piped to openocti-host, where a stray CR breaks the shebang.
+*.sh    text eol=lf
+
+# Never touched.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.mp3   binary
+*.mp4   binary
+*.wav   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.sqlite binary

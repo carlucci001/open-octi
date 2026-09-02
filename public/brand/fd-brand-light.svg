@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 44" width="260" height="44" role="img" aria-label="Farrington Development">
+  <style>
+    .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .sans { font-family: "Inter Tight", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  </style>
+  <rect x="6.5" y="6.5" width="31" height="31" fill="#0A0B0D" stroke="#F5F1EA" stroke-width="1"/>
+  <text x="22" y="27" text-anchor="middle" class="mono" font-size="11" letter-spacing="0.22" fill="#F5F1EA">FD</text>
+  <text x="50" y="28" class="sans" font-size="14" font-weight="500" letter-spacing="0.28" fill="#F5F1EA">Farrington<tspan fill="#6B6F78"> Development</tspan></text>
+</svg>

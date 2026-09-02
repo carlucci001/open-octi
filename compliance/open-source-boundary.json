@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "scope": "Service-level open-source components used by the Social Operator delivery rail. This is not a complete npm dependency SBOM.",
+  "project": {
+    "name": "Farrington Command Center",
+    "currentDistribution": "private-internal",
+    "publicRelease": {
+      "status": "not-approved",
+      "licenseSpdx": null,
+      "gates": {
+        "legalReview": "pending",
+        "secretScan": "pending",
+        "clientDataRemoval": "blocked",
+        "trademarkAssetReview": "pending"
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "postiz",
+      "name": "Postiz",
+      "role": "Social account connection, scheduling, and delivery sidecar",
+      "sourceRepository": "https://github.com/gitroomhq/postiz-app",
+      "licenseSpdx": "AGPL-3.0-only",
+      "licenseUrl": "https://github.com/gitroomhq/postiz-app/blob/main/LICENSE",
+      "image": "ghcr.io/gitroomhq/postiz-app@sha256:3ec7bc8ecf61f08c22e0954291702b097f944def515dc259cb3a441aba4046c0",
+      "boundary": {
+        "type": "separate-network-service",
+        "apiOnly": true,
+        "vendoredSource": false,
+        "npmDependency": false,
+        "upstreamImageModified": false,
+        "reverseProxyPresentationCustomized": true
+      },
+      "noticeFile": "THIRD_PARTY_NOTICES.md",
+      "networkCopyleft": {
+        "modifiedDeploymentRequiresSourceOffer": true,
+        "correspondingSourceUrl": null,
+        "sourceOfferUrl": null
+      },
+      "operations": {
+        "publicRegistrationExpected": false,
+        "additionalOauthRequiresProviderApproval": true
+      }
+    }
+  ]
+}

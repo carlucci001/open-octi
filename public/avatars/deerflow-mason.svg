@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Mason avatar">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="1" stop-color="#166534"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d5a079"/>
+      <stop offset="1" stop-color="#a66d4c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <circle cx="512" cy="368" r="154" fill="url(#skin)"/>
+  <path d="M352 332c20-108 92-170 180-170 90 0 150 54 160 148-86-26-184-18-340 22z" fill="#2f241e"/>
+  <path d="M298 862c38-176 138-264 214-264s176 88 214 264H298z" fill="#1f2937"/>
+  <path d="M408 862l104-166 104 166H408z" fill="#86efac" opacity=".9"/>
+  <text x="512" y="915" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="800" fill="#ffffff">Mason</text>
+</svg>

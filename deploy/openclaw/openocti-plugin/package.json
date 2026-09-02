@@ -1,0 +1,13 @@
+{
+  "name": "@openocti/openclaw-plugin",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "OpenClaw plugin for OpenOcti CRM tools",
+  "main": "index.ts",
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,7 @@
+{
+  "release": "FCC-2026.08.006",
+  "releasedAt": "2026-08-27",
+  "channel": "production",
+  "gitTag": "fcc-2026.08.006",
+  "summary": "Match the PWA window chrome to each Command Center theme"
+}

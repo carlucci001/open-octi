@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Nadia avatar">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12343b"/>
+      <stop offset="1" stop-color="#5d3f6a"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9aa82"/>
+      <stop offset="1" stop-color="#b9825d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <circle cx="512" cy="386" r="188" fill="#17202a" opacity=".34"/>
+  <circle cx="512" cy="366" r="154" fill="url(#skin)"/>
+  <path d="M340 366c20-128 92-204 194-204 100 0 170 62 174 180-62-42-128-56-198-42-72 14-124 36-170 66z" fill="#20232a"/>
+  <path d="M284 858c38-180 145-270 228-270s190 90 228 270H284z" fill="#1f2937"/>
+  <path d="M368 858c28-108 82-162 144-162s116 54 144 162H368z" fill="#f8fafc" opacity=".9"/>
+  <text x="512" y="915" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="800" fill="#ffffff">Nadia</text>
+</svg>

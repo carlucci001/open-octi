@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Rowan avatar">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#334155"/>
+      <stop offset="1" stop-color="#7f1d1d"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cfa17d"/>
+      <stop offset="1" stop-color="#a87251"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <circle cx="512" cy="374" r="154" fill="url(#skin)"/>
+  <path d="M346 352c30-124 102-186 202-170 82 14 132 72 136 154-78-34-172-36-338 16z" fill="#35261f"/>
+  <path d="M298 860c40-178 140-268 214-268s174 90 214 268H298z" fill="#111827"/>
+  <circle cx="432" cy="392" r="28" fill="none" stroke="#f8fafc" stroke-width="12" opacity=".9"/>
+  <circle cx="592" cy="392" r="28" fill="none" stroke="#f8fafc" stroke-width="12" opacity=".9"/>
+  <path d="M460 392h104" stroke="#f8fafc" stroke-width="10" opacity=".9"/>
+  <text x="512" y="915" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="800" fill="#ffffff">Rowan</text>
+</svg>

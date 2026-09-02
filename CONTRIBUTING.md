@@ -1,19 +1,13 @@
 # Contributing to OpenOcti
 
-Thanks for your interest. The code is not published yet — until it is, the most useful contributions are questions and expectations.
+Thank you for helping improve OpenOcti.
 
-## Right now
+1. Open an issue before a large pull request so the approach can be discussed.
+2. Fork the repository, create a focused branch, and add tests for behavior changes.
+3. Run `npm ci --include=dev`, `npm test`, and `npm run build` before opening a pull request.
+4. Never submit API keys, tokens, customer data, private hostnames, private IPs, personal contact details, or infrastructure credentials.
+5. State `I agree to the OpenOcti CLA` when a maintainer requests CLA confirmation.
 
-- **Tell us what you would run it on** and what you would need on day one — open a Discussion.
-- **Sign up for the release** at [openocti.com/contact](https://openocti.com/contact).
+Use Issues for reproducible bugs and Discussions for questions. OpenOcti is community-supported and has no SLA.
 
-## Once the code ships
-
-1. **Open an issue before a large PR** so effort is not wasted on a direction that will not merge.
-2. **No secrets, ever.** No API keys, tokens, hostnames, IPs, or infrastructure details in code, tests, fixtures, or history.
-3. **Reproducible bugs go in Issues; questions go in Discussions.** This is a self-supported project — there is no SLA.
-4. A contributor license agreement will accompany the first release.
-
-## Conduct
-
-Be direct, be kind. Attack ideas, not people.
+Please follow the [Code of Conduct](CODE_OF_CONDUCT.md) in all project spaces.

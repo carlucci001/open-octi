@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Jessica, WNC Times receptionist avatar</title>
+  <desc id="desc">Professional adult woman avatar for the WNC Times receptionist.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef6ff"/>
+      <stop offset="0.55" stop-color="#f7efe7"/>
+      <stop offset="1" stop-color="#e6f3ec"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8a552c"/>
+      <stop offset="1" stop-color="#d2a46e"/>
+    </linearGradient>
+    <clipPath id="circle">
+      <circle cx="256" cy="256" r="248"/>
+    </clipPath>
+  </defs>
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+  <g clip-path="url(#circle)">
+    <path d="M109 495c18-86 76-135 147-135s129 49 147 135H109z" fill="#20364f"/>
+    <path d="M175 420c21-38 49-58 81-58s60 20 81 58c-24 20-51 30-81 30s-57-10-81-30z" fill="#ffffff"/>
+    <path d="M210 335h92v65c-18 25-74 25-92 0v-65z" fill="#f1c6a8"/>
+    <path d="M145 227c0-91 49-153 116-153 69 0 110 59 110 147 0 65-25 145-115 145-75 0-111-63-111-139z" fill="url(#hair)"/>
+    <path d="M170 238c0-69 38-117 89-117s84 47 84 117c0 79-37 119-87 119s-86-40-86-119z" fill="#f4cfb6"/>
+    <path d="M164 221c51-3 92-28 123-74 18 34 44 56 77 66-9-73-47-119-104-119-59 0-94 49-96 127z" fill="url(#hair)"/>
+    <path d="M206 247c9-8 22-8 32 0" fill="none" stroke="#2f3034" stroke-width="8" stroke-linecap="round"/>
+    <path d="M276 247c10-8 23-8 32 0" fill="none" stroke="#2f3034" stroke-width="8" stroke-linecap="round"/>
+    <path d="M250 258c-5 24-11 39-18 45 11 9 32 9 44 0" fill="none" stroke="#c98e70" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M223 319c18 15 48 15 66 0" fill="none" stroke="#a85d62" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="190" cy="287" r="18" fill="#efaf9e" opacity="0.38"/>
+    <circle cx="322" cy="287" r="18" fill="#efaf9e" opacity="0.38"/>
+    <path d="M146 491c11-45 32-78 62-99l48 63 48-63c30 21 51 54 62 99H146z" fill="#264868"/>
+    <path d="M212 390l44 65 44-65c-28 15-60 15-88 0z" fill="#f8fbff"/>
+  </g>
+  <circle cx="256" cy="256" r="248" fill="none" stroke="#ffffff" stroke-width="12" opacity="0.85"/>
+</svg>

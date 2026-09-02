@@ -1,0 +1,56 @@
+{
+  "id": "openocti",
+  "name": "OpenOcti",
+  "version": "1.0.0",
+  "description": "CRM tools connected to OpenOcti",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "baseUrl": {
+        "type": "string"
+      },
+      "apiKey": {
+        "type": "string"
+      },
+      "enabled": {
+        "type": "boolean"
+      }
+    }
+  },
+  "uiHints": {
+    "baseUrl": {
+      "label": "OpenOcti URL",
+      "placeholder": "http://app:3000"
+    },
+    "apiKey": {
+      "label": "API Key",
+      "sensitive": true
+    }
+  },
+  "contracts": {
+    "tools": [
+      "fcc_call",
+      "fcc_list_tools",
+      "fcc_dashboard",
+      "fcc_search",
+      "fcc_list_accounts",
+      "fcc_get_account",
+      "fcc_list_calendar_events",
+      "fcc_create_lead",
+      "fcc_qualify_lead",
+      "fcc_create_task",
+      "fcc_complete_task",
+      "fcc_log_activity",
+      "fcc_read_note",
+      "fcc_write_note",
+      "fcc_send_email",
+      "fcc_send_signature_document",
+      "fcc_open_record",
+      "fcc_navigate_to"
+    ]
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "/data/openclaw/workspace/main",
+      "model": { "primary": "openai/gpt-4.1", "fallbacks": [] },
+      "contextPruning": { "mode": "cache-ttl", "ttl": "1h" },
+      "compaction": { "mode": "safeguard" },
+      "memorySearch": { "enabled": true }
+    },
+    "list": [
+      {
+        "id": "main",
+        "name": "Maggie",
+        "workspace": "/data/openclaw/workspace/main",
+        "model": { "primary": "openai/gpt-4.1", "fallbacks": [] },
+        "identity": { "name": "Maggie", "emoji": "🐙" },
+        "tools": { "alsoAllow": ["fcc_call", "fcc_dashboard", "fcc_search", "fcc_list_accounts", "fcc_get_account", "fcc_list_calendar_events", "fcc_create_lead", "fcc_qualify_lead", "fcc_create_task", "fcc_complete_task", "fcc_log_activity", "fcc_read_note", "fcc_write_note", "fcc_send_email", "fcc_send_signature_document", "fcc_list_tools", "fcc_open_record", "fcc_navigate_to"] }
+      },
+      {
+        "id": "coding",
+        "name": "Craig",
+        "workspace": "/data/openclaw/workspace/coding",
+        "model": { "primary": "openai/gpt-4.1", "fallbacks": [] },
+        "identity": { "name": "Craig", "emoji": "🛠️" },
+        "tools": { "alsoAllow": ["fcc_call", "fcc_dashboard", "fcc_search", "fcc_create_task", "fcc_complete_task", "fcc_log_activity", "fcc_read_note", "fcc_write_note", "fcc_list_tools", "fcc_open_record", "fcc_navigate_to"] }
+      },
+      {
+        "id": "social-media",
+        "name": "Sasha",
+        "workspace": "/data/openclaw/workspace/social-media",
+        "model": { "primary": "openai/gpt-4.1", "fallbacks": [] },
+        "identity": { "name": "Sasha", "emoji": "🎨" },
+        "tools": { "alsoAllow": ["fcc_call", "fcc_search", "fcc_create_task", "fcc_log_activity", "fcc_read_note", "fcc_write_note", "fcc_send_email", "fcc_list_tools", "fcc_open_record", "fcc_navigate_to"] }
+      },
+      {
+        "id": "legal",
+        "name": "Linda",
+        "workspace": "/data/openclaw/workspace/legal",
+        "model": { "primary": "openai/gpt-4.1", "fallbacks": [] },
+        "identity": { "name": "Linda", "emoji": "⚖️" },
+        "tools": { "alsoAllow": ["fcc_call", "fcc_search", "fcc_get_account", "fcc_create_task", "fcc_log_activity", "fcc_read_note", "fcc_write_note", "fcc_send_email", "fcc_send_signature_document", "fcc_list_tools", "fcc_open_record", "fcc_navigate_to"] }
+      },
+      {
+        "id": "matilda",
+        "name": "Matilda",
+        "workspace": "/data/openclaw/workspace/matilda",
+        "model": { "primary": "openai/gpt-4.1", "fallbacks": [] },
+        "identity": { "name": "Matilda", "emoji": "✨" },
+        "tools": { "alsoAllow": ["fcc_call", "fcc_dashboard", "fcc_search", "fcc_list_accounts", "fcc_get_account", "fcc_list_calendar_events", "fcc_create_task", "fcc_complete_task", "fcc_log_activity", "fcc_read_note", "fcc_write_note", "fcc_list_tools", "fcc_open_record", "fcc_navigate_to"] }
+      }
+    ]
+  },
+  "tools": {
+    "profile": "full",
+    "alsoAllow": ["fcc_call", "fcc_list_tools"],
+    "agentToAgent": { "allow": ["*"] }
+  },
+  "plugins": {
+    "enabled": true,
+    "allow": ["openocti"],
+    "load": { "paths": ["/data/openclaw/extensions/openocti"] },
+    "entries": {
+      "openocti": {
+        "enabled": true,
+        "config": { "apiKey": "${OPENCLAW_API_KEY}" }
+      }
+    }
+  },
+  "gateway": { "auth": { "token": "${OPENCLAW_GATEWAY_TOKEN}" } }
+}

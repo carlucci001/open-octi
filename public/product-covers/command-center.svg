@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Farrington Command Center product cover</title>
+  <desc id="desc">A polished command center dashboard graphic with colorful operations panels and network lines.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#172554"/>
+      <stop offset=".45" stop-color="#111827"/>
+      <stop offset="1" stop-color="#052e2b"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f2937"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset=".5" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <path d="M0 532 C205 445 325 625 550 520 C760 422 PHONE_REDACTED 350 L1200 675 L0 675 Z" fill="#0f766e" opacity=".24"/>
+  <path d="M84 100 H1116 V575 H84 Z" rx="34" fill="#020617" opacity=".55"/>
+  <path d="M120 132 H1080 V546 H120 Z" rx="26" fill="url(#panel)" stroke="#334155" stroke-width="2"/>
+  <rect x="154" y="166" width="270" height="150" rx="18" fill="#0f172a" stroke="#38bdf8" stroke-opacity=".4"/>
+  <rect x="466" y="166" width="270" height="150" rx="18" fill="#0f172a" stroke="#22c55e" stroke-opacity=".4"/>
+  <rect x="778" y="166" width="270" height="150" rx="18" fill="#0f172a" stroke="#f59e0b" stroke-opacity=".45"/>
+  <rect x="154" y="350" width="426" height="150" rx="18" fill="#0f172a" stroke="#64748b" stroke-opacity=".5"/>
+  <rect x="620" y="350" width="428" height="150" rx="18" fill="#0f172a" stroke="#64748b" stroke-opacity=".5"/>
+  <g filter="url(#glow)">
+    <circle cx="289" cy="241" r="35" fill="#38bdf8"/>
+    <circle cx="601" cy="241" r="35" fill="#22c55e"/>
+    <circle cx="913" cy="241" r="35" fill="#f59e0b"/>
+    <circle cx="367" cy="425" r="33" fill="#a78bfa"/>
+    <circle cx="834" cy="425" r="33" fill="#fb7185"/>
+  </g>
+  <path d="M324 241 H566 M636 241 H878 M601 276 L389 397 M913 276 L856 397 M401 425 H801" stroke="url(#accent)" stroke-width="7" stroke-linecap="round" opacity=".74"/>
+  <g fill="#e5e7eb" font-family="Inter,Segoe UI,Arial,sans-serif">
+    <text x="154" y="94" font-size="32" font-weight="800">Farrington Command Center</text>
+    <text x="154" y="126" font-size="16" fill="#93c5fd">CRM • agents • products • licenses • deployment operations</text>
+    <text x="184" y="295" font-size="18" font-weight="700">CRM Core</text>
+    <text x="497" y="295" font-size="18" font-weight="700">AI Staff</text>
+    <text x="810" y="295" font-size="18" font-weight="700">Billing</text>
+    <text x="184" y="478" font-size="18" font-weight="700">Versioned Products</text>
+    <text x="650" y="478" font-size="18" font-weight="700">Support + Delivery</text>
+  </g>
+  <rect x="857" y="74" width="190" height="44" rx="22" fill="#dcfce7"/>
+  <text x="883" y="103" fill="#14532d" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="18" font-weight="800">VERSION 1 DONE</text>
+</svg>

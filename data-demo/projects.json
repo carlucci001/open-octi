@@ -1,0 +1,12 @@
+{
+  "projects": [
+    {
+      "id": "pr_demo_launch",
+      "accountId": "ac_demo_company",
+      "name": "Demo launch project",
+      "status": "active",
+      "createdAt": "2026-01-01T12:00:00.000Z",
+      "updatedAt": "2026-01-01T12:00:00.000Z"
+    }
+  ]
+}

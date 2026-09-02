@@ -1,0 +1,15 @@
+{
+  "documents": [
+    {
+      "id": "doc_demo_brief",
+      "title": "OpenOcti demo brief",
+      "type": "note",
+      "status": "draft",
+      "content": "This is synthetic starter content.",
+      "createdAt": "2026-01-01T12:00:00.000Z",
+      "updatedAt": "2026-01-01T12:00:00.000Z"
+    }
+  ],
+  "forms": [],
+  "formSubmissions": []
+}

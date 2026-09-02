@@ -1,0 +1,34 @@
+title = "Project gitleaks config"
+
+# Extend the default ruleset with the project's own overrides.
+# See: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+[extend]
+useDefault = true
+
+# Paths to ignore entirely (regex, matched against file path)
+[allowlist]
+description = "Project-wide allowlist"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)dist/''',
+  '''(^|/)build/''',
+  '''(^|/)coverage/''',
+  '''(^|/)\.git/''',
+  '''(^|/)package-lock\.json$''',
+  '''(^|/)pnpm-lock\.yaml$''',
+  '''(^|/)yarn\.lock$''',
+  '''\.min\.js$''',
+  '''\.map$''',
+]
+
+# Test-fixture placeholders and documentation examples that trip false positives.
+# Add lines here as you find them; keep tight regexes to avoid hiding real leaks.
+regexes = [
+  '''EXAMPLE_[A-Z0-9_]+''',
+  '''YOUR_API_KEY_HERE''',
+  '''xxxxxxxxxxxxxxxxxxxx''',
+  # An empty `SOME_KEY=` line in .env.example followed by the next variable name makes the
+  # generic rule capture that bare identifier; an all-caps identifier is never a secret.
+  '''^[A-Z][A-Z0-9_]{8,}=?$''',
+]

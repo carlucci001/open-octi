@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Command Center — Loading</title>
+<!--
+  Farrington Command Center — boot loader splash
+  ------------------------------------------------------------------
+  Self-contained. No frameworks, no build step, no external JS.
+  Only asset dependency: ./cclogo.png (ship it alongside this file).
+
+  USAGE
+  - As a standalone holding page: serve this file directly.
+  - As an in-app overlay: copy the <style> + the .cc-loader markup into
+    your app shell, render it on first paint, then call
+    window.ccLoader.hide() (or remove the .cc-loader node) once the
+    dashboard is ready. A `.cc-loader--out` class fades it out.
+
+  Fonts: uses Google "Rajdhani". If you want zero network calls, host
+  the font locally or swap the font-family for your system stack.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --cc-logo-size: min(64vmin, 520px); }
+
+  html, body { margin: 0; height: 100%; }
+  body { background: #03070e; }
+
+  .cc-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 48px 24px;
+    box-sizing: border-box;
+    font-family: 'Rajdhani', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(circle at 50% 42%, #122339 0%, #0a1626 42%, #050b15 72%, #03070e 100%);
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+  .cc-loader--out { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  /* ---- logo stage (square, all overlays are % of this box) ---- */
+  .cc-stage {
+    position: relative;
+    width: var(--cc-logo-size);
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+  }
+  .cc-stage > * { pointer-events: none; }
+
+  .cc-grid {
+    position: absolute; inset: 0; opacity: 0.06;
+    background: repeating-linear-gradient(0deg, #6fd6ff 0, #6fd6ff 1px, transparent 1px, transparent 14px);
+    animation: ccDrift 3s linear infinite;
+  }
+  .cc-vignette {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 46%, transparent 52%, rgba(2,6,12,0.55) 100%);
+  }
+  .cc-glow {
+    position: absolute; left: 50%; top: 44%; width: 34%; height: 34%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(70,200,255,0.55) 0%, rgba(40,150,230,0.18) 45%, transparent 70%);
+    filter: blur(6px);
+    animation: ccBreathe 4s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+  .cc-logo {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 18px rgba(40,140,220,0.35));
+  }
+
+  .cc-radar {
+    position: absolute; left: 50%; top: 43.8%; width: 21.5%; height: 21.5%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%; overflow: hidden; mix-blend-mode: screen;
+    -webkit-mask: radial-gradient(circle, #000 58%, transparent 100%);
+    mask: radial-gradient(circle, #000 58%, transparent 100%);
+  }
+  .cc-radar__sweep {
+    position: absolute; inset: -2%; border-radius: 50%;
+    animation: ccSpin 4s linear infinite; will-change: transform;
+    background: conic-gradient(from 0deg,
+      rgba(90,220,255,0) 0deg, rgba(90,220,255,0) 268deg,
+      rgba(90,220,255,0.07) 300deg, rgba(110,230,255,0.28) 344deg,
+      rgba(170,245,255,0.75) 358.5deg, rgba(210,250,255,0.95) 360deg);
+  }
+  .cc-radar__edge {
+    position: absolute; left: 50%; top: 0; width: 1.6px; height: 50%;
+    transform-origin: bottom center;
+    background: linear-gradient(to top, rgba(200,250,255,0.95), rgba(120,225,255,0));
+    box-shadow: 0 0 6px rgba(150,235,255,0.9);
+  }
+  .cc-blip {
+    position: absolute; left: 50%; top: 43.8%; width: 3.6%; height: 3.6%;
+    border-radius: 50%; mix-blend-mode: screen;
+    background: radial-gradient(circle, rgba(220,250,255,0.95) 0%, rgba(110,220,255,0.5) 45%, transparent 75%);
+    animation: ccBlip 4s ease-in-out infinite;
+  }
+
+  .cc-ping {
+    position: absolute; left: 50%; top: 20%; width: 11%; height: 11%;
+    border-radius: 50%; border: 2px solid rgba(120,225,255,0.8);
+    box-shadow: 0 0 8px rgba(120,225,255,0.5); mix-blend-mode: screen;
+    animation: ccPing 4s ease-out infinite;
+  }
+  .cc-ping--2 { border-color: rgba(120,225,255,0.6); box-shadow: none; animation-delay: 0.6s; }
+  .cc-antenna {
+    position: absolute; left: 50%; top: 20%; width: 5%; height: 5%;
+    transform: translate(-50%, -50%); border-radius: 50%; mix-blend-mode: screen;
+    background: radial-gradient(circle, rgba(210,250,255,0.9) 0%, transparent 70%);
+    animation: ccBlip 4s ease-in-out infinite;
+  }
+
+  .cc-wing {
+    position: absolute; top: 42.5%; width: 16%; height: 14%;
+    transform: translate(-50%, -50%); border-radius: 50%; filter: blur(3px);
+    mix-blend-mode: screen;
+    background: radial-gradient(circle, rgba(90,200,255,0.45) 0%, transparent 68%);
+    animation: ccWingGlow 4s ease-in-out infinite;
+  }
+  .cc-wing--l { left: 23%; }
+  .cc-wing--r { left: 77%; animation-delay: 2s; }
+
+  .cc-dot {
+    position: absolute; top: 42.5%; width: 1.6%; height: 1.6%;
+    border-radius: 50%; background: rgba(210,250,255,0.95);
+    box-shadow: 0 0 7px rgba(150,235,255,0.9); mix-blend-mode: screen;
+  }
+  .cc-dot--l { animation: ccTravelL 4s linear infinite; }
+  .cc-dot--r { animation: ccTravelR 4s linear infinite; }
+
+  /* ---- text + progress ---- */
+  .cc-text {
+    display: flex; align-items: baseline; gap: 2px; margin-top: -18px;
+    color: #bfe9ff; font-size: clamp(15px, 2.6vmin, 22px); font-weight: 600;
+    letter-spacing: 0.42em; text-transform: uppercase;
+    animation: ccTextGlow 2.4s ease-in-out infinite;
+  }
+  .cc-text__dots { display: inline-flex; gap: 3px; margin-left: 8px; letter-spacing: 0; }
+  .cc-text__dots span { animation: ccDot 1.4s ease-in-out infinite; }
+  .cc-text__dots span:nth-child(2) { animation-delay: 0.2s; }
+  .cc-text__dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  .cc-bar {
+    position: relative; width: min(56vmin, 240px); height: 3px;
+    border-radius: 99px; background: rgba(120,200,255,0.12); overflow: hidden;
+  }
+  .cc-bar__fill {
+    position: absolute; top: 0; left: 0; height: 100%; width: 32%; border-radius: 99px;
+    background: linear-gradient(90deg, rgba(90,200,255,0) 0%, rgba(130,225,255,0.95) 50%, rgba(90,200,255,0) 100%);
+    box-shadow: 0 0 8px rgba(120,220,255,0.7);
+    animation: ccBarSweep 1.8s cubic-bezier(0.45,0,0.55,1) infinite;
+  }
+
+  @keyframes ccSpin { to { transform: rotate(360deg); } }
+  @keyframes ccBreathe {
+    0%, 100% { opacity: 0.35; transform: translate(-50%, -50%) scale(0.9); }
+    50% { opacity: 0.85; transform: translate(-50%, -50%) scale(1.12); }
+  }
+  @keyframes ccPing {
+    0% { opacity: 0; transform: scale(0.2); }
+    14% { opacity: 0.85; }
+    70%, 100% { opacity: 0; transform: scale(2.4); }
+  }
+  @keyframes ccWingGlow { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.7; } }
+  @keyframes ccBlip {
+    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.85); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  }
+  @keyframes ccDrift { 0% { background-position: 0 0; } 100% { background-position: 0 -28px; } }
+  @keyframes ccTravelL {
+    0% { left: 30%; opacity: 0; } 12% { opacity: 1; }
+    80% { opacity: 1; } 100% { left: 9%; opacity: 0; }
+  }
+  @keyframes ccTravelR {
+    0% { left: 70%; opacity: 0; } 12% { opacity: 1; }
+    80% { opacity: 1; } 100% { left: 91%; opacity: 0; }
+  }
+  @keyframes ccTextGlow {
+    0%, 100% { opacity: 0.78; text-shadow: 0 0 10px rgba(90,200,255,0.25); }
+    50% { opacity: 1; text-shadow: 0 0 18px rgba(90,200,255,0.55); }
+  }
+  @keyframes ccDot { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+  @keyframes ccBarSweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cc-loader *, .cc-loader *::before, .cc-loader *::after { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="cc-loader" id="cc-loader" role="status" aria-live="polite" aria-label="Loading dashboard">
+    <div class="cc-stage">
+      <div class="cc-grid"></div>
+      <div class="cc-vignette"></div>
+      <div class="cc-glow"></div>
+      <img class="cc-logo" src="./cclogo.png" alt="Farrington Command Center" />
+      <div class="cc-radar">
+        <div class="cc-radar__sweep"><div class="cc-radar__edge"></div></div>
+      </div>
+      <div class="cc-blip"></div>
+      <div class="cc-ping"></div>
+      <div class="cc-ping cc-ping--2"></div>
+      <div class="cc-antenna"></div>
+      <div class="cc-wing cc-wing--l"></div>
+      <div class="cc-wing cc-wing--r"></div>
+      <div class="cc-dot cc-dot--l"></div>
+      <div class="cc-dot cc-dot--r"></div>
+    </div>
+
+    <div class="cc-text">
+      <span>Loading&nbsp;Dashboard</span>
+      <span class="cc-text__dots"><span>.</span><span>.</span><span>.</span></span>
+    </div>
+
+    <div class="cc-bar"><div class="cc-bar__fill"></div></div>
+  </div>
+
+  <script>
+    // Minimal control hook for app integration.
+    // Call window.ccLoader.hide() when the dashboard is ready.
+    window.ccLoader = {
+      el: document.getElementById('cc-loader'),
+      hide: function () { if (this.el) this.el.classList.add('cc-loader--out'); },
+      show: function () { if (this.el) this.el.classList.remove('cc-loader--out'); }
+    };
+    // DEMO ONLY — remove in production; your app should call ccLoader.hide().
+    // setTimeout(function () { window.ccLoader.hide(); }, 4000);
+  </script>
+</body>
+</html>

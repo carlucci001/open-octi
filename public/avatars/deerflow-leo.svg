@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Leo avatar">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f3d3e"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c88958"/>
+      <stop offset="1" stop-color="#9f633f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <circle cx="512" cy="370" r="160" fill="url(#skin)"/>
+  <path d="M358 334c18-106 88-168 176-168 88 0 148 58 154 148-80-32-166-28-330 20z" fill="#1f2937"/>
+  <path d="M304 860c36-178 132-268 208-268s172 90 208 268H304z" fill="#0f172a"/>
+  <rect x="392" y="640" width="240" height="120" rx="46" fill="#ffffff" opacity=".92"/>
+  <path d="M430 860h164l-82-166-82 166z" fill="#38bdf8"/>
+  <text x="512" y="915" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="800" fill="#ffffff">Leo</text>
+</svg>
