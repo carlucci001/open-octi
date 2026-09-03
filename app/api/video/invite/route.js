@@ -140,7 +140,7 @@ ${when ? `<p>When: ${whenText}</p>` : ''}
 
     const resend = new Resend(resendKey)
     const primaryFromAddr = process.env.FARRINGTON_FROM_EMAIL || 'Carl Farrington <redacted@example.invalid>'
-    const fallbackFromAddr = process.env.FARRINGTON_FALLBACK_FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'NewsroomAIOS <redacted@example.invalid>'
+    const fallbackFromAddr = process.env.FARRINGTON_FALLBACK_FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'ContentHub <redacted@example.invalid>'
     const sendPayload = {
       from: primaryFromAddr,
       to: recipients,

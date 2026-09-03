@@ -120,7 +120,7 @@ data/voice-sample-cache/
 # Local browser-test and diagnostic artifacts
 .playwright-cli/
 /output/
-NEWSROOM-AIOS-API-CONNECTIONS.md
+ContentHub-API-CONNECTIONS.md
 .demo-studio/
 
 .demo-studio/.yt-token.json

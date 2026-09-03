@@ -273,7 +273,7 @@ const CICD_FLOW_PRESETS = [
       buildCommand: 'npm run build',
       previewCommand: 'npm run dev',
       deployCommand: 'systemctl restart farrington-crm.service',
-      healthCheckCommand: 'curl -fsSI https://openocti.local && curl -fsS http://localhost:3000/api/pricing',
+      healthCheckCommand: 'curl -fsSI https://crm.company.example.com && curl -fsS http://localhost:3000/api/pricing',
       tags: ['production', 'gitea', 'nextjs'],
     },
   },
@@ -665,7 +665,7 @@ function VoiceBridgePanel() {
     } catch {}
   }
 
-  const webhook = status?.webhookUrl || 'https://openocti.local/api/twilio/agent-voice'
+  const webhook = status?.webhookUrl || 'https://crm.company.example.com/api/twilio/agent-voice'
   const sampleWebhook = `${webhook}?agentId=matilda&provider=openai&voiceName=marin&greeting=${encodeURIComponent('This is the Farrington phone bridge test. How can I help?')}`
 
   return (
@@ -689,7 +689,7 @@ function VoiceBridgePanel() {
 
         <div className="mt-4 space-y-3">
           <BridgeUrlRow label="Twilio Voice URL" value={webhook} copied={copied} onCopy={copyText} />
-          <BridgeUrlRow label="Media Stream WSS" value={status?.streamUrl || 'wss://openocti.local/twilio-agent-stream'} copied={copied} onCopy={copyText} />
+          <BridgeUrlRow label="Media Stream WSS" value={status?.streamUrl || 'wss://crm.company.example.com/twilio-agent-stream'} copied={copied} onCopy={copyText} />
           <BridgeUrlRow label="OpenAI test URL" value={sampleWebhook} copied={copied} onCopy={copyText} />
         </div>
 

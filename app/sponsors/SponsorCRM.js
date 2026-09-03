@@ -115,7 +115,7 @@ const CAMPAIGNS = [
     id: "newspaper_outreach",
     name: "Newspaper Upgrade",
     icon: "📰",
-    description: "Get existing papers to sign up on NewsroomAIOS",
+    description: "Get existing papers to sign up on ContentHub",
     listFilter: "newspapers",
     outcomes: [
       { v: "no_answer", l: "No Answer" },
@@ -134,7 +134,7 @@ const CAMPAIGNS = [
     id: "tda_outreach",
     name: "State TDAs",
     icon: "🏛️",
-    description: "Pitch state tourism development authorities on NewsroomAIOS",
+    description: "Pitch state tourism development authorities on ContentHub",
     listFilter: "tdas",
     outcomes: [
       { v: "no_answer", l: "No Answer" },
@@ -457,7 +457,7 @@ function mergeSeeds(existing) {
 function emailBody(lead) {
   const m = M.find(x => x.id === lead.mk);
   const c = CATS.find(x => x.name === lead.cat);
-  return `Subject: Founding Sponsor Opportunity — ${m?.p}\n\nHi ${lead.cn || "there"},\n\nThank you for taking my call. We're launching ${m?.p}, a news and community engagement platform for ${m?.n}.\n\nAs a Founding Sponsor, you OWN the entire ${lead.cat} section:\n- Header, sidebar, and footer ads on every page\n- Unlimited advertorials and sponsored content\n- Zero competitors in your category\n- 12 months of exclusive category domination\n\nInvestment: $${c?.price.toLocaleString()}/year ($${Math.round((c?.price || 2500) / 12)}/month)\n\nOnly 6 sponsor slots exist. Once your category is taken, it's gone.\n\nReply or call PHONE_REDACTED.\n\nCarl Farrington\nFarrington Development\nfarringtondevelopment.com | newsroomaios.com | wnctimes.com`;
+  return `Subject: Founding Sponsor Opportunity — ${m?.p}\n\nHi ${lead.cn || "there"},\n\nThank you for taking my call. We're launching ${m?.p}, a news and community engagement platform for ${m?.n}.\n\nAs a Founding Sponsor, you OWN the entire ${lead.cat} section:\n- Header, sidebar, and footer ads on every page\n- Unlimited advertorials and sponsored content\n- Zero competitors in your category\n- 12 months of exclusive category domination\n\nInvestment: $${c?.price.toLocaleString()}/year ($${Math.round((c?.price || 2500) / 12)}/month)\n\nOnly 6 sponsor slots exist. Once your category is taken, it's gone.\n\nReply or call PHONE_REDACTED.\n\nCarl Farrington\nFarrington Development\ncompany.example.com | content.example.com | wnctimes.com`;
 }
 
 const gm = (id) => M.find(m => m.id === id);
@@ -806,7 +806,7 @@ export default function SponsorCRM({ onNavigate, activeLifecycleTab = 'leads' })
 
   // ── Filter + Sort ──
   const filtered = useMemo(() => leads.filter(l => {
-    // Dynamic channel tabs (e.g. f.list = "channel:newsroomaios_demos")
+    // Dynamic channel tabs (e.g. f.list = "channel:ContentHub_demos")
     if (typeof f.list === 'string' && f.list.startsWith('channel:')) {
       const cid = f.list.slice(8);
       if (l.campaign !== cid && l.source !== cid) return false;
@@ -1957,7 +1957,7 @@ export default function SponsorCRM({ onNavigate, activeLifecycleTab = 'leads' })
                 <label className={label} style={labelStyle}>Contact Name</label>
                 <input value={editing.cn} onChange={e => setEditing(p => p ? { ...p, cn: e.target.value } : p)} placeholder="Person" className={inp} style={inpStyle} />
               </div>
-              {editing.campaign !== 'farrington_dev' && editing.campaign !== 'newsroomaios_demos' && (
+              {editing.campaign !== 'farrington_dev' && editing.campaign !== 'ContentHub_demos' && (
                 <div>
                   <label className={label} style={labelStyle}>Business Type</label>
                   <input value={editing.bt} onChange={e => setEditing(p => p ? { ...p, bt: e.target.value } : p)} placeholder="e.g. Bike shop" className={inp} style={inpStyle} />
@@ -1979,7 +1979,7 @@ export default function SponsorCRM({ onNavigate, activeLifecycleTab = 'leads' })
                 <label className={label} style={labelStyle}>Address</label>
                 <input value={editing.address || ''} onChange={e => setEditing(p => p ? { ...p, address: e.target.value } : p)} placeholder="123 Main St, City, State" className={inp} style={inpStyle} />
               </div>
-              {editing.campaign !== 'farrington_dev' && editing.campaign !== 'newsroomaios_demos' && (
+              {editing.campaign !== 'farrington_dev' && editing.campaign !== 'ContentHub_demos' && (
                 <>
                   <div>
                     <label className={label} style={labelStyle}>Market</label>
@@ -2065,14 +2065,14 @@ export default function SponsorCRM({ onNavigate, activeLifecycleTab = 'leads' })
         const emailSubject = isTda
           ? `A News & Community Engagement Platform for ${stateName} Tourism`
           : isNewspaper
-          ? `Upgrade ${lead.bn} with AI-Powered Technology — NewsroomAIOS`
+          ? `Upgrade ${lead.bn} with AI-Powered Technology — ContentHub`
           : isFarrington
           ? `Farrington Development next step for ${lead.bn || "your project"}`
           : (body.match(/^Subject: (.+)\n/)?.[1] || "Founding Sponsor Opportunity");
         const emailBodyText = isTda
-          ? `Hi ${lead.cn || "there"},\n\nThank you for taking the time to speak with me. My name is Carl Farrington, and I'm the founder of NewsroomAIOS.\n\nI wanted to follow up because what we've built is unlike anything currently available to tourism development authorities — and I believe it could be a powerful new tool for ${lead.bn}.\n\nHere's the idea in plain terms:\n\nWe build a dedicated news and community engagement platform for ${lead.bn} — a professional, AI-powered publication designed entirely around promoting tourism in your region. Hotels, restaurants, outfitters, attractions, event venues, B&Bs — every member of your tourism network gets featured. No cost to them. No advertising fees. No contracts for individual businesses.\n\nThe entire platform is yours for $25,000/year. That's it. One flat annual fee covers everything:\n\n• We design and launch your platform — you'll have it up and running within 24 hours\n• Every member in your tourism network gets free advertising — directory listings, premium placements, and editorial features at no cost to them\n• We write and publish advertorials, business profiles, destination features, event coverage, and local tourism news — all handled by our team\n• Your platform is indexed on Google News, so every article ranks in organic search results — travelers find your member businesses on a trusted news source\n• An AI-powered voice assistant built into the platform gives visitors a conversational way to discover your destinations and member businesses\n• Your office gets a dedicated point of contact, plus a support ticket system for anything you need\n• There are no ongoing costs for your members and no ongoing costs beyond the annual fee for your office\n\nThis is not an advertising product. There is nothing for your members to buy. This is a news and community engagement platform — we handle the content, the technology, and all member interactions. Every tourism business in your network benefits from being part of a professional, Google News-indexed publication that engages travelers and promotes your region year-round.\n\nThink of it this way: for less than the cost of a single billboard campaign, every tourism business in your region gets a full year of free promotion through a professional news and engagement platform — plus AI-powered tools that connect travelers directly to your member businesses.\n\nLearn more: https://newsroomaios.com\n\nI'd love to walk you through a quick demo — 15 minutes is all it takes. You can book a time here:\nhttps://calendar.app.google/Lii7ixesgekmiKNn6\n\nOr just reply to this email and we'll set something up.\n\nLooking forward to it,\n\nCarl Farrington\nFounder, NewsroomAIOS\nPHONE_REDACTED\nnewsroomaios.com`
+          ? `Hi ${lead.cn || "there"},\n\nThank you for taking the time to speak with me. My name is Carl Farrington, and I'm the founder of ContentHub.\n\nI wanted to follow up because what we've built is unlike anything currently available to tourism development authorities — and I believe it could be a powerful new tool for ${lead.bn}.\n\nHere's the idea in plain terms:\n\nWe build a dedicated news and community engagement platform for ${lead.bn} — a professional, AI-powered publication designed entirely around promoting tourism in your region. Hotels, restaurants, outfitters, attractions, event venues, B&Bs — every member of your tourism network gets featured. No cost to them. No advertising fees. No contracts for individual businesses.\n\nThe entire platform is yours for $25,000/year. That's it. One flat annual fee covers everything:\n\n• We design and launch your platform — you'll have it up and running within 24 hours\n• Every member in your tourism network gets free advertising — directory listings, premium placements, and editorial features at no cost to them\n• We write and publish advertorials, business profiles, destination features, event coverage, and local tourism news — all handled by our team\n• Your platform is indexed on Google News, so every article ranks in organic search results — travelers find your member businesses on a trusted news source\n• An AI-powered voice assistant built into the platform gives visitors a conversational way to discover your destinations and member businesses\n• Your office gets a dedicated point of contact, plus a support ticket system for anything you need\n• There are no ongoing costs for your members and no ongoing costs beyond the annual fee for your office\n\nThis is not an advertising product. There is nothing for your members to buy. This is a news and community engagement platform — we handle the content, the technology, and all member interactions. Every tourism business in your network benefits from being part of a professional, Google News-indexed publication that engages travelers and promotes your region year-round.\n\nThink of it this way: for less than the cost of a single billboard campaign, every tourism business in your region gets a full year of free promotion through a professional news and engagement platform — plus AI-powered tools that connect travelers directly to your member businesses.\n\nLearn more: https://content.example.com\n\nI'd love to walk you through a quick demo — 15 minutes is all it takes. You can book a time here:\nhttps://calendar.app.google/Lii7ixesgekmiKNn6\n\nOr just reply to this email and we'll set something up.\n\nLooking forward to it,\n\nCarl Farrington\nFounder, ContentHub\nPHONE_REDACTED\ncontent.example.com`
           : isNewspaper
-          ? `Hi ${lead.cn || "there"},\n\nIt was great talking with you about ${lead.bn}. As I mentioned, NewsroomAIOS is a news and community engagement platform built for community newspapers like yours.\n\nHere's what you get — day one:\n• AI-powered article generation for local news, sports, business & events\n• Modern, mobile-first website indexed on Google News\n• Built-in sponsor system — 6 category slots at $2,500–$5,000/yr (revenue you keep)\n• Your brand, your market, your editorial voice\n\nIt's free to start, no credit card required. You'll have a live paper in 24 hours.\n\nSee it in action: https://wnctimes.com\nGet started: https://newsroomaios.com/get-started\n\nWant a live walkthrough? Book a 15-minute demo with me on Google Meet:\nhttps://calendar.app.google/Lii7ixesgekmiKNn6\n\nLooking forward to getting you set up,\n\nCarl Farrington\nFounder, NewsroomAIOS\nPHONE_REDACTED`
+          ? `Hi ${lead.cn || "there"},\n\nIt was great talking with you about ${lead.bn}. As I mentioned, ContentHub is a news and community engagement platform built for community newspapers like yours.\n\nHere's what you get — day one:\n• AI-powered article generation for local news, sports, business & events\n• Modern, mobile-first website indexed on Google News\n• Built-in sponsor system — 6 category slots at $2,500–$5,000/yr (revenue you keep)\n• Your brand, your market, your editorial voice\n\nIt's free to start, no credit card required. You'll have a live paper in 24 hours.\n\nSee it in action: https://wnctimes.com\nGet started: https://content.example.com/get-started\n\nWant a live walkthrough? Book a 15-minute demo with me on Google Meet:\nhttps://calendar.app.google/Lii7ixesgekmiKNn6\n\nLooking forward to getting you set up,\n\nCarl Farrington\nFounder, ContentHub\nPHONE_REDACTED`
           : isFarrington
           ? `Hi ${lead.cn || "there"},\n\nI wanted to follow up from Farrington Development and make sure we have the right next step for ${lead.bn || "your project"}.\n\nBased on what I have so far, this looks like it may fit a consulting, automation, web, CRM, or AI workflow conversation. I can help define the scope, budget, and timeline before anyone invests time in the wrong direction.\n\nIf you are open to it, the best next step is a short conversation so I can confirm money, authority, and need, then give you a practical recommendation.\n\nCarl Farrington\nFarrington Development`
           : body.replace(/^Subject: .+\n\n/, "");
@@ -2090,8 +2090,8 @@ export default function SponsorCRM({ onNavigate, activeLifecycleTab = 'leads' })
             fd.append("subject", emailSubject);
             fd.append("body", emailBodyText);
             fd.append("campaignType", isTda ? "tda_outreach" : isNewspaper ? "newspaper_outreach" : isFarrington ? "farrington_dev" : "sponsors");
-            fd.append("brand", isFarrington ? "farrington_dev" : "newsroomaios");
-            fd.append("fromName", isFarrington ? "Farrington Development" : "NewsroomAIOS");
+            fd.append("brand", isFarrington ? "farrington_dev" : "ContentHub");
+            fd.append("fromName", isFarrington ? "Farrington Development" : "ContentHub");
             fd.append("contactName", lead.cn || "there");
             if (isTda) {
               fd.append("paperName", lead.bn || "State Tourism Office");
@@ -2484,7 +2484,7 @@ export default function SponsorCRM({ onNavigate, activeLifecycleTab = 'leads' })
                 { id: 'newspaper',          icon: '📰', label: 'Newspaper Outreach',   desc: 'Cold newspaper list' },
                 { id: 'tda',                icon: '🏞️', label: 'State TDA',            desc: 'Tourism Development Authority' },
                 { id: 'farrington_dev',     icon: '💻', label: 'Farrington Dev',       desc: 'Web dev inquiry' },
-                { id: 'newsroomaios_demos', icon: '🎥', label: 'NewsroomAIOS Demo',    desc: 'Product demo request' },
+                { id: 'ContentHub_demos', icon: '🎥', label: 'ContentHub Demo',    desc: 'Product demo request' },
               ].map(c => (
                 <button key={c.id}
                   onClick={() => { setPickingCampaign(false); setEditing({ ...EMPTY_LEAD, campaign: c.id }) }}

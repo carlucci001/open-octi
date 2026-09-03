@@ -784,7 +784,7 @@ export async function POST(request) {
       const account = accountForLease(lease)
       const origin = safeText(process.env.CRM_PUBLIC_URL, 300).startsWith('https://')
         ? safeText(process.env.CRM_PUBLIC_URL, 300).replace(/\/$/, '')
-        : 'https://openocti.local'
+        : 'https://crm.company.example.com'
       const checkoutNonce = existingLeaseCheckoutNonce({
         leaseId: lease.id,
         requestId,

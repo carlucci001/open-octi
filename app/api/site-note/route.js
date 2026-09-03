@@ -1,5 +1,5 @@
-// Proxy for the carlfarrington.com desk-notes widget. Secret stays server-side.
-const EP = process.env.SITE_NOTE_ENDPOINT || "https://carlfarrington.com";
+// Proxy for the owner.example.com desk-notes widget. Secret stays server-side.
+const EP = process.env.SITE_NOTE_ENDPOINT || "https://owner.example.com";
 const SECRET = (process.env.SITE_NOTE_SECRET || "").trim();
 
 export async function GET() {

@@ -52,7 +52,7 @@ function getStripe() {
 function getBaseUrl() {
   const configured = process.env.INVOICE_BASE_URL
   if (configured) return configured.trim().replace(/\/$/, '')
-  return 'https://openocti.local'
+  return 'https://crm.company.example.com'
 }
 
 function genId() { return 'inv_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) }
@@ -154,7 +154,7 @@ function buildPdf(invoice, client) {
     doc.fontSize(9).font('Helvetica').fillColor('#6B6F78')
     doc.text('Farrington Development LLC', 50, 115)
     doc.text('Asheville, North Carolina')
-    doc.text('www.farringtondevelopment.com')
+    doc.text('www.company.example.com')
 
     doc.fontSize(28).font('Helvetica-Bold').fillColor('#0A0B0D')
     doc.text('INVOICE', 400, 50, { align: 'right' })

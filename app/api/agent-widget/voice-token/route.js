@@ -19,7 +19,7 @@ const PUBLIC_WIDGET_VOICE_BINDINGS = {
     name: 'Jessica',
     firstName: 'Jessica',
   },
-  'newsroomaios-web': {
+  'ContentHub-web': {
     agentId: 'agent_4801kwavtfgcepgbfnqncqbtw7tk',
     voiceName: 'Bruce',
     name: 'Bruce',

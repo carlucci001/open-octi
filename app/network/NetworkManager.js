@@ -66,7 +66,7 @@ function TopologyView({ data }) {
   const nodes = [
     {
       x: cx, y: 80, label: 'Browser', status: 'online', icon: 'WEB',
-      tip: tipText('Your browser session', 'Public HTTPS connection', 'Entry: openocti.local', 'Status: Online'),
+      tip: tipText('Your browser session', 'Public HTTPS connection', 'Entry: crm.company.example.com', 'Status: Online'),
     },
     {
       x: cx - 340, y: 80, label: 'Cloudflare', status: statusOf(data.cloudflared), icon: 'CF', sub: data.cloudflared?.state,
@@ -80,7 +80,7 @@ function TopologyView({ data }) {
     {
       x: cx + 340, y: 80, label: 'Public CRM', status: statusOf(data.publicCrm), icon: 'WWW', sub: data.publicCrm?.status ? `HTTP ${data.publicCrm.status}` : '',
       tip: tipText(
-        'openocti.local',
+        'crm.company.example.com',
         'Public HTTPS app surface',
         data.publicCrm?.ms != null ? `Edge ping: ${data.publicCrm.ms}ms` : null,
         `Status: ${data.publicCrm?.ok ? 'Serving traffic' : 'Offline'}`,
@@ -195,7 +195,7 @@ function NetworkTopologyView({ data }) {
   // Nodes positioned within zones
   const browser = { x: Z.public.x + 110, y: Z.public.y + 115, label: 'Browser', icon: 'WEB',
     status: 'online',
-    tip: tipText('Your browser session', 'Public HTTPS', 'Connects through openocti.local', 'Status: Online') }
+    tip: tipText('Your browser session', 'Public HTTPS', 'Connects through crm.company.example.com', 'Status: Online') }
   const cloudflare = { x: Z.edge.x + 110, y: Z.edge.y + 115, label: 'Cloudflare', icon: 'CF',
     status: statusOf(data.cloudflared),
     tip: tipText(
@@ -217,7 +217,7 @@ function NetworkTopologyView({ data }) {
   const publicCrm = { x: Z.hetzner.x + 300, y: Z.hetzner.y + 115, label: 'Public CRM', icon: 'WWW',
     status: statusOf(data.publicCrm),
     tip: tipText(
-      'openocti.local',
+      'crm.company.example.com',
       'Public HTTPS application surface',
       data.publicCrm?.status ? `HTTP ${data.publicCrm.status}` : null,
       data.publicCrm?.ms != null ? `Edge ping: ${data.publicCrm.ms}ms` : null,
@@ -617,7 +617,7 @@ export default function NetworkManager() {
 
       {/* Top status bar */}
       <div className="command-stat-grid grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-        <StatusCard title="Public CRM" ok={stats.publicCrm?.ok} detail="openocti.local" ms={stats.publicCrm?.ms} />
+        <StatusCard title="Public CRM" ok={stats.publicCrm?.ok} detail="crm.company.example.com" ms={stats.publicCrm?.ms} />
         <StatusCard title="Hetzner CRM" ok={stats.crmService?.ok && stats.local?.ok} detail="/root/farrington-command-center" ms={stats.local?.ms} />
         <StatusCard title="OpenClaw" ok={stats.openclaw?.ok} detail="private server-side runtime" ms={stats.openclaw?.ms} />
       </div>

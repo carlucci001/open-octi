@@ -514,7 +514,7 @@ function buildPdf({ title, body, signature }) {
     doc.fontSize(9).font('Helvetica').fillColor('#6B6F78')
     doc.text('Farrington Development LLC', 50, 115)
     doc.text('Asheville, North Carolina')
-    doc.text('farringtondevelopment.com')
+    doc.text('company.example.com')
 
     doc.moveTo(50, 150).lineTo(562, 150).strokeColor('#6B6F78').lineWidth(0.5).stroke()
 

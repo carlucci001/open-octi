@@ -13,7 +13,7 @@ export async function POST(request) {
   }
 
   try {
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_MARKETING_URL || 'https://farringtondevelopment.com'
+    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_MARKETING_URL || 'https://company.example.com'
     const returnPath = String(body.returnPath || '/products.html').startsWith('/') ? String(body.returnPath || '/products.html') : '/products.html'
     const result = await createProductCheckoutSession({ body, origin, returnPath })
     return NextResponse.json(result, { headers: checkoutCorsHeaders() })

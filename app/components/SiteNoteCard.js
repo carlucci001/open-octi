@@ -1,5 +1,5 @@
 "use client";
-// Site Notes widget — posts short public notes to carlfarrington.com (/now page).
+// Site Notes widget — posts short public notes to owner.example.com (/now page).
 // Same notes Maggie posts by voice via her post_site_note tool.
 import { useCallback, useEffect, useState } from "react";
 import { clientCapabilityStatus } from "@/lib/client-capabilities";
@@ -71,7 +71,7 @@ export default function SiteNoteCard() {
         <div>
           <h2 className="text-base font-semibold" style={{ fontFamily: "'Outfit', sans-serif" }}>Site Notes</h2>
           <div className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: "var(--text-muted)" }}>
-            Public · carlfarrington.com/now · Maggie posts here too
+            Public · owner.example.com/now · Maggie posts here too
           </div>
         </div>
       </div>

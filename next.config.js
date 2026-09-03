@@ -21,6 +21,28 @@ const closedModuleRequests = [
   '@/lib/stripe-billing-catalog-source',
   '@/lib/stripe-subscription-lifecycle',
   '../billing/InvoicesManager',
+  // WO-8: imports that can remain in shared Command Center modules resolve to
+  // the unavailable capability stub in OpenOcti builds.
+  './platforms/PlatformsModule',
+  '../../platforms/PlatformAdminWorkspace',
+  './platforms/adminClient',
+  './platforms/registry',
+  './platforms/ssrf',
+  './VideoHub/sync',
+  '@/lib/platforms/adminClient',
+  '@/lib/platforms/adminContract',
+  '@/lib/platforms/manifest',
+  '@/lib/platforms/registry',
+  '@/lib/platforms/ssrf',
+  '@/lib/platforms/surfaceSelection',
+  '@/lib/SearchSuite3-client',
+  '@/lib/SearchSuite3-engagements',
+  '@/lib/VideoHub/channel',
+  '@/lib/VideoHub/client',
+  '@/lib/VideoHub/sync',
+  '@/lib/VideoHub/webhook',
+  '@/lib/ContentHub-web-agent',
+  '@/lib/newsroom-director',
 ]
 
 // Build stamp shown in the sidebar footer as "Version 2.1.<build> · <commit>".

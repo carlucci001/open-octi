@@ -454,7 +454,7 @@ export async function POST(request) {
     // marketing folders count as part of the same brand's scope.
     const legacyBrandFolders = {
       'farrington-development': ['farrington-development-marketing'],
-      'newsroom-aios': ['newsroomaios-marketing'],
+      'ContentHub': ['ContentHub-marketing'],
       'wnc-times': ['wnctimes-marketing'],
     }
     const referenceScope = {

@@ -50,6 +50,6 @@ export async function POST(request) {
   }
   writeData("portal-sessions.json", sessions)
 
-  const url = "https://portal.farringtondevelopment.com/api/portal/auth/verify?token=" + token
+  const url = "https://portal.company.example.com/api/portal/auth/verify?token=" + token
   return NextResponse.json({ ok: true, url, account: { id: acct.id, name: acct.name, email: acct.email } })
 }

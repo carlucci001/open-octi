@@ -20,7 +20,7 @@ const DEFAULT_TENANT = 'farrington-development'
 
 function getPostizConfig() {
   let base = (process.env.POSTIZ_API_URL || '').trim().replace(/\/$/, '')
-  if (base === 'https://postiz.farringtondevelopment.com/api/public/v1') {
+  if (base === 'https://postiz.company.example.com/api/public/v1') {
     base = 'http://127.0.0.1:5005/api/public/v1'
   }
   const key = (process.env.POSTIZ_API_KEY || '').trim()

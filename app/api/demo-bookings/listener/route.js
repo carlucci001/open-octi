@@ -1,5 +1,5 @@
 // Compatibility shim — the demo bookings listener is now channel
-// 'newsroomaios_demos' in the unified Inbound Channels system. This route
+// 'ContentHub_demos' in the unified Inbound Channels system. This route
 // keeps the old /api/demo-bookings/listener path alive so existing clients
 // (DemoBookingsPanel) keep working until they're migrated to /api/inbound-channels.
 import { NextResponse } from 'next/server'
@@ -8,7 +8,7 @@ import { startChannel, stopChannel, getChannelStatus, listChannels } from '@/lib
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const CHANNEL_ID = 'newsroomaios_demos'
+const CHANNEL_ID = 'ContentHub_demos'
 
 function findChannel() {
   return listChannels().find(c => c.id === CHANNEL_ID)

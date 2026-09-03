@@ -73,7 +73,7 @@ const MATILDA_SECTIONS = [
     desc: 'Booking and looking ahead.',
     items: [
       { tool: 'list_upcoming_events', say: '"What\'s on my calendar this week?"',                does: 'Lists upcoming events in a chosen window (default 7 days).' },
-      { tool: 'book_demo',            say: '"Book Justin Smith for a client call Tuesday at 2pm." / "Book a demo for Acme Tuesday at 2pm."',     does: 'Books normal appointments on Farrington Development, and only routes to NewsroomAIOS Demos when the request is explicitly a demo.' },
+      { tool: 'book_demo',            say: '"Book Justin Smith for a client call Tuesday at 2pm." / "Book a demo for Acme Tuesday at 2pm."',     does: 'Books normal appointments on Farrington Development, and only routes to ContentHub Demos when the request is explicitly a demo.' },
     ],
   },
   {
@@ -234,7 +234,7 @@ const AGENT_GUIDES = {
   'social-media':          { name: 'Sasha',   emoji: '🎨', role: 'Graphic designer & social media marketer',                    sections: SASHA_SECTIONS },
   'legal':                 { name: 'Linda',   emoji: '⚖️', role: 'Legal advisor — reviews AI-drafted contracts',                 sections: LINDA_SECTIONS },
   'communications':        { name: 'Cameron', emoji: '📡', role: 'Communications coordinator — Twilio, Discord, Telegram',       sections: CAMERON_SECTIONS },
-  'newsroomaios-promoter': { name: 'Mark',    emoji: '📰', role: 'Marketing content lead — long-form writing, press, newsletters', sections: MARK_SECTIONS },
+  'ContentHub-promoter': { name: 'Mark',    emoji: '📰', role: 'Marketing content lead — long-form writing, press, newsletters', sections: MARK_SECTIONS },
   'main':                  { name: 'Maggie',  emoji: '🤖', role: 'Office manager — broad CRM operations, invoicing',             sections: MAGGIE_SECTIONS },
   'coding':                { name: 'Craig',   emoji: '👨‍💻', role: 'Software engineering helper',                                sections: CRAIG_SECTIONS },
 }
@@ -299,7 +299,7 @@ const GENERAL_GUIDES = {
     intro: 'How leads, accounts, contacts, opportunities, projects, and tasks fit together.',
     sections: [
       { heading: 'Leads → Accounts', body: 'Leads come in from inbound calls (Doreen), forms, and outreach campaigns. When a lead qualifies, "qualify" converts it into an Account + Contact + Opportunity in the chosen pipeline.' },
-      { heading: 'Pipelines & Stages', body: 'Each campaign type has its own pipeline: sponsors, newspapers, TDAs, Farrington Development, NewsroomAIOS demos. Move opportunities through stages as deals progress.' },
+      { heading: 'Pipelines & Stages', body: 'Each campaign type has its own pipeline: sponsors, newspapers, TDAs, Farrington Development, ContentHub demos. Move opportunities through stages as deals progress.' },
       { heading: 'Projects', body: 'Once a deal is signed, create a Project linked to the Account. Track budget, hours, due date, status.' },
       { heading: 'Tasks', body: 'Tasks can link to anything: account, contact, lead, opportunity, project. Voice-create them with Maggie or Matilda.' },
     ],

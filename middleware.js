@@ -21,7 +21,7 @@ const PUBLIC_PREFIXES = [
   // Invoice payment return flow. The route itself still enforces CRM auth for
   // staff actions; only Stripe session-verified payment checks are public.
   '/api/invoices',
-  // Public lease/pricing display on farringtondevelopment.com — the marketing
+  // Public lease/pricing display on company.example.com — the marketing
   // site's lease.html fetches tiers from here to render the "Pick a tier" grid.
   // Read-only; ?withMargin=1 is gated inside the route, not here.
   '/api/pricing',
@@ -83,11 +83,11 @@ const PUBLIC_EXACT = [
   '/.well-known/farrington-platform.json',
   // Sanitized public status surface; incident publication remains Carl-only.
   '/status',
-  // GetFound3 signs every request with its dedicated HMAC secret. Let the
+  // SearchSuite3 signs every request with its dedicated HMAC secret. Let the
   // receiver perform that authentication instead of requiring a CRM session.
   '/api/integrations/seo-visibility',
-  // MyVTC signs this one webhook receiver with its dedicated HMAC secret.
-  '/api/integrations/myvtc/webhook',
+  // VideoHub signs this one webhook receiver with its dedicated HMAC secret.
+  '/api/integrations/VideoHub/webhook',
   '/api/products',
   '/api/products/bridge.js',
   '/api/products/inquiry',
@@ -123,7 +123,7 @@ export function loginRedirectUrl(request, pathname, env = process.env) {
 
 function authGateUrl(request) {
   const configured = process.env.FCC_AUTH_GATE_ORIGIN || process.env.CRM_INTERNAL_ORIGIN
-  const productionLocal = request.nextUrl.hostname === 'openocti.local'
+  const productionLocal = request.nextUrl.hostname === 'crm.company.example.com'
     ? 'http://127.0.0.1:3000'
     : ''
   return new URL('/api/auth/me', configured || productionLocal || request.url)

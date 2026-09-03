@@ -233,7 +233,7 @@ export async function POST(request) {
           to: ['personal@example.invalid'],
           reply_to: email,
           subject: `New lead: ${name} — ${company} [${source}]`,
-          text: `New website lead captured in Command Center.\n\nName: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone || '(none)'}\n\n${notes}\n\nOpportunity: ${opportunity.name}\nOpen FCC: https://openocti.local`,
+          text: `New website lead captured in Command Center.\n\nName: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone || '(none)'}\n\n${notes}\n\nOpportunity: ${opportunity.name}\nOpen FCC: https://crm.company.example.com`,
         }),
       })
     } catch (err) { console.warn('intake notify email failed:', err?.message) }

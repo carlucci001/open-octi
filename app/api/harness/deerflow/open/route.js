@@ -29,7 +29,7 @@ export async function GET(request) {
   if (error) return error
 
   const base = cleanBase(process.env.DEERFLOW_API_BASE_URL || process.env.DEER_FLOW_API_BASE_URL || 'http://127.0.0.1:2026')
-  const target = cleanBase(process.env.DEERFLOW_BROWSER_DASHBOARD_URL || process.env.DEERFLOW_DASHBOARD_URL || 'https://deerflow.farringtondevelopment.com')
+  const target = cleanBase(process.env.DEERFLOW_BROWSER_DASHBOARD_URL || process.env.DEERFLOW_DASHBOARD_URL || 'https://deerflow.company.example.com')
   const email = process.env.DEERFLOW_ADMIN_EMAIL || ''
   const password = process.env.DEERFLOW_ADMIN_PASSWORD || ''
 
@@ -55,7 +55,7 @@ export async function GET(request) {
   }
 
   const response = NextResponse.redirect(target)
-  const cookieDomain = '.farringtondevelopment.com'
+  const cookieDomain = '.company.example.com'
   for (const header of splitSetCookies(login.headers)) {
     const cookie = parseCookieHeader(header)
     if (!cookie || !['access_token', 'csrf_token'].includes(cookie.name)) continue

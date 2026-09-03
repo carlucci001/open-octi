@@ -24,7 +24,7 @@ function readOpenClawGatewayToken() {
 export async function GET(request) {
   const { error } = await requireAdmin(request)
   if (error) return error
-  const origin = process.env.PUBLIC_TUNNEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://openocti.local'
+  const origin = process.env.PUBLIC_TUNNEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://crm.company.example.com'
   const target = new URL('/api/harness/dashboard/openclaw-hetzner/', origin)
   const token = readOpenClawGatewayToken()
   if (token) target.hash = `token=${encodeURIComponent(token)}`

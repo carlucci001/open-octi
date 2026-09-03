@@ -2626,7 +2626,7 @@ const TOOLS = {
       const userAttachments = await resolveAttachments(args.attachments)
       const allAttachments = [...inlineAttachments, ...userAttachments]
       const r = await resend.emails.send({
-        from: 'NewsroomAIOS <redacted@example.invalid>',
+        from: 'ContentHub <redacted@example.invalid>',
         to: [to],
         replyTo: 'personal@example.invalid',
         subject: args.subject,

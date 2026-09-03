@@ -44,14 +44,14 @@ const ORGANIZATION_SOURCE_TOOLS = [
 
 const DESTINATIONS = [
   { id: 'farrington_dev', label: 'Farrington Development' },
-  { id: 'newsroomaios', label: 'NewsroomAIOS' },
+  { id: 'ContentHub', label: 'ContentHub' },
   { id: 'wnc_times', label: 'WNC Times' },
   { id: 'client_automation', label: 'Client automation product' },
   { id: 'client_command_center', label: 'Client Command Center' },
   { id: 'review_only', label: 'Review only / do not promote' },
 ]
 
-const CRM_DESTINATION_BRANDS = new Set(['farrington_dev', 'newsroomaios', 'wnc_times'])
+const CRM_DESTINATION_BRANDS = new Set(['farrington_dev', 'ContentHub', 'wnc_times'])
 const FARRINGTON_SERVICE_LINES = new Set(['web-development', 'ai-automation', 'crm-command-center', 'custom-software', 'app-build', 'workflow-integration', 'api-data-integration', 'ecommerce', 'seo-marketing-automation', 'hosting-maintenance', 'consulting-scope'])
 
 const CAMPAIGN_MODES = [
@@ -69,16 +69,16 @@ const ORGANIZATION_SCOPES = [
 
 const ORGANIZATION_CAMPAIGNS = [
   {
-    id: 'newsroomaios-tda',
-    label: 'NewsroomAIOS - Tourist Development Authorities',
-    destination: 'newsroomaios',
-    brandContext: 'newsroomaios',
+    id: 'ContentHub-tda',
+    label: 'ContentHub - Tourist Development Authorities',
+    destination: 'ContentHub',
+    brandContext: 'ContentHub',
     serviceLine: 'tourism-authority',
-    campaign: 'newsroomaios-tda',
-    campaignType: 'newsroomaios_demo',
+    campaign: 'ContentHub-tda',
+    campaignType: 'ContentHub_demo',
     organizationType: 'Tourist Development Authority / CVB / DMO',
     tag: 'tda',
-    offer: 'NewsroomAIOS local publisher and destination storytelling platform',
+    offer: 'ContentHub local publisher and destination storytelling platform',
     fit: 'Prioritize tourism offices, convention and visitor bureaus, destination marketing organizations, and chambers with active tourism programs.',
     query: '"tourist development authority" OR "convention and visitors bureau" OR "destination marketing organization" OR "tourism board"',
     mustHave: 'tourism, visitor, destination, contact, staff',
@@ -86,16 +86,16 @@ const ORGANIZATION_CAMPAIGNS = [
     notes: 'Prioritize organizations that publish visitor news, events, grants, destination guides, or partner/sponsor content.',
   },
   {
-    id: 'newsroomaios-chambers',
-    label: 'NewsroomAIOS - Chambers and regional business groups',
-    destination: 'newsroomaios',
-    brandContext: 'newsroomaios',
+    id: 'ContentHub-chambers',
+    label: 'ContentHub - Chambers and regional business groups',
+    destination: 'ContentHub',
+    brandContext: 'ContentHub',
     serviceLine: 'publisher-onboarding',
-    campaign: 'newsroomaios-chambers',
-    campaignType: 'newsroomaios_demo',
+    campaign: 'ContentHub-chambers',
+    campaignType: 'ContentHub_demo',
     organizationType: 'Chamber / regional business association',
     tag: 'chamber',
-    offer: 'NewsroomAIOS community publishing and sponsor workflow',
+    offer: 'ContentHub community publishing and sponsor workflow',
     fit: 'Prioritize chambers and business associations with member news, events, sponsors, newsletters, and public directories.',
     query: '"chamber of commerce" OR "business association" OR "economic development partnership"',
     mustHave: 'members, events, sponsors, newsletter, contact',
@@ -171,7 +171,7 @@ function buildOrganizationQuery({ campaign, scope, location, mustHave, exclude }
 }
 
 function campaignTypeForDestination(brandContext, fallback) {
-  if (brandContext === 'newsroomaios') return 'newsroomaios_demo'
+  if (brandContext === 'ContentHub') return 'ContentHub_demo'
   if (brandContext === 'wnc_times') return 'wnc_times'
   if (brandContext === 'farrington_dev') return 'farrington_dev'
   return fallback
@@ -185,8 +185,8 @@ function serviceLineForDestination(campaign, brandContext) {
 
 function findMatchingLeadList(campaign, leadLists = []) {
   const termsByCampaign = {
-    'newsroomaios-chambers': ['chamber'],
-    'newsroomaios-tda': ['tourism', 'tourist', 'visitor', 'destination', 'tda', 'cvb'],
+    'ContentHub-chambers': ['chamber'],
+    'ContentHub-tda': ['tourism', 'tourist', 'visitor', 'destination', 'tda', 'cvb'],
     'command-center-associations': ['association', 'chapter'],
   }
   const terms = termsByCampaign[campaign?.id] || [campaign?.tag, campaign?.organizationType]

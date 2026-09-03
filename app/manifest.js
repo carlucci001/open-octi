@@ -12,7 +12,7 @@ export function manifestFor(env) {
     ...(!brand.openOcti ? { scope_extensions: [
       {
         type: 'origin',
-        origin: 'https://builder.farringtondevelopment.com',
+        origin: 'https://builder.company.example.com',
       },
     ] } : {}),
     display: 'standalone',

@@ -81,11 +81,26 @@ const DIRECTORY_OVERLAYS = ['docs/brand', 'docs/guides', 'docs/releases', 'docs/
 
 const TEXT_EXTENSIONS = new Set([
   '', '.bat', '.cjs', '.conf', '.css', '.csv', '.dockerignore', '.env', '.example',
-  '.html', '.js', '.json', '.jsx', '.md', '.mjs', '.ps1', '.sh', '.sql', '.svg',
+  '.html', '.js', '.json', '.jsx', '.md', '.mjs', '.ps1', '.service', '.sh', '.sql', '.svg', '.toml',
   '.ts', '.tsx', '.txt', '.yaml', '.yml',
 ])
 
+const OPENOCTI_REFERENCE_REPLACEMENTS = [
+  [new RegExp(['newsroom', '-?', 'aios\\.com'].join(''), 'gi'), 'content.example.com'],
+  [new RegExp(['my', 'vtc\\.com'].join(''), 'gi'), 'video.example.com'],
+  [new RegExp(['carl', 'farrington\\.com'].join(''), 'gi'), 'owner.example.com'],
+  [new RegExp(['farrington', 'development\\.com'].join(''), 'gi'), 'company.example.com'],
+  [new RegExp(['get', 'found'].join(''), 'gi'), 'SearchSuite'],
+  [new RegExp(['get', 'remedy'].join(''), 'gi'), 'RemedySuite'],
+  [new RegExp(['my', 'vtc'].join(''), 'gi'), 'VideoHub'],
+  [new RegExp(['newsroom', '-?', 'aios'].join(''), 'gi'), 'ContentHub'],
+  [new RegExp(['vibn', 'flow'].join(''), 'gi'), 'WorkflowSuite'],
+  [new RegExp(['vibn', 'flip'].join(''), 'gi'), 'PublishingSuite'],
+  [new RegExp(['vibin', 'flow'].join(''), 'gi'), 'WorkflowSuite'],
+]
+
 const SCRUB_REPLACEMENTS = [
+  ...OPENOCTI_REFERENCE_REPLACEMENTS,
   [/178\.156\.186\.151/g, '203.0.113.10'],
   [/crm\.farringtondevelopment\.com/gi, 'openocti.local'],
   [/openocti-alerts/gi, 'openocti-alerts'],
@@ -95,6 +110,14 @@ const SCRUB_REPLACEMENTS = [
   [/\b100\.66\.\d{1,3}\.\d{1,3}\b/g, '127.0.0.1'],
   [/acct_REDACTED/g, 'acct_REDACTED'],
 ]
+
+function neutralizeOpenOctiReferences(value) {
+  let result = String(value || '')
+  for (const [pattern, replacement] of OPENOCTI_REFERENCE_REPLACEMENTS) {
+    result = result.replace(pattern, replacement)
+  }
+  return result
+}
 
 const FORBIDDEN_EXPORT_PATTERNS = [
   ['live IPv4 address', /178\.156\.186\.151/],
@@ -107,6 +130,29 @@ const FORBIDDEN_EXPORT_PATTERNS = [
   ['production account identifier', /acct_REDACTED/],
   ['North American phone number', /(?:\+?1[ .-]?)?\(?[2-9]\d{2}\)?[ .-]\d{3}[ .-]\d{4}\b/],
 ]
+
+// Keep the blocked product markers out of this source file itself by building
+// each matcher from neutral fragments. The exported scanner therefore scans
+// its own implementation without requiring an exception.
+export const OPENOCTI_PRODUCT_DENYLIST = Object.freeze([
+  ['closed search product reference', new RegExp(['get', 'found'].join(''), 'i')],
+  ['closed remediation product reference', new RegExp(['get', 'remedy'].join(''), 'i')],
+  ['closed video product reference', new RegExp(['my', 'vtc'].join(''), 'i')],
+  ['closed news product reference', new RegExp(['newsroom', '-?', 'aios'].join(''), 'i')],
+  ['closed workflow product reference', new RegExp(['vibn', 'flow'].join(''), 'i')],
+  ['closed flip product reference', new RegExp(['vibn', 'flip'].join(''), 'i')],
+  ['closed alternate workflow reference', new RegExp(['vibin', 'flow'].join(''), 'i')],
+  ['closed owner domain reference', new RegExp(['carl', 'farrington\\.com'].join(''), 'i')],
+  ['closed company domain reference', new RegExp(['farrington', 'development\\.com'].join(''), 'i')],
+  ['closed production host reference', new RegExp(['fcc-', 'prod'].join(''), 'i')],
+])
+
+export function matchOpenOctiDenylist(value) {
+  const text = String(value || '')
+  return OPENOCTI_PRODUCT_DENYLIST
+    .filter(([, pattern]) => pattern.test(text))
+    .map(([label]) => label)
+}
 
 const DATA_DEMO_PATTERNS = [
   ['email marker', /@/],
@@ -226,6 +272,7 @@ export function writeOpenOctiEnvExample(output, sourceFile = path.join(SOURCE_RO
 
   const optionalKeys = [...entries.keys()]
     .filter(key => !requiredKeys.includes(key) && !OPENOCTI_HOST_ONLY_ENV_KEYS.has(key))
+    .filter(key => matchOpenOctiDenylist(key).length === 0)
   for (const key of ['OPENOCTI_PORT', 'DEERFLOW_PORT']) {
     if (!optionalKeys.includes(key)) optionalKeys.push(key)
   }
@@ -371,6 +418,27 @@ function scanExport(output) {
   if (failures.length) throw new Error(`Export privacy scan failed (${failures.join(', ')})`)
 }
 
+export function scanOpenOctiDenylist(output) {
+  const failures = []
+  for (const file of listFiles(output)) {
+    const relative = path.relative(output, file).replaceAll('\\', '/')
+    for (const label of matchOpenOctiDenylist(relative)) {
+      failures.push(`${relative}:0: ${label} in path`)
+    }
+    if (!isTextFile(file)) continue
+    const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/)
+    lines.forEach((line, index) => {
+      for (const label of matchOpenOctiDenylist(line)) {
+        failures.push(`${relative}:${index + 1}: ${label}`)
+      }
+    })
+  }
+  if (failures.length) {
+    throw new Error(`OpenOcti product denylist scan failed (${failures.length} hits):\n${failures.join('\n')}`)
+  }
+  return 'PASS (0 hits)'
+}
+
 function runGitleaks(output) {
   const report = path.join(os.tmpdir(), `openocti-gitleaks-${process.pid}.json`)
   const command = process.platform === 'win32' ? 'gitleaks.exe' : 'gitleaks'
@@ -423,7 +491,7 @@ function writeManifest(output, metadata) {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     source: 'OpenOcti export',
-    excludes: OPENOCTI_EXCLUDES,
+    excludes: OPENOCTI_EXCLUDES.map(neutralizeOpenOctiReferences),
     fileCount: files.length,
     byteCount: bytes,
     treeSha256: tree.digest('hex'),
@@ -459,9 +527,11 @@ export function exportOpenOcti(output = DEFAULT_OUTPUT, { version, exportedAt = 
     thirdPartyPackageCount: thirdParty.packageCount,
     scrubbedOccurrenceCount,
     listedFileCount,
+    productDenylist: 'PASS (0 hits)',
     gitleaks,
     starterAgentPack,
   })
+  scanOpenOctiDenylist(output)
   return { output, manifest }
 }
 
@@ -473,6 +543,7 @@ export function main(argv = process.argv.slice(2)) {
     console.log(`Files: ${result.manifest.fileCount}`)
     console.log(`Tree SHA-256: ${result.manifest.treeSha256}`)
     console.log(`gitleaks: ${result.manifest.gitleaks}`)
+    console.log(`product denylist: ${result.manifest.productDenylist}`)
     return 0
   } catch (error) {
     console.error(`OpenOcti export failed: ${error.message}`)

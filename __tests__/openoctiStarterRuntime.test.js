@@ -57,7 +57,7 @@ describe('OpenOcti OpenClaw starter runtime', () => {
     walk(seedRoot)
     const content = files.map(file => fs.readFileSync(file, 'utf8')).join('\n')
     const forbidden = [
-      /farrington/i, /\bcarl\b/i, /wnct/i, /newsroom/i, /myvtc/i, /hetzner/i, /gitea/i,
+      /farrington/i, /\bcarl\b/i, /wnct/i, /newsroom/i, /VideoHub/i, /hetzner/i, /gitea/i,
       /https?:\/\//i, /\b(?:\d{1,3}\.){3}\d{1,3}\b/, /[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/,
       /\+?1\D*\d{3}\D*\d{3}\D*\d{4}/, /<<REMOVED>>/i, /\b(?:sk|pk|rk)-[A-Za-z0-9_-]{12,}\b/,
     ]

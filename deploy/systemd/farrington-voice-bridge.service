@@ -11,7 +11,7 @@ RestartSec=3
 Environment=NODE_ENV=production
 Environment=TWILIO_AGENT_BRIDGE_ENABLED=true
 Environment=TWILIO_AGENT_BRIDGE_PORT=8788
-Environment=TWILIO_AGENT_STREAM_URL=wss://crm.farringtondevelopment.com/twilio-agent-stream
+Environment=TWILIO_AGENT_STREAM_URL=wss://crm.company.example.com/twilio-agent-stream
 
 [Install]
 WantedBy=multi-user.target

@@ -60,9 +60,9 @@ const CLIENT_EMAIL_IDENTITIES = [
   },
   {
     id: 'newsroom',
-    label: 'NewsroomAIOS',
+    label: 'ContentHub',
     brand: 'newsroom',
-    from: 'NewsroomAIOS <redacted@example.invalid>',
+    from: 'ContentHub <redacted@example.invalid>',
     detail: 'Paper partner, newsroom platform, campaign, and publication workflow.',
   },
   {

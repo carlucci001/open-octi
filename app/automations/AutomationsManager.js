@@ -39,7 +39,7 @@ const AGENTS = [
   { id: 'deerflow-lead-research-analyst', name: 'Leo' },
   { id: 'deerflow-market-competitor-analyst', name: 'Mason' },
   { id: 'deerflow-reputation-risk-analyst', name: 'Rowan' },
-  { id: 'newsroomaios-promoter', name: 'Mark' },
+  { id: 'ContentHub-promoter', name: 'Mark' },
   { id: 'main', name: 'Maggie' },
   { id: 'communications', name: 'Cameron' },
   { id: 'social-media', name: 'Sasha' },
@@ -186,7 +186,7 @@ const SERVICE_TEMPLATES = {
     description: 'Mark prepares a press release, builds the recipient list by beat/market, waits for approval, then delivers the approved campaign package.',
     scope: 'client',
     serviceType: 'press-release',
-    assignedAgentId: 'newsroomaios-promoter',
+    assignedAgentId: 'ContentHub-promoter',
     assignedAgentName: 'Mark',
     trigger: { type: 'schedule', config: { cadence: 'Monthly' } },
     cadence: 'Monthly',
@@ -250,7 +250,7 @@ const SERVICE_TEMPLATES = {
     description: 'Apify refreshes a client-specific press list, verifies public contact sources, flags stale contacts, and prepares a clean recipient list for Mark.',
     scope: 'client',
     serviceType: 'media-refresh',
-    assignedAgentId: 'newsroomaios-promoter',
+    assignedAgentId: 'ContentHub-promoter',
     assignedAgentName: 'Mark',
     trigger: { type: 'schedule', config: { cadence: 'Monthly' } },
     cadence: 'Monthly',
@@ -978,7 +978,7 @@ function AutomationEditor({ initial, accounts, onCancel, onSave }) {
   const [scope, setScope] = useState(initial?.scope || 'in-house')
   const [tenantId, setTenantId] = useState(initial?.tenantId || '')
   const [serviceType, setServiceType] = useState(initial?.serviceType || 'custom')
-  const [assignedAgentId, setAssignedAgentId] = useState(initial?.assignedAgentId || 'newsroomaios-promoter')
+  const [assignedAgentId, setAssignedAgentId] = useState(initial?.assignedAgentId || 'ContentHub-promoter')
   const [cadence, setCadence] = useState(initial?.cadence || initial?.trigger?.config?.cadence || '')
   const [dataProvider, setDataProvider] = useState(initial?.dataSource?.provider || 'apify')
   const [dataQuery, setDataQuery] = useState(initial?.dataSource?.query || '')

@@ -20,7 +20,7 @@ const CAMPAIGNS = [
 // Which script set a lead's brand most likely wants on the phone.
 const BRAND_DEFAULT_CAMPAIGN = {
   farrington_dev: 'farrington_dev',
-  newsroomaios: 'newspapers',
+  ContentHub: 'newspapers',
   wnc_times: 'sponsors',
 }
 

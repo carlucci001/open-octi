@@ -12,11 +12,11 @@ const DEFAULT_TIMEOUT_MS = 20000
 
 const PRESETS = [
   {
-    id: 'newsroomaios',
-    label: 'NewsroomAIOS',
-    baseUrl: 'https://www.newsroomaios.com',
+    id: 'ContentHub',
+    label: 'ContentHub',
+    baseUrl: 'https://www.content.example.com',
     auth: { type: 'header', prefix: '', headerName: 'X-API-Key' },
-    docsUrl: 'https://www.newsroomaios.com',
+    docsUrl: 'https://www.content.example.com',
     discoveryPaths: ['/openapi.json', '/api/openapi.json', '/swagger.json'],
     defaultHeaders: { 'Content-Type': 'application/json', 'X-Tenant-ID': 'wnct-times' },
     samples: [
@@ -178,7 +178,7 @@ function cleanHeaders(value) {
 function applyAuth(url, headers, auth = {}) {
   const key = String(auth.key || '').trim()
   if (!key || auth.type === 'none') return
-  if (/(^|\.)newsroomaios\.com$/i.test(url.hostname)) {
+  if (/(^|\.)ContentHub\.com$/i.test(url.hostname)) {
     for (const name of Object.keys(headers)) {
       if (/^authorization$/i.test(name)) delete headers[name]
     }

@@ -35,8 +35,8 @@ const SOURCES = [
 
 const BRAND_CONTEXTS = [
   { id: 'farrington_dev', label: 'Farrington Development', from: 'Farrington Development', campaignType: 'farrington_dev' },
-  { id: 'myvtc', label: 'MyVTC', from: 'MyVTC', campaignType: 'myvtc' },
-  { id: 'newsroomaios', label: 'NewsroomAIOS', from: 'NewsroomAIOS', campaignType: 'newsroomaios_demo' },
+  { id: 'VideoHub', label: 'VideoHub', from: 'VideoHub', campaignType: 'VideoHub' },
+  { id: 'ContentHub', label: 'ContentHub', from: 'ContentHub', campaignType: 'ContentHub_demo' },
   { id: 'wnc_times', label: 'WNC Times', from: 'WNC Times', campaignType: 'wnc_times' },
 ]
 
@@ -54,12 +54,12 @@ const LEAD_CATEGORY_GROUPS = {
     { id: 'hosting-maintenance', label: 'Hosting / maintenance' },
     { id: 'consulting-scope', label: 'Consulting / scope' },
   ],
-  myvtc: [
-    { id: 'MyVTC', label: 'MyVTC contact' },
+  VideoHub: [
+    { id: 'VideoHub', label: 'VideoHub contact' },
     { id: 'contact', label: 'General contact' },
     { id: 'funeral-home', label: 'Funeral home partnership' },
   ],
-  newsroomaios: [
+  ContentHub: [
     { id: 'platform-demo', label: 'Platform demo' },
     { id: 'publisher-onboarding', label: 'Publisher onboarding' },
     { id: 'tourism-authority', label: 'Tourism authority / destination org' },
@@ -215,9 +215,9 @@ function Field({ label, children }) {
 
 function inferBrand(lead = {}) {
   const haystack = [lead.brandContext, lead.source, lead.serviceLine, lead.productOpportunity, lead.notes, ...(lead.tags || [])].join(' ').toLowerCase()
-  if (haystack.includes('myvtc')) return 'myvtc'
+  if (haystack.includes('VideoHub')) return 'VideoHub'
   if (haystack.includes('wnc')) return 'wnc_times'
-  if (haystack.includes('newsroom')) return 'newsroomaios'
+  if (haystack.includes('newsroom')) return 'ContentHub'
   return 'farrington_dev'
 }
 
@@ -230,7 +230,7 @@ const fillTemplate = (text = '', lead = {}, brand = {}) => String(text)
 
 function LeadEmailModal({ lead, onClose, onSent }) {
   // Brand follows the lead's pipeline: a Farrington lead sends as Farrington
-  // Development, a NewsroomAIOS lead as NewsroomAIOS. The /api/sponsor-email
+  // Development, a ContentHub lead as ContentHub. The /api/sponsor-email
   // route maps the brand to the actual From address (BRAND_FROM).
   const [brandId, setBrandId] = useState(() => lead.brandContext || inferBrand(lead))
   const [templates, setTemplates] = useState(null) // null = loading

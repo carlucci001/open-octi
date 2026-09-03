@@ -261,7 +261,7 @@ export default function PrivacyFinancePanel() {
           <div style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>Webhook URL</div>
           <div className="flex gap-2">
             <code className="flex-1 rounded-lg" style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px', fontSize: 12, overflow: 'auto' }}>
-              {state.webhookUrl || 'https://openocti.local/api/privacy/transaction-webhook'}
+              {state.webhookUrl || 'https://crm.company.example.com/api/privacy/transaction-webhook'}
             </code>
             <button
               onClick={copyWebhook}

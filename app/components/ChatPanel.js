@@ -17,7 +17,7 @@ const CURATED_AGENT_AVATARS = {
   coding: OPENOCTI_AVATAR || '/avatars/coding-1777251118838.png',
   communications: OPENOCTI_AVATAR || '/avatars/communications-1777476569009.jpg',
   legal: OPENOCTI_AVATAR || '/avatars/legal-1777476559880.jpg',
-  promoter: OPENOCTI_AVATAR || '/avatars/newsroomaios-promoter-1777251395979.png',
+  promoter: OPENOCTI_AVATAR || '/avatars/ContentHub-promoter-1777251395979.png',
   social: OPENOCTI_AVATAR || '/avatars/social-media-1777476538091.jpg',
   morningBrief: OPENOCTI_AVATAR || '/avatars/morning-brief-1777509881964.png',
   finance: OPENOCTI_AVATAR || '/avatars/finance-manager-local.svg',

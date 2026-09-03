@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 const BRIDGE = `(() => {
   const script = document.currentScript || document.querySelector('script[data-openocti-hostucts]');
   const config = {
-    apiBase: (script?.dataset.apiBase || 'https://openocti.local').replace(/\\/$/, ''),
+    apiBase: (script?.dataset.apiBase || 'https://crm.company.example.com').replace(/\\/$/, ''),
     product: script?.dataset.product || '',
     target: script?.dataset.target || '[data-openocti-hostucts]',
     checkoutTarget: script?.dataset.checkoutTarget || '',

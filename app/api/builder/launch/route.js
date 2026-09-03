@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const DEFAULT_BUILDER_URL = process.env.NODE_ENV === 'production'
-  ? 'https://builder.farringtondevelopment.com/'
+  ? 'https://builder.company.example.com/'
   : 'http://localhost:5173/'
 const ALLOWED_THEMES = new Set(['command', 'codex', 'codex-blue'])
 

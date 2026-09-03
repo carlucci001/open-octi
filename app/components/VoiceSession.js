@@ -183,7 +183,7 @@ const FALLBACK_VOICE_AGENTS = [
     category: 'communications',
   },
   {
-    id: 'newsroomaios-promoter',
+    id: 'ContentHub-promoter',
     firstName: 'Mark',
     name: 'Mark',
     voiceName: 'Mark',
@@ -599,7 +599,7 @@ const AUTOMATION_BUILDER_AGENTS = [
   { id: 'deerflow-lead-research-analyst', name: 'Leo' },
   { id: 'deerflow-market-competitor-analyst', name: 'Mason' },
   { id: 'deerflow-reputation-risk-analyst', name: 'Rowan' },
-  { id: 'newsroomaios-promoter', name: 'Mark' },
+  { id: 'ContentHub-promoter', name: 'Mark' },
   { id: 'main', name: 'Maggie' },
   { id: 'communications', name: 'Cameron' },
   { id: 'social-media', name: 'Sasha' },
@@ -3967,8 +3967,8 @@ function VoiceButton({ activeContext, activeSection }) {
                 description,
                 isDemo: requestedAsDemo,
                 kind: requestedAsDemo ? 'demo' : 'client_call',
-                calendarKey: requestedAsDemo ? 'newsroomaios' : 'farrington-dev',
-                source: requestedAsDemo ? 'newsroomaios_demos' : 'manual',
+                calendarKey: requestedAsDemo ? 'ContentHub' : 'farrington-dev',
+                source: requestedAsDemo ? 'ContentHub_demos' : 'manual',
               }),
             }).then(r => r.json())
             if (r.ok) {

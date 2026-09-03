@@ -49,7 +49,7 @@ function statusTone(status) {
 
 function productFamily(order) {
   const haystack = `${order.product || ''} ${order.productName || ''} ${order.offerName || ''}`.toLowerCase()
-  if (haystack.includes('newsroom')) return 'NewsroomAIOS'
+  if (haystack.includes('newsroom')) return 'ContentHub'
   if (haystack.includes('command')) return 'Command Center'
   return order.productName || 'Product'
 }

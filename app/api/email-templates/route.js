@@ -45,16 +45,16 @@ const SEED_TEMPLATES = [
   {
     id: 'nra-first-reply',
     name: 'First reply',
-    brandContext: 'newsroomaios',
-    subject: 'NewsroomAIOS next step for {company}',
-    body: 'Hi {contact},\n\nThanks for taking a look at NewsroomAIOS. I wanted to follow up with a clear next step for {company} and see whether a short demo would help you evaluate the platform.\n\nNewsroomAIOS is built to help local publishers create, manage, and monetize modern community news operations with AI-assisted workflows, voice agents, media tools, and sponsor-ready publishing infrastructure.\n\nIf it makes sense, I can walk you through the fit, setup path, and practical numbers.\n\nCarl Farrington\nNewsroomAIOS',
+    brandContext: 'ContentHub',
+    subject: 'ContentHub next step for {company}',
+    body: 'Hi {contact},\n\nThanks for taking a look at ContentHub. I wanted to follow up with a clear next step for {company} and see whether a short demo would help you evaluate the platform.\n\nContentHub is built to help local publishers create, manage, and monetize modern community news operations with AI-assisted workflows, voice agents, media tools, and sponsor-ready publishing infrastructure.\n\nIf it makes sense, I can walk you through the fit, setup path, and practical numbers.\n\nCarl Farrington\nContentHub',
   },
   {
     id: 'nra-demo-followup',
     name: 'Demo follow-up',
-    brandContext: 'newsroomaios',
-    subject: 'NewsroomAIOS follow-up for {company}',
-    body: 'Hi {contact},\n\nThanks for taking a look at NewsroomAIOS. I wanted to follow up with a clear next step for {company} and see whether a short demo would help you evaluate the platform.\n\nNewsroomAIOS is built to help local publishers create, manage, and monetize modern community news operations with AI-assisted workflows, voice agents, media tools, and sponsor-ready publishing infrastructure.\n\nIf it makes sense, I can walk you through the fit, setup path, and practical numbers.\n\nCarl Farrington\nNewsroomAIOS',
+    brandContext: 'ContentHub',
+    subject: 'ContentHub follow-up for {company}',
+    body: 'Hi {contact},\n\nThanks for taking a look at ContentHub. I wanted to follow up with a clear next step for {company} and see whether a short demo would help you evaluate the platform.\n\nContentHub is built to help local publishers create, manage, and monetize modern community news operations with AI-assisted workflows, voice agents, media tools, and sponsor-ready publishing infrastructure.\n\nIf it makes sense, I can walk you through the fit, setup path, and practical numbers.\n\nCarl Farrington\nContentHub',
   },
   {
     id: 'wnc-first-reply',

@@ -1312,7 +1312,7 @@ function ProductEditor({
       <div className="grid gap-4">
         <EditorSection title="Identity">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TextInput id="product-name-input" autoFocus={isNew} label="Name" value={draft.name} onChange={v => updateField('name', v)} placeholder="Command Center Pro, NewsroomAIOS Starter..." />
+            <TextInput id="product-name-input" autoFocus={isNew} label="Name" value={draft.name} onChange={v => updateField('name', v)} placeholder="Command Center Pro, ContentHub Starter..." />
             <TextInput label="Slug" value={draft.slug} onChange={v => updateField('slug', slugify(v))} placeholder="Auto-created from name if blank" />
             <TextInput label="Short name" value={draft.shortName} onChange={v => updateField('shortName', v)} />
             <label>

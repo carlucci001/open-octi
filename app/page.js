@@ -435,7 +435,7 @@ function RepositoryNavIcon() {
 
 const OPENOCTI = isOpenOcti()
 const EDITION_BRAND = brandAssetsFor()
-const OPENOCTI_CLOSED_TABS = new Set(['research'])
+const OPENOCTI_CLOSED_TABS = new Set(['research', 'platforms', 'SearchSuite3'])
 
 const NAV_MAIN = [
   { id: 'dashboard', icon: <CommandCenterNavIcon />, label: 'Command Center', desc: 'Command Center dashboard and today\'s priorities' },
@@ -552,7 +552,7 @@ function LabWorkspaceIcon({ lab, size = 18, strokeWidth = 2.25 }) {
 const NAV_TOOLS = [
   { id: 'switchboard', icon: <SwitchboardNavIcon />, label: 'Switchboard', desc: 'Live agent call monitoring and QA controls' },
   { id: 'agents', icon: <AgentsNavIcon />, label: 'Agents', desc: 'Manage your AI agents — your virtual team' },
-  { id: 'platforms', icon: <Boxes size={18} strokeWidth={2.25} />, label: 'Platforms', desc: 'Register and manage the platforms Farrington runs — GetFound3 and future products' },
+  { id: 'platforms', icon: <Boxes size={18} strokeWidth={2.25} />, label: 'Platforms', desc: 'Register and manage the platforms Farrington runs — SearchSuite3 and future products' },
   { id: 'automations', icon: <AutomationsNavIcon />, label: 'Automations', desc: 'Build guarded client-service workflows and reusable agent runs' },
   { id: 'builder', icon: <Hammer size={18} strokeWidth={2.25} />, label: 'Builder', desc: 'Create and run full applications in the private owner workspace' },
   { id: 'products', icon: <Package size={18} strokeWidth={2.25} />, label: 'Products', desc: 'Product catalog, licensing, prices, and order flow' },
@@ -586,7 +586,7 @@ const NAV_TOOLS = [
       { id: 'credentials', label: 'Credentials' },
     ],
   },
-]
+].filter(item => !OPENOCTI || !OPENOCTI_CLOSED_TABS.has(item.id))
 
 // ── Workspace segmentation (presentational): groups the existing section ids
 // into Sell / Build / Projects / System. Every id still routes via the same
@@ -652,9 +652,7 @@ const VALID_TABS = new Set([
   'my-account',
   'voice-guide',
   'outreach-campaigns',
-  // Legacy tab id — GetFound3's old deep links and saved states land on
-  // Platforms with GetFound3 selected (see the tab render).
-  'getfound3',
+  ...(!OPENOCTI ? ['SearchSuite3'] : []),
 ])
 
 const FINANCE_SUBS = new Set(['overview', 'overhead', 'payments', 'invoices', 'privacy', 'api-spend'])
@@ -1080,7 +1078,7 @@ function UserAvatarMenu({ user, isAdmin, isOwner, theme, onThemeChange, networkM
               />
             )}
             {!OPENOCTI && isAdmin && <AvatarToolButton icon={<MenuIcon type="portal" />} label={portalBusy ? 'Opening Client Portal' : 'Client Portal'} onClick={openPortal} disabled={portalBusy} />}
-            <AvatarToolButton icon={<MenuIcon type="external" />} label="Website" href="https://farringtondevelopment.com" />
+            <AvatarToolButton icon={<MenuIcon type="external" />} label="Website" href="https://company.example.com" />
             <ThemeModeToggle theme={theme} onChange={onThemeChange} compact menuIcon />
           </div>
           <div className="avatar-menu-main-scroll">
@@ -1201,8 +1199,8 @@ function MobileAccountDrawer({ user, isAdmin, theme, onThemeChange, networkMode,
           </button>
         )}
         {!OPENOCTI && isAdmin && <PortalHeaderLink compact />}
-        <a href="https://farringtondevelopment.com" target="_blank" rel="noopener noreferrer"
-          className="avatar-menu-tool-icon" aria-label="Open farringtondevelopment.com"
+        <a href="https://company.example.com" target="_blank" rel="noopener noreferrer"
+          className="avatar-menu-tool-icon" aria-label="Open company.example.com"
           data-tooltip="Website" data-tooltip-side="bottom">
           <MenuIcon type="external" />
         </a>
@@ -2101,7 +2099,7 @@ export default function Page() {
           }))
         }, 350)
       }
-      else if (action === 'open_website') window.open('https://farringtondevelopment.com', '_blank', 'noopener,noreferrer')
+      else if (action === 'open_website') window.open('https://company.example.com', '_blank', 'noopener,noreferrer')
       else if (action === 'open_portal') window.open('/portal/dashboard', '_blank', 'noopener,noreferrer')
       else if (action === 'toggle_network_mode') {
         if (value === 'solo' || value === 'multi') {
@@ -2501,8 +2499,8 @@ export default function Page() {
           {tab === 'feed' && <Feed onNavigate={handleNavTo} />}
           {tab === 'pipelines' && <PipelinesManager onNavigate={handleNavTo} />}
           {tab === 'accounts' && <AccountsManager onNavigate={handleNavTo} />}
-          {tab === 'platforms' && <PlatformsModule onNavigate={handleNavTo} isAdmin={isAdmin} />}
-          {tab === 'getfound3' && <PlatformsModule onNavigate={handleNavTo} isAdmin={isAdmin} initialPlatformId="getfound3" />}
+          {!OPENOCTI && tab === 'platforms' && <PlatformsModule onNavigate={handleNavTo} isAdmin={isAdmin} />}
+          {!OPENOCTI && tab === 'SearchSuite3' && <PlatformsModule onNavigate={handleNavTo} isAdmin={isAdmin} initialPlatformId="SearchSuite3" />}
           {tab === 'support' && <SupportManager />}
           {tab === 'contacts' && <ContactsManager onNavigate={handleNavTo} />}
           {tab === 'leads' && <LeadsManager onNavigate={handleNavTo} />}

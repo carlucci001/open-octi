@@ -23,7 +23,7 @@ describe('OpenOcti Linda documents and e-signature', () => {
     for (const template of index) {
       const body = fs.readFileSync(path.join(templatesRoot, template.file), 'utf8').trim()
       expect(body.endsWith(notice), template.name).toBe(true)
-      expect(body).not.toMatch(/Farrington|Newsroom|WNCT|MyVTC|Carl/i)
+      expect(body).not.toMatch(/Farrington|Newsroom|WNCT|VideoHub|Carl/i)
     }
   })
 

@@ -46,7 +46,7 @@ function checkLocalCrm() {
 }
 
 function checkPublicCrm() {
-  return pingUrl('https://openocti.local/', 4000)
+  return pingUrl('https://crm.company.example.com/', 4000)
 }
 
 async function checkOpenClaw() {

@@ -67,9 +67,9 @@ add('OpenClaw chat tunnel (localhost:18789)', async () => {
   return { ok: true, msg: 'tunnel listening' }
 })
 
-// 4. Cloudflared tunnel (openocti.local → :3000)
-add('Cloudflared tunnel (openocti.local)', async () => {
-  const r = await httpProbe('https://openocti.local/api/pricing')
+// 4. Cloudflared tunnel (crm.company.example.com → :3000)
+add('Cloudflared tunnel (crm.company.example.com)', async () => {
+  const r = await httpProbe('https://crm.company.example.com/api/pricing')
   if (!r.ok) return { ok: false, msg: `tunnel not reaching CRM (${r.err || 'status ' + r.status}) — check cloudflared service` }
   return { ok: true, msg: `up (status ${r.status})` }
 })
@@ -122,8 +122,8 @@ add('Stripe API', async () => {
 })
 
 // 7. Marketing site is reachable (the leasing pages)
-add('Marketing site (farringtondevelopment.com/lease)', async () => {
-  const r = await httpProbe('https://farringtondevelopment.com/lease')
+add('Marketing site (company.example.com/lease)', async () => {
+  const r = await httpProbe('https://company.example.com/lease')
   if (!r.ok) return { ok: false, msg: `marketing site down (${r.err || 'status ' + r.status})` }
   return { ok: true, msg: `up (status ${r.status})` }
 })

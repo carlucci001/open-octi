@@ -6,7 +6,7 @@ import { resolvePublicWidgetAgent } from '@/lib/public-agent-widget'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const PUBLIC_WIDGET_BASE_URL = 'https://openocti.local'
+const PUBLIC_WIDGET_BASE_URL = 'https://crm.company.example.com'
 
 function inlineAvatarDataUri(avatarUrl) {
   const value = String(avatarUrl || '')

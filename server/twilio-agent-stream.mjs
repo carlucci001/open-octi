@@ -42,7 +42,7 @@ const TRANSFER_AGENTS = [
   { id: 'social-media', names: ['sasha', 'social'], label: 'Sasha' },
   { id: 'legal', names: ['linda', 'legal'], label: 'Linda' },
   { id: 'communications', names: ['cameron', 'communications'], label: 'Cameron' },
-  { id: 'newsroomaios-promoter', names: ['mark', 'marketing'], label: 'Mark' },
+  { id: 'ContentHub-promoter', names: ['mark', 'marketing'], label: 'Mark' },
   { id: 'doreen', names: ['doreen', 'reception'], label: 'Doreen' },
   { id: 'diane', names: ['diane', 'morning'], label: 'Diane' },
 ]

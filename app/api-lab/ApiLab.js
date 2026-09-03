@@ -103,8 +103,8 @@ function normalizePath(path) {
 export default function ApiLab() {
   const [presets, setPresets] = useState([])
   const [presetId, setPresetId] = useState('custom')
-  const [baseUrl, setBaseUrl] = useState('https://www.newsroomaios.com')
-  const [endpointUrl, setEndpointUrl] = useState('https://www.newsroomaios.com/api/ai/search-news')
+  const [baseUrl, setBaseUrl] = useState('https://www.content.example.com')
+  const [endpointUrl, setEndpointUrl] = useState('https://www.content.example.com/api/ai/search-news')
   const [authType, setAuthType] = useState('bearer')
   const [headerName, setHeaderName] = useState('Authorization')
   const [queryName, setQueryName] = useState('key')
@@ -299,15 +299,15 @@ export default function ApiLab() {
                 <Badge tone={presetId === 'custom' ? 'accent' : 'neutral'}>{presetId === 'custom' ? 'active' : 'available'}</Badge>
               </div>
               <Field label="Full endpoint URL">
-                <input value={endpointUrl} onChange={e => applyEndpoint(e.target.value)} placeholder="https://www.newsroomaios.com/api/ai/search-news" style={inputStyle} />
+                <input value={endpointUrl} onChange={e => applyEndpoint(e.target.value)} placeholder="https://www.content.example.com/api/ai/search-news" style={inputStyle} />
               </Field>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
                 <button
                   type="button"
                   onClick={() => {
                     setPresetId('custom')
-                    setBaseUrl('https://www.newsroomaios.com')
-                    applyEndpoint('https://www.newsroomaios.com/api/ai/search-news')
+                    setBaseUrl('https://www.content.example.com')
+                    applyEndpoint('https://www.content.example.com/api/ai/search-news')
                     setMethod('POST')
                     setAuthType('header')
                     setHeaderName('X-API-Key')
@@ -318,7 +318,7 @@ export default function ApiLab() {
                   className="rounded-lg px-3 py-2 text-sm font-semibold"
                   style={secondaryButton}
                 >
-                  Load NewsroomAIOS search
+                  Load ContentHub search
                 </button>
                 <button
                   type="button"

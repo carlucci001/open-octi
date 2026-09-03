@@ -3793,7 +3793,7 @@ function LabsTab({ editing, setEditing, elSyncStatus, onStartVoiceTest }) {
     : elevenBound
       ? 'This agent has an ElevenLabs ConvAI binding. OpenAI, Gemini, or Chirp voice experiments need a separate experimental profile so ConvAI prompt, flows, actions, and events are not confused with the production voice agent.'
       : ''
-  const publicBase = 'https://openocti.local'
+  const publicBase = 'https://crm.company.example.com'
   const agentId = encodeURIComponent(editing.id || 'agent')
   const widgetUrl = `${publicBase}/agent-widget?agent=${agentId}&theme=${encodeURIComponent(labs.embedTheme || 'light')}`
   const scriptSnippet = `<script async src="${publicBase}/api/agent-widget.js?agent=${agentId}" data-agent="${editing.id || 'agent'}" data-theme="${labs.embedTheme || 'light'}" data-style="${labs.embedStyle || 'floating'}"></script>`

@@ -342,7 +342,7 @@ function ShareLinkPanel({ user, info }) {
           </div>
           <LinkRow url={info.public.url} onCopy={copy} />
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-            Public CRM at openocti.local. Auth-protected for anyone with valid credentials.
+            Public CRM at crm.company.example.com. Auth-protected for anyone with valid credentials.
           </div>
         </div>
       )}

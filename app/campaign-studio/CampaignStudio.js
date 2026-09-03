@@ -72,7 +72,7 @@ function campaignAssetUrl(url, version = CAMPAIGN_ASSET_CACHE_VERSION) {
   const raw = String(url || '').trim()
   if (!raw) return ''
   try {
-    const parsed = raw.startsWith('http') ? new URL(raw) : new URL(raw, 'https://openocti.local')
+    const parsed = raw.startsWith('http') ? new URL(raw) : new URL(raw, 'https://crm.company.example.com')
     const parts = parsed.pathname.split('/').filter(Boolean)
     const file = parts.length ? decodeURIComponent(parts[parts.length - 1]) : ''
     if (!file) return raw

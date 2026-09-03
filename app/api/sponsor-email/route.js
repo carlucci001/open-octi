@@ -4,8 +4,8 @@ import { sponsorEmailHtml, newspaperOutreachEmailHtml, tdaOutreachEmailHtml } fr
 
 const BRAND_FROM = {
   farrington_dev: "Farrington Development <redacted@example.invalid>",
-  newsroomaios: "NewsroomAIOS <redacted@example.invalid>",
-  newsroomaios_demo: "NewsroomAIOS <redacted@example.invalid>",
+  ContentHub: "ContentHub <redacted@example.invalid>",
+  ContentHub_demo: "ContentHub <redacted@example.invalid>",
   wnc_times: "WNC Times <redacted@example.invalid>",
 };
 
@@ -59,7 +59,7 @@ export async function POST(req) {
     }
 
     let html;
-    if (campaignType === "farrington_dev" || campaignType === "newsroomaios_demo" || campaignType === "wnc_times") {
+    if (campaignType === "farrington_dev" || campaignType === "ContentHub_demo" || campaignType === "wnc_times") {
       html = plainTextHtml({ brandLabel: fromName || campaignType, plainText });
     } else if (campaignType === "tda_outreach") {
       html = tdaOutreachEmailHtml({ contactName: contactName || "there", orgName: paperName || "your tourism office", state: state || "" });

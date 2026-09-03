@@ -212,7 +212,7 @@ function projectHints(localPath = '') {
       buildCommand: has('build') ? 'npm run build' : '',
       testCommand: has('test') ? 'npm test' : has('test:unit') ? 'npm run test:unit' : '',
       previewCommand: has('dev') ? 'npm run dev' : '',
-      healthCheckCommand: /farrington-command-center/i.test(root) ? 'curl -fsSI https://openocti.local && curl -fsS http://localhost:3000/api/pricing' : '',
+      healthCheckCommand: /farrington-command-center/i.test(root) ? 'curl -fsSI https://crm.company.example.com && curl -fsS http://localhost:3000/api/pricing' : '',
       processNotes: docs.length
         ? `Hints read from ${docs.map(d => d.name).join(', ')}. Review before making this live.`
         : 'No README, PRD, AGENTS, package, or deployment docs were found in the project root.',
@@ -258,7 +258,7 @@ function systemStatus() {
     },
     crm: {
       status: crmActive,
-      url: 'https://openocti.local',
+      url: 'https://crm.company.example.com',
       workingDirectory: crmWorkingDirectory,
     },
     openclaw: {
@@ -267,7 +267,7 @@ function systemStatus() {
     },
     cloudflared: {
       status: cloudflaredActive,
-      url: 'https://openocti.local',
+      url: 'https://crm.company.example.com',
     },
     backup: {
       status: backupSnapshots().length ? 'active' : 'unknown',

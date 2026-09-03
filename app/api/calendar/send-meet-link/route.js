@@ -73,7 +73,7 @@ export async function POST(request) {
 
     const resend = new Resend(resendKey)
     const result = await resend.emails.send({
-      from: from || 'NewsroomAIOS <redacted@example.invalid>',
+      from: from || 'ContentHub <redacted@example.invalid>',
       to: [to],
       replyTo: 'personal@example.invalid',
       subject: `Video link for our ${appointmentLabel} — ${eventTitle || 'Farrington Development'}`,

@@ -32,7 +32,7 @@ vi.mock('@/lib/openclaw-config', () => openclawMocks)
 vi.mock('@/lib/orca-handoff', () => orcaMocks)
 
 function request(body) {
-  return new Request('https://openocti.local/api/orchestrations', {
+  return new Request('https://crm.company.example.com/api/orchestrations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -51,7 +51,7 @@ async function post(body) {
 
 async function getLibrary() {
   const { GET } = await import('@/app/api/orchestrations/route')
-  const response = await GET(new Request('https://openocti.local/api/orchestrations'))
+  const response = await GET(new Request('https://crm.company.example.com/api/orchestrations'))
   return { response, body: await response.json() }
 }
 
