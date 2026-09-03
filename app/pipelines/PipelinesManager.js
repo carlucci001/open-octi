@@ -444,7 +444,7 @@ function OpportunityForm({ opportunity, accounts, pipelines, currentPipeline, on
             <option value="manual">Manual</option>
           </ThemedSelect>
         </Field>
-        <Field label="Geography"><input style={inp} value={f.leadGeneration?.geography || ''} onChange={e => ulg('geography', e.target.value)} placeholder="Asheville, NC" /></Field>
+        <Field label="Geography"><input style={inp} value={f.leadGeneration?.geography || ''} onChange={e => ulg('geography', e.target.value)} placeholder="City, ST" /></Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Industries / lead types"><input style={inp} value={f.leadGeneration?.industries || ''} onChange={e => ulg('industries', e.target.value)} placeholder="restaurants, hotels, tourism offices" /></Field>

@@ -7,6 +7,8 @@ export default function OpenOctiFirstRun() {
   const [profile, setProfile] = useState(null)
   const [businessName, setBusinessName] = useState('')
   const [ownerName, setOwnerName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [website, setWebsite] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -19,6 +21,8 @@ export default function OpenOctiFirstRun() {
         setProfile(result.profile)
         setBusinessName(result.profile.businessName || '')
         setOwnerName(result.profile.ownerName || '')
+        setPhone(result.profile.phone || '')
+        setWebsite(result.profile.website || '')
       })
       .catch(reason => setError(reason.message))
   }, [])
@@ -33,7 +37,7 @@ export default function OpenOctiFirstRun() {
       const response = await fetch('/api/openocti/setup', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ businessName, ownerName }),
+        body: JSON.stringify({ businessName, ownerName, phone, website }),
       })
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error(result.error || 'Setup could not be saved')
@@ -52,6 +56,8 @@ export default function OpenOctiFirstRun() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <label className="text-sm">Business name<input required maxLength={120} value={businessName} onChange={event => setBusinessName(event.target.value)} className="mt-1 w-full rounded-lg px-3" style={{ minHeight: 48, background: '#000010', border: '1px solid #315080', color: '#fff' }} /></label>
         <label className="text-sm">Owner name<input required maxLength={120} value={ownerName} onChange={event => setOwnerName(event.target.value)} className="mt-1 w-full rounded-lg px-3" style={{ minHeight: 48, background: '#000010', border: '1px solid #315080', color: '#fff' }} /></label>
+        <label className="text-sm">Phone <span style={{ color: '#8ba0c4' }}>(optional)</span><input maxLength={40} value={phone} onChange={event => setPhone(event.target.value)} className="mt-1 w-full rounded-lg px-3" style={{ minHeight: 48, background: '#000010', border: '1px solid #315080', color: '#fff' }} /></label>
+        <label className="text-sm">Website <span style={{ color: '#8ba0c4' }}>(optional)</span><input maxLength={240} value={website} onChange={event => setWebsite(event.target.value)} className="mt-1 w-full rounded-lg px-3" style={{ minHeight: 48, background: '#000010', border: '1px solid #315080', color: '#fff' }} /></label>
       </div>
       {error && <p role="alert" className="text-sm mt-3" style={{ color: '#fca5a5' }}>{error}</p>}
       <button disabled={saving} className="rounded-lg px-4 mt-4 font-semibold" style={{ minHeight: 48, background: '#30c0f0', color: '#001040', opacity: saving ? 0.65 : 1 }}>{saving ? 'Saving…' : 'Finish setup'}</button>

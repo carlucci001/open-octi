@@ -179,7 +179,7 @@ T['nda-mutual'] = {
   placeholders: ['client_name','client_address','effective_date','purpose_of_disclosure','term_years','state_of_governing_law'],
   body: `# Mutual Non-Disclosure Agreement
 
-**This Agreement** is effective **{{effective_date}}** between **Farrington Development LLC**, Asheville, NC ("Farrington"), and **{{client_name}}**, {{client_address}} ("Counterparty"). Each party is a "Discloser" when sharing information and a "Recipient" when receiving it.
+**This Agreement** is effective **{{effective_date}}** between **Farrington Development LLC**, City, ST ("Farrington"), and **{{client_name}}**, {{client_address}} ("Counterparty"). Each party is a "Discloser" when sharing information and a "Recipient" when receiving it.
 
 ## 1. Purpose
 The parties wish to explore **{{purpose_of_disclosure}}** and may disclose confidential information to each other to evaluate the opportunity.

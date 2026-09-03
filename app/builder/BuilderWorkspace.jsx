@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Hammer, KeyRound, LockKeyhole, MonitorUp, Power, RefreshCw, Router, Server } from 'lucide-react'
+import { Github, Hammer, KeyRound, LockKeyhole, MessageCircle, MonitorUp, Power, RefreshCw, Router, Server } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import { isOpenOcti } from '@/lib/edition'
 
 function reserveCallSafeBuilderWindow() {
   const required = !!(window.__fccCallActive || window.__fccConferenceActive)
@@ -72,7 +73,52 @@ function IconButton({ label, onClick, disabled, children }) {
   )
 }
 
+function OpenOctiBuilderComingSoon() {
+  return (
+    <div className="command-workspace p-4 sm:p-5">
+      <PageHeader
+        icon={<Hammer size={20} />}
+        title="Builder"
+        subtitle="Follow the open edition roadmap and help prioritize what ships next."
+      />
+      <section
+        className="mx-auto mt-4 max-w-3xl overflow-hidden rounded-xl p-6 text-center sm:p-9"
+        style={{
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 78%, var(--surface2)), var(--surface) 66%)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 18px 48px color-mix(in srgb, var(--accent) 9%, transparent)',
+        }}
+      >
+        <img src="/openocti/logo.png" alt="OpenOcti octopus" className="mx-auto h-24 w-24 object-contain" />
+        <h2 className="mt-5 text-2xl font-black leading-tight sm:text-3xl" style={{ color: 'var(--text)' }}>
+          Builder is coming to a future OpenOcti edition
+        </h2>
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-6" style={{ color: 'var(--text-muted)' }}>
+          The visual site &amp; app builder ships with Command Center today; we&apos;re packaging it for the open edition.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <a
+            href="https://github.com/carlucci001/open-octi"
+            className="inline-flex min-h-12 items-center gap-2 rounded-lg px-5 text-sm font-black"
+            style={{ background: 'var(--accent)', color: '#fff', boxShadow: '0 10px 24px var(--accent-soft)' }}
+          >
+            <Github size={18} /> Star OpenOcti on GitHub
+          </a>
+          <a
+            href="https://github.com/carlucci001/open-octi/discussions"
+            className="inline-flex min-h-12 items-center gap-2 rounded-lg px-5 text-sm font-bold"
+            style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+          >
+            <MessageCircle size={18} /> Upvote it in Discussions
+          </a>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 export default function BuilderWorkspace() {
+  const openEdition = isOpenOcti()
   const [status, setStatus] = useState({ state: 'checking', checkedAt: null, responseMs: null })
 
   const checkStatus = useCallback(async () => {
@@ -91,10 +137,11 @@ export default function BuilderWorkspace() {
   }, [])
 
   useEffect(() => {
+    if (openEdition) return undefined
     checkStatus()
     const timer = window.setInterval(checkStatus, 30000)
     return () => window.clearInterval(timer)
-  }, [checkStatus])
+  }, [checkStatus, openEdition])
 
   const openBuilder = async (reservedWindow = null) => {
     const launchWindow = reservedWindow || reserveCallSafeBuilderWindow()
@@ -150,6 +197,8 @@ export default function BuilderWorkspace() {
   const checkedLabel = status.checkedAt
     ? new Date(status.checkedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })
     : 'Not checked yet'
+
+  if (openEdition) return <OpenOctiBuilderComingSoon />
 
   return (
     <div className="command-workspace p-4 sm:p-5">

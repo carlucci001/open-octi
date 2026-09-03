@@ -201,7 +201,7 @@ export default function QualifyWizard({ lead, pipelines, onComplete, onClose }) 
               </div>
               <div className="mb-3">
                 <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>Geography</label>
-                <input style={inp} value={leadGenGeography} onChange={e => setLeadGenGeography(e.target.value)} placeholder="Asheville, NC" />
+                <input style={inp} value={leadGenGeography} onChange={e => setLeadGenGeography(e.target.value)} placeholder="City, ST" />
               </div>
             </div>
             <div className="mb-3">

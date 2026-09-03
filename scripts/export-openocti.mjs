@@ -99,8 +99,17 @@ const OPENOCTI_REFERENCE_REPLACEMENTS = [
   [new RegExp(['vibin', 'flow'].join(''), 'gi'), 'WorkflowSuite'],
 ]
 
+const OPENOCTI_CONTACT_REPLACEMENTS = [
+  [/tel:\+?[\d(). -]{7,}/gi, 'tel:PHONE_REDACTED'],
+  [/(\bphone(?:_numbers?|display|href)?\b[^\r\n]*?)\b\d{10}\b/gi, '$1PHONE_REDACTED'],
+  [/(?:\+?1[ .-]?)?\(?[2-9]\d{2}\)?[ .-]\d{3}[ .-]\d{4}\b/g, 'PHONE_REDACTED'],
+  [new RegExp(['ashe', 'ville', '(?:,\\s*[A-Z]{2})?'].join(''), 'gi'), 'City, ST'],
+  [new RegExp(['carl', 'farring'].join(''), 'gi'), 'workspace-owner'],
+]
+
 const SCRUB_REPLACEMENTS = [
   ...OPENOCTI_REFERENCE_REPLACEMENTS,
+  ...OPENOCTI_CONTACT_REPLACEMENTS,
   [/178\.156\.186\.151/g, '203.0.113.10'],
   [/crm\.farringtondevelopment\.com/gi, 'openocti.local'],
   [/openocti-alerts/gi, 'openocti-alerts'],
@@ -111,9 +120,9 @@ const SCRUB_REPLACEMENTS = [
   [/acct_REDACTED/g, 'acct_REDACTED'],
 ]
 
-function neutralizeOpenOctiReferences(value) {
+export function neutralizeOpenOctiReferences(value) {
   let result = String(value || '')
-  for (const [pattern, replacement] of OPENOCTI_REFERENCE_REPLACEMENTS) {
+  for (const [pattern, replacement] of [...OPENOCTI_REFERENCE_REPLACEMENTS, ...OPENOCTI_CONTACT_REPLACEMENTS]) {
     result = result.replace(pattern, replacement)
   }
   return result
@@ -129,6 +138,10 @@ const FORBIDDEN_EXPORT_PATTERNS = [
   ['private notification topic', /openocti-alerts/i],
   ['production account identifier', /acct_REDACTED/],
   ['North American phone number', /(?:\+?1[ .-]?)?\(?[2-9]\d{2}\)?[ .-]\d{3}[ .-]\d{4}\b/],
+  ['compact phone-labeled number', /(\bphone(?:_numbers?|display|href)?\b[^\r\n]*?)\b\d{10}\b/i],
+  ['telephone href', /tel:\+/i],
+  ['private city', new RegExp(['ashe', 'ville'].join(''), 'i')],
+  ['owner personal identifier', new RegExp(['carl', 'farring'].join(''), 'i')],
 ]
 
 // Keep the blocked product markers out of this source file itself by building
@@ -145,6 +158,9 @@ export const OPENOCTI_PRODUCT_DENYLIST = Object.freeze([
   ['closed owner domain reference', new RegExp(['carl', 'farrington\\.com'].join(''), 'i')],
   ['closed company domain reference', new RegExp(['farrington', 'development\\.com'].join(''), 'i')],
   ['closed production host reference', new RegExp(['fcc-', 'prod'].join(''), 'i')],
+  ['private telephone href', new RegExp(['tel:\\+', '1828'].join(''), 'i')],
+  ['private city reference', new RegExp(['ashe', 'ville'].join(''), 'i')],
+  ['owner personal identifier', new RegExp(['carl', 'farring'].join(''), 'i')],
 ])
 
 export function matchOpenOctiDenylist(value) {
@@ -389,10 +405,6 @@ function scrubKnownInfrastructure(output) {
       return /@(gmail|hotmail|yahoo|aol|outlook|icloud|live|msn)\./i.test(email)
         ? 'personal@example.invalid'
         : 'redacted@example.invalid'
-    })
-    content = content.replace(/(?:\+?1[ .-]?)?\(?[2-9]\d{2}\)?[ .-]\d{3}[ .-]\d{4}\b/g, () => {
-      replacements += 1
-      return 'PHONE_REDACTED'
     })
     if (content !== original) {
       replacements += 1

@@ -49,7 +49,7 @@ function HeroVisual() {
             <span className="mono" style={{ fontSize: 11.5, color: "var(--ink-3)" }}>10 leads · 3 credits</span>
           </div>
           <div className="col gap-8">
-            {[["Summit Drain & Rooter", "Asheville, NC"], ["Pisgah Pipe & Fixture", "Brevard, NC"], ["Canton Pipeworks LLC", "Canton, NC"]].map(([b, t], i) => (
+            {[["Summit Drain & Rooter", "City, ST"], ["Pisgah Pipe & Fixture", "Brevard, NC"], ["Canton Pipeworks LLC", "Canton, NC"]].map(([b, t], i) => (
               <div key={i} className="row between" style={{ background: "var(--surface-2)", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "11px 14px" }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{b}</span>
                 <span className="mono" style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{t}</span>

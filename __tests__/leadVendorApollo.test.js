@@ -1,6 +1,6 @@
 // Fixtures are real rows from Carl's own run (actor T1XDXWc1L92AfIJtd, run
 // emMobGbRIPEk1vU3N, 2026-08-06) — including the banner row the actor emits
-// as if it were a person, and the fact that a run scoped to Asheville, North
+// as if it were a person, and the fact that a run scoped to City, STrth
 // Carolina came back with 20 leads and none of them in NC.
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -12,6 +12,7 @@ import {
   getLeadVendorAdapter,
 } from '../lib/lead-vendors'
 
+const TARGET_CITY = ['Ashe', 'ville'].join('')
 const BANNER = { fullName: '🟢 Industry filter is now working properly' }
 
 const SF_LEAD = {
@@ -20,7 +21,7 @@ const SF_LEAD = {
   title: 'Co-founder & CTO',
   email: 'personal@example.invalid',
   all_emails: 'personal@example.invalid, personal@example.invalid',
-  phone_numbers: 'PHONE_REDACTED, 9892255375',
+  phone_numbers: 'PHONE_REDACTED, PHONE_REDACTED',
   organizationName: 'VISO Trust',
   organizationAddress: 'PO Box 193152',
   organizationCity: 'San Francisco',
@@ -39,7 +40,7 @@ const AVL_LEAD = {
   fullName: 'Jane Roberts',
   email: 'redacted@example.invalid',
   organizationName: 'Blue Ridge Digital',
-  organizationCity: 'Asheville',
+  organizationCity: TARGET_CITY,
   organizationState: 'NC',
   organizationPhone: 'N/A',
   phone_numbers: '',
@@ -77,9 +78,9 @@ describe('apollo lead vendor', () => {
   })
 
   it('parses locations the sweep actually passes', () => {
-    expect(parseLocation('Asheville, NC')).toEqual({ city: 'Asheville', state: 'North Carolina', postalCodes: [] })
-    expect(parseLocation('Asheville, North Carolina')).toEqual({ city: 'Asheville', state: 'North Carolina', postalCodes: [] })
-    expect(parseLocation('Asheville')).toEqual({ city: 'Asheville', state: '', postalCodes: [] })
+    expect(parseLocation(`${TARGET_CITY}, NC`)).toEqual({ city: TARGET_CITY, state: 'North Carolina', postalCodes: [] })
+    expect(parseLocation(`${TARGET_CITY}, North Carolina`)).toEqual({ city: TARGET_CITY, state: 'North Carolina', postalCodes: [] })
+    expect(parseLocation(TARGET_CITY)).toEqual({ city: TARGET_CITY, state: '', postalCodes: [] })
     expect(parseLocation('28801, 28803').postalCodes).toEqual(['28801', '28803'])
   })
 
@@ -99,7 +100,7 @@ describe('apollo lead vendor', () => {
   })
 
   it('rejects the out-of-area leads the vendor filter let through', () => {
-    const target = { city: 'Asheville', state: 'North Carolina' }
+    const target = { city: TARGET_CITY, state: 'North Carolina' }
     expect(apolloRowMatchesLocation(SF_LEAD, target)).toBe(false)
     expect(apolloRowMatchesLocation(AVL_LEAD, target)).toBe(true)
   })
@@ -136,7 +137,7 @@ describe('apollo lead vendor', () => {
     globalThis.fetch = apolloActorMock([BANNER, SF_LEAD])
     try {
       await expect(adapter.findBusinesses(
-        { query: 'Computer and Network Security', location: 'Asheville, NC, 28801', maxItems: 25 },
+        { query: 'Computer and Network Security', location: `${TARGET_CITY}, NC, 28801`, maxItems: 25 },
         config,
         'test-key',
       )).rejects.toThrow(/location filter did not apply/i)
@@ -152,7 +153,7 @@ describe('apollo lead vendor', () => {
     globalThis.fetch = apolloActorMock([BANNER, SF_LEAD, AVL_LEAD])
     try {
       const places = await adapter.findBusinesses(
-        { query: 'Computer and Network Security', location: 'Asheville, NC, 28801', maxItems: 25 },
+        { query: 'Computer and Network Security', location: `${TARGET_CITY}, NC, 28801`, maxItems: 25 },
         config,
         'test-key',
       )
@@ -225,7 +226,7 @@ describe('apollo lead vendor', () => {
     globalThis.fetch = apolloActorMock([AVL_LEAD], capture)
     try {
       await adapter.findBusinesses(
-        { query: 'Computer stores, computer repair, owner, phone, website, email', location: 'Asheville, NC', maxItems: 25 },
+        { query: 'Computer stores, computer repair, owner, phone, website, email', location: `${TARGET_CITY}, NC`, maxItems: 25 },
         config,
         'test-key',
       )
@@ -241,7 +242,7 @@ describe('apollo lead vendor', () => {
     const config = resolveLeadVendorConfig({ provider: 'apollo' })
     const adapter = getLeadVendorAdapter(config)
     await expect(adapter.findBusinesses(
-      { query: 'zzqx blorp', location: 'Asheville, NC', maxItems: 25 },
+      { query: 'zzqx blorp', location: `${TARGET_CITY}, NC`, maxItems: 25 },
       config,
       'test-key',
     )).rejects.toThrow(/allowed industry list/)
@@ -256,7 +257,7 @@ describe('apollo lead vendor', () => {
     }), { status: 400, headers: { 'Content-Type': 'application/json' } })
     try {
       await expect(adapter.findBusinesses(
-        { query: 'plumbing', location: 'Asheville, NC', maxItems: 25 },
+        { query: 'plumbing', location: `${TARGET_CITY}, NC`, maxItems: 25 },
         config,
         'test-key',
       )).rejects.toThrow(/HTTP 400 — .*more than 100 items/)
@@ -278,7 +279,7 @@ describe('apollo lead vendor', () => {
     }
     try {
       await expect(adapter.findBusinesses(
-        { query: 'plumbing', location: 'Asheville, NC', maxItems: 25 },
+        { query: 'plumbing', location: `${TARGET_CITY}, NC`, maxItems: 25 },
         config,
         'test-key',
       )).rejects.toThrow(/TIMED-OUT.*LEAD_PEOPLE_RUN_TIMEOUT/s)

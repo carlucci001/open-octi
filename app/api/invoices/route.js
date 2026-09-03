@@ -153,7 +153,7 @@ function buildPdf(invoice, client) {
 
     doc.fontSize(9).font('Helvetica').fillColor('#6B6F78')
     doc.text('Farrington Development LLC', 50, 115)
-    doc.text('Asheville, North Carolina')
+    doc.text('City, STrth Carolina')
     doc.text('www.company.example.com')
 
     doc.fontSize(28).font('Helvetica-Bold').fillColor('#0A0B0D')
@@ -226,7 +226,7 @@ function buildPdf(invoice, client) {
 
     doc.fontSize(8).font('Helvetica').fillColor('#6B6F78')
     doc.text('Thank you for your business!', 50, 720, { align: 'center', width: 512 })
-    doc.text('Farrington Development LLC — Asheville, NC', { align: 'center', width: 512 })
+    doc.text('Farrington Development LLC — City, ST', { align: 'center', width: 512 })
 
     doc.end()
   })

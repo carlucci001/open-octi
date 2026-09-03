@@ -13,7 +13,7 @@
 
   // ---- 10 plumber leads, Western NC (realistic mock) ----
   const LEADS = [
-    { biz: "Summit Drain & Rooter",        contact: "Dale Whitmore",   phone: "PHONE_REDACTED", email: "redacted@example.invalid",       town: "Asheville, NC",     source: "Google Business" },
+    { biz: "Summit Drain & Rooter",        contact: "Dale Whitmore",   phone: "PHONE_REDACTED", email: "redacted@example.invalid",       town: "City, ST",     source: "Google Business" },
     { biz: "Hendersonville Plumbing Works",contact: "Renee Coffey",    phone: "PHONE_REDACTED", email: "redacted@example.invalid",     town: "Hendersonville, NC",source: "Google Business" },
     { biz: "Pisgah Pipe & Fixture",        contact: "Theo Banks",      phone: "PHONE_REDACTED", email: "redacted@example.invalid",        town: "Brevard, NC",       source: "Yelp" },
     { biz: "Black Mountain Mechanical",    contact: "Lacey Ortega",    phone: "PHONE_REDACTED", email: "redacted@example.invalid",     town: "Black Mountain, NC",source: "Google Business" },
@@ -46,7 +46,7 @@
     "Find me 10 plumber leads in Western North Carolina every morning…",
     "Email me any new 5-star review the moment it posts…",
     "Send a weekly recap of my new jobs every Friday at 4pm…",
-    "Pull 25 new realtor contacts in Asheville each Monday…",
+    "Pull 25 new realtor contacts in City, ST each Monday…",
     "Watch for permit filings near me and text me the address…",
   ];
 
@@ -93,7 +93,7 @@
       cadence: "Every morning · 7:00 AM",
       nextRun: "Tomorrow, 7:00 AM",
       lastRun: "Just now",
-      snippet: "Latest: 10 plumber leads across Asheville, Brevard, Canton & more.",
+      snippet: "Latest: 10 plumber leads across City, STevard, Canton & more.",
       creditsPerRun: 3,
       flagship: true,
       runs: [],

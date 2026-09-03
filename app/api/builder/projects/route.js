@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOwner } from "@/lib/auth";
+import { isOpenOcti } from "@/lib/edition";
 import {
   listBuilderProjects,
   loadBuilderProject,
@@ -13,6 +14,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
+  if (isOpenOcti()) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   const { user, error } = await requireOwner(request);
   if (error) return error;
 
@@ -52,6 +54,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  if (isOpenOcti()) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   const { user, error } = await requireOwner(request);
   if (error) return error;
 

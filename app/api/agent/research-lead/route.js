@@ -77,7 +77,7 @@ export async function POST(request) {
   if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
 
   const name = lead.bn || ''
-  const where = lead.address || lead.paperCity || lead.paperState || 'Asheville NC'
+  const where = lead.address || lead.paperCity || lead.paperState || 'City, ST NC'
   const updates = {}
   const found = {}
 

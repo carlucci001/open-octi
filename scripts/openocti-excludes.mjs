@@ -3,6 +3,7 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   '.gitea/**',
   '.claude/**',
   '.codex-logs/**',
+  '.playwright-cli/**',
   '.tmp/**',
   '.openclaw-plugin-staging/**',
   'node_modules/**',

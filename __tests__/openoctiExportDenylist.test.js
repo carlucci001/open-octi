@@ -3,7 +3,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { matchOpenOctiDenylist, scanOpenOctiDenylist } from '../scripts/export-openocti.mjs'
+import {
+  matchOpenOctiDenylist,
+  neutralizeOpenOctiReferences,
+  scanOpenOctiDenylist,
+} from '../scripts/export-openocti.mjs'
 
 const joined = (...parts) => parts.join('')
 
@@ -20,6 +24,9 @@ describe('OpenOcti export product denylist', () => {
     ['owner domain', joined('carl', 'farrington.com')],
     ['company domain', joined('farrington', 'development.com')],
     ['production host label', joined('fcc-', 'prod')],
+    ['telephone href', joined('tel:', '+', '1828', '7709227')],
+    ['private city', joined('Ashe', 'ville')],
+    ['owner personal identifier', joined('carl', 'farring')],
   ])('matches %s case-insensitively', (_label, value) => {
     expect(matchOpenOctiDenylist(value.toUpperCase())).not.toEqual([])
   })
@@ -41,5 +48,15 @@ describe('OpenOcti export product denylist', () => {
     } finally {
       fs.rmSync(root, { recursive: true, force: true })
     }
+  })
+
+  it.each([
+    [joined('tel:', '+', '1828', '7709227'), 'tel:PHONE_REDACTED'],
+    [joined('(828)', ' 770-9227'), 'PHONE_REDACTED'],
+    [joined('phone: ', '828', '770', '9227'), 'phone: PHONE_REDACTED'],
+    [joined('Ashe', 'ville, NC'), 'City, ST'],
+    [joined('carl', 'farring'), 'workspace-owner'],
+  ])('neutralizes private contact value %s', (value, expected) => {
+    expect(neutralizeOpenOctiReferences(value)).toBe(expected)
   })
 })

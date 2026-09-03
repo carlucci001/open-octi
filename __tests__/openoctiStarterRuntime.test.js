@@ -4,6 +4,7 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { configureSeed, selectProviderModel } from '../deploy/openclaw/configure-seed.mjs'
 import { applyOpenOctiProfile, normalizeOpenOctiProfile } from '../lib/openocti-profile'
+import { resolveEmailSignatureBrand, signatureHtml } from '../lib/emailSignature'
 
 const temporaryDirs = []
 const root = process.cwd()
@@ -77,15 +78,62 @@ describe('OpenOcti OpenClaw starter runtime', () => {
   })
 
   it('fills an existing starter workspace from first-run setup without changing its config', () => {
+    const examplePhone = ['202', '555', '0147'].join('-')
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'openocti-profile-'))
     temporaryDirs.push(stateDir)
     fs.mkdirSync(path.join(stateDir, 'workspace/main'), { recursive: true })
     const configPath = path.join(stateDir, 'openclaw.json')
     fs.writeFileSync(configPath, '{"existing":true}\n')
     fs.writeFileSync(path.join(stateDir, 'workspace/main/IDENTITY.md'), '{{business_name}} belongs to {{owner_name}}.\n')
-    expect(normalizeOpenOctiProfile({ businessName: '  Example Shop  ', ownerName: ' Example Owner ' })).toEqual({ businessName: 'Example Shop', ownerName: 'Example Owner' })
+    expect(normalizeOpenOctiProfile({
+      businessName: '  Example Shop  ',
+      ownerName: ' Example Owner ',
+      phone: ` ${examplePhone} `,
+      website: ' example.test ',
+    })).toEqual({
+      businessName: 'Example Shop',
+      ownerName: 'Example Owner',
+      phone: examplePhone,
+      website: 'example.test',
+    })
     expect(applyOpenOctiProfile(stateDir, { businessName: 'Example Shop', ownerName: 'Example Owner' })).toBe(1)
     expect(fs.readFileSync(path.join(stateDir, 'workspace/main/IDENTITY.md'), 'utf8')).toBe('Example Shop belongs to Example Owner.\n')
     expect(fs.readFileSync(configPath, 'utf8')).toBe('{"existing":true}\n')
+  })
+
+  it('uses optional workspace contact values for OpenOcti email signatures', () => {
+    const examplePhone = ['202', '555', '0147'].join('-')
+    const env = { FCC_EDITION: 'openocti' }
+    const workspaceProfile = {
+      businessName: 'Example Shop',
+      ownerName: 'Example Owner',
+      phone: examplePhone,
+      website: 'example.test',
+    }
+    const brand = resolveEmailSignatureBrand('farrington', { env, workspaceProfile })
+
+    expect(brand).toMatchObject({
+      name: 'Example Shop',
+      person: 'Example Owner',
+      phoneDisplay: examplePhone,
+      phoneHref: `tel:${examplePhone.replaceAll('-', '')}`,
+      website: 'example.test',
+      websiteUrl: 'https://example.test',
+      email: '',
+      location: '',
+    })
+    expect(signatureHtml('farrington', { env, workspaceProfile })).toContain('Example Owner')
+  })
+
+  it('omits missing OpenOcti signature fields instead of rendering placeholders', () => {
+    const html = signatureHtml('farrington', {
+      env: { FCC_EDITION: 'openocti' },
+      workspaceProfile: { businessName: 'Example Shop', ownerName: 'Example Owner' },
+    })
+
+    expect(html).not.toContain('PHONE_REDACTED')
+    expect(html).not.toContain('City, ST')
+    expect(html).not.toContain('mailto:')
+    expect(html).not.toContain('tel:')
   })
 })

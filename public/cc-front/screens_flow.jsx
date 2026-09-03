@@ -116,7 +116,7 @@ function Wizard({ navigate, store, params }) {
               <p className="muted" style={{ marginTop: 10, fontSize: 16 }}>Tap an answer — no forms.</p>
               <div className="col gap-26" style={{ marginTop: 28 }}>
                 <ClarifyRow q="Which area should we cover?">
-                  <ChipGroup options={["Western NC", "Asheville only", "All of NC", "Add another area"]} value={loc} onChange={setLoc} />
+                  <ChipGroup options={["Western NC", "City, ST only", "All of NC", "Add another area"]} value={loc} onChange={setLoc} />
                 </ClarifyRow>
                 <ClarifyRow q="How many leads per run?">
                   <ChipGroup options={["10", "25", "50"]} value={count} onChange={setCount} />

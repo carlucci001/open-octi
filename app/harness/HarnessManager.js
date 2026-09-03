@@ -206,7 +206,7 @@ export default function HarnessManager() {
   const [actionBusy, setActionBusy] = useState(false)
   const [actionResult, setActionResult] = useState(null)
   const [actionError, setActionError] = useState('')
-  const [sampleLead, setSampleLead] = useState('{"businessName":"Farrington Development sample lead","contact":"Owner","website":"","phone":"","address":"Asheville NC","notes":"Test the lead research action contract."}')
+  const [sampleLead, setSampleLead] = useState('{"businessName":"Farrington Development sample lead","contact":"Owner","website":"","phone":"","address":"City, ST NC","notes":"Test the lead research action contract."}')
 
   const [terminalInput, setTerminalInput] = useState('status')
   const [terminalBusy, setTerminalBusy] = useState(false)

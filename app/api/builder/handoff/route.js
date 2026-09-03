@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { findUserById, signSession } from '@/lib/auth'
 import { publicUser, isOwner } from '@/lib/roles'
 import { consumeBuilderHandoff } from '@/lib/builderHandoff'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic'
 const BUILDER_SESSION_TTL_MS = 8 * 60 * 60 * 1000
 
 export async function POST(request) {
+  if (isOpenOcti()) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 })
   const authorization = request.headers.get('authorization') || ''
   const body = await request.json().catch(() => ({}))
   const code = typeof body?.code === 'string'

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireOwner } from '@/lib/auth'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -7,6 +8,7 @@ export const dynamic = 'force-dynamic'
 const BUILDER_LOCAL_URL = process.env.BUILDER_LOCAL_URL || 'http://localhost:5173/api/health'
 
 export async function GET(request) {
+  if (isOpenOcti()) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 })
   const { error } = await requireOwner(request)
   if (error) return error
 

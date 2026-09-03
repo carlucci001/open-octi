@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { NextResponse } from 'next/server'
 import { requireOwner } from '@/lib/auth'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -23,6 +24,7 @@ async function builderIsLive() {
 }
 
 export async function POST(request) {
+  if (isOpenOcti()) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 })
   const { error } = await requireOwner(request)
   if (error) return error
 

@@ -14,7 +14,7 @@ function buildInitialState() {
       request: "Every Friday, summarize my new leads and jobs into a one-page recap",
       title: "Your week, in one page", sub: "Week in Review · last Friday", when: "Fri",
       ranAt: "Fri, 4:00 PM", status: "done", credits: 2,
-      summary: "This week: 14 new leads, 6 jobs booked, and about $4,200 in pipeline. Your busiest day was Wednesday. Two leads from Asheville are still waiting on a callback." },
+      summary: "This week: 14 new leads, 6 jobs booked, and about $4,200 in pipeline. Your busiest day was Wednesday. Two leads from City, ST are still waiting on a callback." },
   ];
   return {
     user: F.USER,

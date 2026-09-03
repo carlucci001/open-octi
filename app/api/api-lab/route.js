@@ -20,7 +20,7 @@ const PRESETS = [
     discoveryPaths: ['/openapi.json', '/api/openapi.json', '/swagger.json'],
     defaultHeaders: { 'Content-Type': 'application/json', 'X-Tenant-ID': 'wnct-times' },
     samples: [
-      { name: 'Search news', method: 'POST', path: '/api/ai/search-news', body: { query: 'Asheville local news', limit: 5 } },
+      { name: 'Search news', method: 'POST', path: '/api/ai/search-news', body: { query: 'City, ST local news', limit: 5 } },
     ],
   },
   {

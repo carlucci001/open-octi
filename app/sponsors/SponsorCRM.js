@@ -15,7 +15,7 @@ import { CheckCircle2, ExternalLink, Mail, MapPin, Pencil, Phone, Search, Trash2
 
 /* ── Data ── */
 const M = [
-  { id: "avl", n: "Asheville, NC", p: "Asheville News", o: "Carl Farrington" },
+  { id: "avl", n: "City, ST", p: "City, ST News", o: "Carl Farrington" },
   { id: "atl", n: "Atlanta, GA", p: "Atlanta News", o: "Chad LaMothe" },
   { id: "chi", n: "Chicago, IL", p: "Chicago News", o: "Carl Farrington" },
   { id: "cos", n: "Colorado Springs, CO", p: "Colorado Springs News", o: "Carl Farrington" },
@@ -31,7 +31,7 @@ const M = [
   { id: "sdn", n: "San Diego, CA", p: "San Diego News", o: "Carl Farrington" },
   { id: "sea", n: "Seattle, WA", p: "Seattle News", o: "Carl Farrington" },
   { id: "xen", n: "Xenia, OH", p: "The 42", o: "Carl Farrington" },
-  { id: "wnc", n: "Asheville, NC", p: "WNC Times", o: "Carl Farrington" },
+  { id: "wnc", n: "City, ST", p: "WNC Times", o: "Carl Farrington" },
 ];
 
 const CATS = [
@@ -190,18 +190,18 @@ const SEEDS = {
     { cat: "Lifestyle / Community", biz: "12 Bones Smokehouse", type: "Restaurant", ph: "PHONE_REDACTED" },
     { cat: "Events / Entertainment", biz: "Orange Peel", type: "Music venue", ph: "PHONE_REDACTED" },
     { cat: "Local News", biz: "Hunter Subaru", type: "Auto dealership", ph: "PHONE_REDACTED" },
-    { cat: "Business / Economy", biz: "Edward Jones Asheville", type: "Financial advisor", ph: "PHONE_REDACTED" },
+    { cat: "Business / Economy", biz: "Edward Jones City, ST", type: "Financial advisor", ph: "PHONE_REDACTED" },
     // Chambers / Associations
-    { cat: "Opinion / Editorial", biz: "Asheville Area Chamber", type: "Chamber of Commerce", ph: "PHONE_REDACTED" },
-    { cat: "Business / Economy", biz: "Asheville Downtown Association", type: "Business association", ph: "PHONE_REDACTED" },
+    { cat: "Opinion / Editorial", biz: "City, ST Area Chamber", type: "Chamber of Commerce", ph: "PHONE_REDACTED" },
+    { cat: "Business / Economy", biz: "City, ST Downtown Association", type: "Business association", ph: "PHONE_REDACTED" },
     // Government / TDA
     { cat: "Events / Entertainment", biz: "Buncombe County TDA", type: "Tourism development authority", ph: "PHONE_REDACTED" },
-    { cat: "Local News", biz: "City of Asheville Economic Dev", type: "City government", ph: "PHONE_REDACTED" },
+    { cat: "Local News", biz: "City of City, ST Economic Dev", type: "City government", ph: "PHONE_REDACTED" },
     // Nonprofits
-    { cat: "Lifestyle / Community", biz: "United Way of Asheville", type: "Nonprofit foundation", ph: "PHONE_REDACTED" },
+    { cat: "Lifestyle / Community", biz: "United Way of City, ST", type: "Nonprofit foundation", ph: "PHONE_REDACTED" },
     { cat: "Lifestyle / Community", biz: "Habitat for Humanity Buncombe", type: "Nonprofit housing", ph: "PHONE_REDACTED" },
     // Education
-    { cat: "Opinion / Editorial", biz: "UNC Asheville", type: "University", ph: "PHONE_REDACTED" },
+    { cat: "Opinion / Editorial", biz: "UNC City, ST", type: "University", ph: "PHONE_REDACTED" },
     { cat: "Sports / Outdoors", biz: "AB Tech Community College", type: "Community college", ph: "PHONE_REDACTED" },
   ],
   atl: [
@@ -409,7 +409,7 @@ const SEEDS = {
     { cat: "Local News", biz: "Prestige Subaru Hendersonville", type: "Auto dealership", ph: "PHONE_REDACTED" },
     { cat: "Opinion / Editorial", biz: "Land of Sky Regional Council", type: "Regional council", ph: "PHONE_REDACTED" },
     { cat: "Business / Economy", biz: "Henderson County Chamber", type: "Chamber of Commerce", ph: "PHONE_REDACTED" },
-    { cat: "Events / Entertainment", biz: "Explore Asheville CVB", type: "Tourism development authority", ph: "PHONE_REDACTED" },
+    { cat: "Events / Entertainment", biz: "Explore City, ST CVB", type: "Tourism development authority", ph: "PHONE_REDACTED" },
     { cat: "Local News", biz: "Henderson County Econ Dev", type: "County government", ph: "PHONE_REDACTED" },
     { cat: "Lifestyle / Community", biz: "Community Foundation of WNC", type: "Nonprofit foundation", ph: "PHONE_REDACTED" },
     { cat: "Lifestyle / Community", biz: "MANNA FoodBank", type: "Nonprofit food bank", ph: "PHONE_REDACTED" },

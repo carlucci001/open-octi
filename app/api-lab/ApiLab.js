@@ -26,7 +26,7 @@ const AUTH_TYPES = [
 
 const defaultHeaders = '{\n  "Accept": "application/json"\n}'
 const newsroomHeaders = '{\n  "Accept": "application/json",\n  "Content-Type": "application/json",\n  "X-Tenant-ID": "wnct-times"\n}'
-const NEWSROOM_SEARCH_SAMPLE = '{\n  "query": "Asheville local news",\n  "limit": 5\n}'
+const NEWSROOM_SEARCH_SAMPLE = '{\n  "query": "City, ST local news",\n  "limit": 5\n}'
 
 function safeJson(value, fallback) {
   try {

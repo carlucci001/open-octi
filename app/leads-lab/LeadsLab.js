@@ -944,7 +944,7 @@ export default function LeadsLab({ onNavigate }) {
           <input
             value={presetName}
             onChange={e => setPresetName(e.target.value)}
-            placeholder="Name this setup, e.g. Asheville plumbers x10"
+            placeholder="Name this setup, e.g. City, ST plumbers x10"
             style={{ ...fieldStyle, marginTop: 8 }}
           />
           <div className="flex gap-2 mt-2">

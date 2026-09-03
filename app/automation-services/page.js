@@ -21,7 +21,7 @@ const presets = [
     id: 'lead-sweep',
     name: 'Lead Sweep',
     description: 'Find customer targets, import CRM leads, and email a daily list.',
-    examples: ['Plumber leads in Western North Carolina', 'Property managers in Asheville', 'Restaurant openings in Buncombe County'],
+    examples: ['Plumber leads in Western North Carolina', 'Property managers in City, ST', 'Restaurant openings in Buncombe County'],
     credits: '30-80 credits/run',
   },
   {
@@ -42,7 +42,7 @@ const presets = [
 
 const proofLeads = [
   'Property Maintenance, Inspections & Repairs',
-  'Property Management & Maintenance - Asheville, NC',
+  'Property Management & Maintenance - City, ST',
   'Contact: Altamus | Regional Property Management Firm',
   'Vesta Property Management contact',
   'Maintenance & Office Requests',

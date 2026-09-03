@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { findUserById, requireOwner } from '@/lib/auth'
 import { issueBuilderHandoff } from '@/lib/builderHandoff'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -11,6 +12,7 @@ const DEFAULT_BUILDER_URL = process.env.NODE_ENV === 'production'
 const ALLOWED_THEMES = new Set(['command', 'codex', 'codex-blue'])
 
 export async function POST(request) {
+  if (isOpenOcti()) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 })
   const { user, error } = await requireOwner(request)
   if (error) return error
 

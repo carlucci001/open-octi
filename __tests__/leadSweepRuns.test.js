@@ -46,7 +46,7 @@ describe('lead sweep run store', () => {
   it('creates a running run with an lsr_ id and echoes the params back', async () => {
     const { createSweepRun } = await import('@/lib/lead-sweep-runs')
 
-    const params = { category: 'roofing', location: 'Asheville, NC', limit: 5, campaign: null }
+    const params = { category: 'roofing', location: 'City, ST', limit: 5, campaign: null }
     const run = createSweepRun({
       kind: 'vertical',
       params,
