@@ -1,4 +1,12 @@
-FROM node:24-bookworm-slim AS dependencies
+# bufferutil and utf-8-validate ship no linux-arm64 prebuilds, so on arm64 (Apple Silicon,
+# Graviton, Raspberry Pi) npm compiles them from source and needs python3/make/g++.
+# These tools live only in the dependency stages; the runtime image stays slim.
+FROM node:24-bookworm-slim AS build-base
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
+
+FROM build-base AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
 # package.json pins a vendored local package (vendor/*.tgz); it must be present for npm ci
@@ -15,7 +23,7 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     NEXT_PUBLIC_FCC_EDITION=${FCC_EDITION}
 RUN npm run build
 
-FROM node:24-bookworm-slim AS production-dependencies
+FROM build-base AS production-dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY vendor ./vendor
