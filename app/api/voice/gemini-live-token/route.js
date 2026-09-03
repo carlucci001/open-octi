@@ -7,6 +7,8 @@ import { requireCapability } from '@/lib/permissions'
 import { toGeminiFunctionDeclarations } from '@/lib/realtime-voice-tools'
 import { COMMAND_CENTER_MENU_GUIDE } from '@/lib/commandCenterNavigation'
 import { COMMAND_CENTER_LIVE_VOICE_RULES, OFFICE_AGENT_CONDUCT } from '@/lib/agentOfficeConduct'
+import { isOpenOcti } from '@/lib/edition'
+import { resolveProviderKey } from '@/lib/openocti-keys'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -18,6 +20,7 @@ function cleanText(value, max = 5000) {
 }
 
 function getGeminiKey() {
+  if (isOpenOcti()) return resolveProviderKey('gemini').key
   return getCred('gemini')?.key || getCred('google gemini')?.key || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || ''
 }
 

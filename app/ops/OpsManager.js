@@ -4,6 +4,7 @@ import ThemedSelect from '../components/ThemedSelect'
 import PageHeader from '../components/PageHeader'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, ArchiveRestore, Copy, DatabaseZap, DollarSign, Gauge, GitBranch, Headphones, Info, PhoneCall, Plus, RefreshCw, Rocket, Search, Star, Square, Trash2, Volume2, Wand2, Wrench, X } from 'lucide-react'
+import { isOpenOcti } from '@/lib/edition'
 
 const TABS = [
   { id: 'cicdItems', label: 'CI/CD', icon: GitBranch, summary: 'Repos, checks, deployments, and Gitea links.' },
@@ -886,7 +887,7 @@ let activeVoiceAudio = null
 
 function stopAllVoicePlayback(except = null) {
   if (typeof window === 'undefined') return
-  if (window.speechSynthesis) window.speechSynthesis.cancel()
+  if (!isOpenOcti() && window.speechSynthesis) window.speechSynthesis.cancel()
   document.querySelectorAll('audio').forEach(audio => {
     if (audio === except) return
     audio.pause()
@@ -1804,7 +1805,7 @@ function VoicePreviewPanel({ item, onUpdate }) {
   const [geminiBusy, setGeminiBusy] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [saving, setSaving] = useState(false)
-  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window
+  const supported = !isOpenOcti() && typeof window !== 'undefined' && 'speechSynthesis' in window
 
   useEffect(() => {
     setProvider(item.provider || item.engine || 'browser')

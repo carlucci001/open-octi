@@ -96,11 +96,9 @@ Point OpenOcti at that gateway in `.env` with `OPENCLAW_HOST`, `OPENCLAW_PORT`, 
 
 ## Enable agents
 
-The CRM works without provider credentials. To enable AI agents, add one supported model key to `.env`, such as `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`, then apply the change:
+The CRM works without provider credentials. After signing in as the owner or an administrator, open **Settings → Models & Keys**. Paste an Anthropic, OpenAI, Google Gemini, or OpenRouter key and select **Save & test**. OpenOcti encrypts the key at rest, updates the shared OpenClaw configuration, and the gateway applies the provider through its file watcher without a container restart.
 
-```sh
-docker compose up -d
-```
+Environment variables remain an advanced alternative. Set `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `OPENROUTER_API_KEY` before starting the stack. An app-saved key takes precedence over the matching environment value.
 
 ## Optional research profile
 

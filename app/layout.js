@@ -5,19 +5,9 @@ import ModeBanner from './components/ModeBanner'
 import ActiveVideoCall from './components/ActiveVideoCall'
 import PWARegister from './components/PWARegister'
 import ClientErrorReporter from './components/ClientErrorReporter'
-import { isOpenOcti } from '@/lib/edition'
-import { brandAssetsFor } from '@/lib/brand-assets'
-const OPENOCTI = isOpenOcti()
+import { brandAssetsFor, brandMetadataFor } from '@/lib/brand-assets'
 const BRAND_ASSETS = brandAssetsFor()
-export const metadata = {
-  title: OPENOCTI ? 'OpenOcti' : 'Farrington Command Center',
-  description: OPENOCTI ? 'Open-source AI command center for business operations' : 'Domains, clients, payments, credentials — Farrington Development LLC',
-  manifest: '/manifest.webmanifest',
-  applicationName: OPENOCTI ? 'OpenOcti' : 'Command Center',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: OPENOCTI ? 'OpenOcti' : 'Command Center' },
-  icons: { icon: BRAND_ASSETS.openOcti ? BRAND_ASSETS.faviconIco : BRAND_ASSETS.faviconSvg, shortcut: BRAND_ASSETS.openOcti ? BRAND_ASSETS.faviconIco : BRAND_ASSETS.faviconSvg, apple: BRAND_ASSETS.faviconPng },
-  other: { 'mobile-web-app-capable': 'yes' },
-}
+export const metadata = brandMetadataFor()
 export const viewport = { themeColor: '#020711' }
 // Runs before any app code. localStorage filling up is a cache problem, never a
 // user-facing crash: on QuotaExceededError, drop the disposable caches (all

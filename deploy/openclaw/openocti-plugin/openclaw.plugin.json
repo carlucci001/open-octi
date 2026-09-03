@@ -1,7 +1,7 @@
 {
   "id": "openocti",
   "name": "OpenOcti",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CRM tools connected to OpenOcti",
   "activation": {
     "onStartup": true
@@ -50,7 +50,12 @@
       "fcc_send_email",
       "fcc_send_signature_document",
       "fcc_open_record",
-      "fcc_navigate_to"
+      "fcc_navigate_to",
+      "fcc_import_start",
+      "fcc_import_commit",
+      "fcc_capability_status",
+      "fcc_list_agents",
+      "fcc_open_page"
     ]
   }
 }

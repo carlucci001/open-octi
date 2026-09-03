@@ -1,17 +1,21 @@
 import { clientCapabilityStatus } from '@/lib/client-capabilities'
+import { isOpenOcti } from '@/lib/edition'
 
 const MAGGIE_WELCOME_AGENT_ID = 'main'
 const MAGGIE_WELCOME_MODEL = 'eleven_turbo_v2_5'
 const LOGIN_WELCOME_FETCH_TIMEOUT_MS = 7000
 const LOGIN_WELCOME_PLAY_TIMEOUT_MS = 6500
 const LOGIN_WELCOME_PENDING_KEY = 'fcc-login-welcome-pending'
+const OPENOCTI_FIRST_LOGIN_KEY = 'openocti-first-login-complete'
+const OPENOCTI_MODEL_CAPABILITIES = ['anthropic', 'openai', 'gemini', 'openrouter']
+const OPENOCTI_WELCOME_ROOT = '/audio/openocti-welcome'
 let queuedLoginWelcome = null
 
 function wait(ms) {
   return new Promise(resolve => window.setTimeout(resolve, ms))
 }
 
-function greetingForNow(now = new Date()) {
+function easternHourForNow(now = new Date()) {
   let hour = now.getHours()
   try {
     const easternHour = new Intl.DateTimeFormat('en-US', {
@@ -22,9 +26,22 @@ function greetingForNow(now = new Date()) {
     hour = Number(easternHour)
   } catch {}
   if (hour === 24) hour = 0
+  return hour
+}
+
+function greetingForNow(now = new Date()) {
+  const hour = easternHourForNow(now)
   if (hour < 12) return 'Good morning'
   if (hour < 17) return 'Good afternoon'
   return 'Good evening'
+}
+
+export function openOctiWelcomeClipFor({ setupIncomplete = false, now = new Date() } = {}) {
+  if (setupIncomplete) return `${OPENOCTI_WELCOME_ROOT}/welcome-first-run.mp3`
+  const hour = easternHourForNow(now)
+  if (hour < 12) return `${OPENOCTI_WELCOME_ROOT}/welcome-morning.mp3`
+  if (hour < 17) return `${OPENOCTI_WELCOME_ROOT}/welcome-afternoon.mp3`
+  return `${OPENOCTI_WELCOME_ROOT}/welcome-evening.mp3`
 }
 
 function firstNameFromUser(user, fallbackUsername) {
@@ -100,6 +117,7 @@ export async function playQueuedLoginWelcomeAudio({ delayMs = 120 } = {}) {
 }
 
 function playBrowserSpeechFallback(text) {
+  if (isOpenOcti()) return false
   if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return false
   try {
     const utterance = new SpeechSynthesisUtterance(text)
@@ -111,6 +129,65 @@ function playBrowserSpeechFallback(text) {
     return true
   } catch {
     return false
+  }
+}
+
+async function openOctiWelcomeState() {
+  let profile = {}
+  try {
+    const response = await fetch('/api/openocti/setup', { cache: 'no-store', credentials: 'same-origin' })
+    if (response.ok) profile = (await response.json()).profile || {}
+  } catch {}
+
+  const statuses = await Promise.all([...OPENOCTI_MODEL_CAPABILITIES, 'elevenlabs'].map(clientCapabilityStatus))
+  const modelConfigured = statuses.slice(0, OPENOCTI_MODEL_CAPABILITIES.length).some(item => item.status === 'configured')
+  let completedLocally = false
+  try { completedLocally = window.localStorage.getItem(OPENOCTI_FIRST_LOGIN_KEY) === 'true' } catch {}
+  return {
+    firstLogin: !modelConfigured && !profile.firstLoginCompletedAt && !completedLocally,
+    elevenLabsConfigured: statuses.at(-1)?.status === 'configured',
+  }
+}
+
+async function markOpenOctiFirstLoginComplete() {
+  try { window.localStorage.setItem(OPENOCTI_FIRST_LOGIN_KEY, 'true') } catch {}
+  try {
+    await fetch('/api/openocti/setup', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      credentials: 'same-origin',
+      body: JSON.stringify({ action: 'complete-first-login' }),
+    })
+  } catch {}
+}
+
+async function playPrerecordedWelcome(src, primedAudio, { maxPlaybackMs = 0, blockedDelayMs = maxPlaybackMs } = {}) {
+  const startedAt = Date.now()
+  const audio = primedAudio?.audio || new Audio()
+  try {
+    if (primedAudio?.ready) await primedAudio.ready.catch(() => {})
+    audio.preload = 'auto'
+    audio.volume = 1
+    audio.src = src
+    const ended = new Promise(resolve => {
+      const done = () => resolve(true)
+      audio.addEventListener('ended', done, { once: true })
+      audio.addEventListener('error', done, { once: true })
+      audio.addEventListener('abort', done, { once: true })
+    })
+    await audio.play()
+    if (maxPlaybackMs > 0) await Promise.race([ended, wait(maxPlaybackMs)])
+    else await ended
+    return true
+  } catch {
+    const remaining = Math.max(0, blockedDelayMs - (Date.now() - startedAt))
+    if (remaining) await wait(remaining)
+    return false
+  } finally {
+    audio.pause()
+    audio.removeAttribute('src')
+    audio.load()
   }
 }
 
@@ -171,14 +248,33 @@ export function primeLoginWelcomeAudio() {
 export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio) {
   if (typeof window === 'undefined' || typeof Audio === 'undefined' || typeof URL === 'undefined') return
   const text = buildLoginWelcomeText(user, fallbackUsername)
+  const openOcti = isOpenOcti()
+  const openOctiState = openOcti ? await openOctiWelcomeState() : null
+
+  if (openOctiState?.firstLogin) {
+    const played = await playPrerecordedWelcome(openOctiWelcomeClipFor({ setupIncomplete: true }), primedAudio, { blockedDelayMs: 8000 })
+    logLoginWelcomeStage(played ? 'played' : 'blocked', { provider: 'prerecorded' })
+    await markOpenOctiFirstLoginComplete()
+    window.location.assign('/settings/models')
+    return
+  }
+
+  const prerecordedFallback = async () => {
+    if (!openOcti) return false
+    const played = await playPrerecordedWelcome(openOctiWelcomeClipFor(), primedAudio, { maxPlaybackMs: LOGIN_WELCOME_PLAY_TIMEOUT_MS })
+    if (played) logLoginWelcomeStage('played', { provider: 'prerecorded' })
+    return played
+  }
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
   const timeoutId = controller ? window.setTimeout(() => controller.abort(), LOGIN_WELCOME_FETCH_TIMEOUT_MS) : null
   let audioUrl = ''
   let audio = null
   try {
-    const capability = await clientCapabilityStatus('elevenlabs')
+    const capability = openOctiState
+      ? { status: openOctiState.elevenLabsConfigured ? 'configured' : 'not_configured' }
+      : await clientCapabilityStatus('elevenlabs')
     if (capability.status !== 'configured') {
-      if (playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
+      if (!(await prerecordedFallback()) && playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
       return
     }
     logLoginWelcomeStage('requested')
@@ -197,14 +293,14 @@ export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio)
     })
     if (!response.ok) {
       logLoginWelcomeStage('tts-failed', { status: String(response.status), reason: `lab-tts ${response.status}` })
-      if (playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
+      if (!(await prerecordedFallback()) && playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
       return
     }
 
     const blob = await response.blob()
     if (!blob.size) {
       logLoginWelcomeStage('tts-failed', { reason: 'empty audio blob' })
-      if (playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
+      if (!(await prerecordedFallback()) && playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
       return
     }
 
@@ -228,7 +324,7 @@ export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio)
     await Promise.race([ended, wait(LOGIN_WELCOME_PLAY_TIMEOUT_MS)])
   } catch (error) {
     logLoginWelcomeStage('failed', { reason: error?.name || error?.message || 'playback failed' })
-    if (playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
+    if (!(await prerecordedFallback()) && playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
     // Login must remain fail-open if the browser blocks audio or the TTS service is unavailable.
   } finally {
     if (timeoutId) window.clearTimeout(timeoutId)

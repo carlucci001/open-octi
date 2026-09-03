@@ -1,71 +1,12 @@
-Closed-path rule: anything under portal, billing, research, or concierge stays closed; everything else ships.
-
 # Releasing OpenOcti
 
-Run a release only from an approved, clean Farrington Command Center `master`. The exporter is the release boundary: never copy files around it, never add live credentials, and stop if its privacy scan or gitleaks check fails.
+Only release a reviewed, clean source tree. The versioned exporter is the public boundary: never copy live credentials, local environment files, build output, or private business data into a release.
 
-## 1. Choose the version
+1. Prepare `docs/releases/X.Y.Z.md` and run the public test suite.
+2. Run `node scripts/export-openocti.mjs --version X.Y.Z`.
+3. Confirm `package.json` and `VERSION.json` contain the requested version.
+4. Confirm the exporter reports a clean privacy scan and `gitleaks: PASS (0 findings)`.
+5. Run `npm test` and `npm run build` in the exported tree.
+6. Build a fresh Docker Compose project and verify login, health, keyless behavior, samples, imports, and OpenClaw.
 
-Use semantic versioning:
-
-- Patch (`X.Y.Z+1`) for compatible fixes.
-- Minor (`X.Y+1.0`) for compatible features.
-- Major (`X+1.0.0`) for upgrade-affecting changes.
-
-Prepare `openocti/docs/releases/X.Y.Z.md` before exporting.
-
-## 2. Export from Command Center
-
-On the Windows development machine, from `C:\dev\farrington-command-center`:
-
-```powershell
-git switch master
-git status --short
-node scripts/export-openocti.mjs --version X.Y.Z
-```
-
-The command must finish with the privacy scan clean and `gitleaks: PASS (0 findings)`. Confirm `C:\dev\openocti-export\package.json` and `C:\dev\openocti-export\VERSION.json` both contain `X.Y.Z`.
-
-## 3. Run the public checks
-
-From `C:\dev\openocti-export`, run the same checks as public CI:
-
-```powershell
-npm ci --include=dev
-npm test
-npm run build
-docker build --tag openocti-ci .
-```
-
-Do not continue unless every check passes.
-
-## 4. Sync the public repository
-
-Sync `C:\dev\openocti-export` into `C:\dev\octi-public`. Replace the public working tree with the export, but preserve `C:\dev\octi-public\.git` and keep the exported `.env.example`. Do not carry `node_modules`, `.next`, local environment files, or any file absent from the export.
-
-Review `git status --short` and the complete diff in `C:\dev\octi-public`. Stage only the reviewed release files.
-
-## 5. Commit, tag, and publish
-
-From `C:\dev\octi-public`:
-
-```powershell
-git commit -m "OpenOcti X.Y.Z"
-git tag vX.Y.Z
-git push origin main
-git push origin vX.Y.Z
-gh release create vX.Y.Z --notes-file docs/releases/X.Y.Z.md
-```
-
-The commit and tag must point to the same release tree. Never force-push or reuse an existing version tag.
-
-## 6. Confirm public CI
-
-Find the workflow run for the pushed commit and wait for it to finish:
-
-```powershell
-gh run list --workflow ci.yml --branch main --limit 5
-gh run watch RUN_ID --exit-status
-```
-
-The release is complete only when the OpenOcti CI run is green. If CI fails, fix the source in Farrington Command Center and produce a new patch version through this runbook; do not patch only the public repository.
+Publish only the exact verified export. Commit and tag the same tree, then wait for public CI to pass. Never reuse or move a published tag. Back up the `/data` volume before upgrading an installed stack.

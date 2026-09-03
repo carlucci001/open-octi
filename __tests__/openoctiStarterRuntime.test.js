@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { configureSeed, selectProviderModel } from '../deploy/openclaw/configure-seed.mjs'
+import { agentIdentityFiles, publicFeatureManifest } from '../scripts/generate-octi-knowledge.mjs'
 import { applyOpenOctiProfile, normalizeOpenOctiProfile } from '../lib/openocti-profile'
 import { resolveEmailSignatureBrand, signatureHtml } from '../lib/emailSignature'
 
@@ -14,6 +15,35 @@ afterEach(() => {
 })
 
 describe('OpenOcti OpenClaw starter runtime', () => {
+  it('removes closed capabilities from Octi generated knowledge', () => {
+    const manifest = publicFeatureManifest(`
+      definition('anthropic', 'Anthropic', [['ANTHROPIC_API_KEY']]),
+      definition('SearchSuite3', 'SearchSuite3', [['SearchSuite3_API_KEY']]),
+      definition('newsroom', 'Newsroom AIOS', [['NEWSROOM_API_KEY']]),
+    `)
+
+    expect(manifest).toContain("definition('anthropic'")
+    expect(manifest).not.toMatch(/SearchSuite|newsroom/i)
+  })
+
+  it('ships deterministic first-run sources for Octi import and roster answers', () => {
+    const guide = fs.readFileSync(path.join(root, 'docs/guides/import-center.md'), 'utf8')
+    const rules = fs.readFileSync(path.join(root, 'deploy/openclaw/seed/workspace/octi/AGENTS.md'), 'utf8')
+
+    expect(guide).toContain('/settings/import')
+    expect(guide).toContain('Undo import')
+    expect(rules).toContain('knowledge/AGENT-ROSTER.md')
+    expect(rules).toContain('docs/guides/import-center.md')
+  })
+
+  it('includes Octi alongside the five specialist identities in generated roster knowledge', () => {
+    const workspace = path.join(root, 'deploy/openclaw/seed/workspace')
+    const identities = agentIdentityFiles(workspace).map(file => path.basename(path.dirname(file)))
+
+    expect(identities).toContain('octi')
+    expect(identities).toEqual(expect.arrayContaining(['main', 'coding', 'social-media', 'legal', 'matilda']))
+  })
+
   it.each([
     [{ ANTHROPIC_API_KEY: 'test' }, 'anthropic', 'anthropic/'],
     [{ OPENAI_API_KEY: 'test' }, 'openai', 'openai/'],
@@ -36,7 +66,7 @@ describe('OpenOcti OpenClaw starter runtime', () => {
     })
 
     const config = JSON.parse(fs.readFileSync(path.join(stateDir, 'openclaw.json'), 'utf8'))
-    expect(config.agents.list.map(agent => agent.id)).toEqual(['main', 'coding', 'social-media', 'legal', 'matilda'])
+    expect(config.agents.list.map(agent => agent.id)).toEqual(['main', 'octi', 'coding', 'social-media', 'legal', 'matilda'])
     expect(config.agents.list.every(agent => agent.model.primary === 'openai/gpt-4.1')).toBe(true)
     const workspaces = fs.readdirSync(path.join(stateDir, 'workspace'), { recursive: true })
       .filter(file => String(file).endsWith('.md'))
@@ -53,7 +83,7 @@ describe('OpenOcti OpenClaw starter runtime', () => {
     const walk = directory => fs.readdirSync(directory, { withFileTypes: true }).forEach(entry => {
       const file = path.join(directory, entry.name)
       if (entry.isDirectory()) walk(file)
-      else files.push(file)
+      else if (!file.includes(`${path.sep}workspace${path.sep}octi${path.sep}knowledge${path.sep}`)) files.push(file)
     })
     walk(seedRoot)
     const content = files.map(file => fs.readFileSync(file, 'utf8')).join('\n')
@@ -66,15 +96,38 @@ describe('OpenOcti OpenClaw starter runtime', () => {
 
     const config = JSON.parse(fs.readFileSync(path.join(seedRoot, 'openclaw.json'), 'utf8'))
     const plugin = fs.readFileSync(path.join(root, 'deploy/openclaw/openocti-plugin/index.ts'), 'utf8')
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'deploy/openclaw/openocti-plugin/openclaw.plugin.json'), 'utf8'))
     const registered = new Set([...plugin.matchAll(/^\s{2}(fcc_[a-z0-9_]+):/gm)].map(match => match[1]))
+    const contracted = new Set(manifest.contracts?.tools || [])
     const referenced = config.agents.list.flatMap(agent => agent.tools?.alsoAllow || [])
     expect([...new Set(referenced)].filter(tool => !registered.has(tool))).toEqual([])
+    expect([...registered].filter(tool => !contracted.has(tool))).toEqual([])
+  })
+
+  it('ships Octi as a documented, actionable onboarding guide', () => {
+    const seedRoot = path.join(root, 'deploy/openclaw/seed')
+    const config = JSON.parse(fs.readFileSync(path.join(seedRoot, 'openclaw.json'), 'utf8'))
+    const octi = config.agents.list.find(agent => agent.id === 'octi')
+    expect(octi.name).toBe('Octi')
+    expect(octi.tools.alsoAllow).toEqual(expect.arrayContaining(['fcc_capability_status', 'fcc_list_agents', 'fcc_open_page', 'fcc_import_start', 'fcc_import_commit']))
+    expect(fs.readFileSync(path.join(seedRoot, 'workspace/octi/SOUL.md'), 'utf8')).toContain('Never guess')
+    const generator = fs.readFileSync(path.join(root, 'scripts/generate-octi-knowledge.mjs'), 'utf8')
+    expect(generator).toContain("'docs/INSTALL.md'")
+    expect(generator).toContain("'docs/RELEASING.md'")
+    expect(generator).toContain("'FEATURE-MANIFEST.md'")
+    expect(generator).toContain("'DATA-MODEL.md'")
   })
 
   it('copies the seed only when no OpenClaw config exists', () => {
     const entrypoint = fs.readFileSync(path.join(root, 'deploy/openclaw/entrypoint.sh'), 'utf8')
     expect(entrypoint).toContain('if [ ! -f "$config_file" ]')
     expect(entrypoint).toContain('cp /opt/openocti-seed/openclaw.json "$config_file"')
+  })
+
+  it('runs OpenClaw as the shared data volume owner', () => {
+    const dockerfile = fs.readFileSync(path.join(root, 'deploy/openclaw/Dockerfile'), 'utf8')
+    expect(dockerfile).toContain('RUN mkdir -p /data && chown node:node /data')
+    expect(dockerfile).toContain('\nUSER node\n')
   })
 
   it('fills an existing starter workspace from first-run setup without changing its config', () => {
@@ -95,6 +148,10 @@ describe('OpenOcti OpenClaw starter runtime', () => {
       ownerName: 'Example Owner',
       phone: examplePhone,
       website: 'example.test',
+      firstLoginCompletedAt: '',
+      firstRunDismissed: false,
+      firstRunVisitedAgentsAt: '',
+      firstRunImportOpenedAt: '',
     })
     expect(applyOpenOctiProfile(stateDir, { businessName: 'Example Shop', ownerName: 'Example Owner' })).toBe(1)
     expect(fs.readFileSync(path.join(stateDir, 'workspace/main/IDENTITY.md'), 'utf8')).toBe('Example Shop belongs to Example Owner.\n')

@@ -9,6 +9,8 @@ import { Paginator, usePagination } from '../components/Paginator'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
 import { Code2, Copy as CopyIcon, Download, ExternalLink, FileSignature, FileText, Pencil, Send, Trash2 } from 'lucide-react'
+import { isOpenOcti } from '@/lib/edition'
+import { OpenOctiConfigurationLinks } from '../components/OpenOctiConfigurationNotice'
 
 function api(body) { return fetch('/api/documents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()) }
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'
@@ -1219,7 +1221,9 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
       {viewTab === 'esignatures' && !eSignConfig.configured && (
         <div className="rounded-lg p-4 mb-4" role="status" style={{ background: 'var(--amber-soft)', border: '1px solid var(--amber)', color: 'var(--text)' }}>
           <div className="font-semibold">E-signature is not configured</div>
-          <div className="text-sm mt-1">Add <code>SIGNING_PUBLIC_URL</code> and <code>RESEND_API_KEY</code> to enable e-signature.</div>
+          <div className="text-sm mt-1">{isOpenOcti()
+            ? <OpenOctiConfigurationLinks needs={['SIGNING_PUBLIC_URL', 'RESEND_API_KEY']} prefix="Open settings for" />
+            : <>Add <code>SIGNING_PUBLIC_URL</code> and <code>RESEND_API_KEY</code> to enable e-signature.</>}</div>
         </div>
       )}
 

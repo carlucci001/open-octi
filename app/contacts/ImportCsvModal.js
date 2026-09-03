@@ -1,31 +1,8 @@
 'use client'
 import { useState, useRef } from 'react'
+import { guessContactField, parseCsv } from '@/lib/import-table'
 
 const inp = { background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit' }
-
-// Quote-aware CSV parser (handles commas, quotes, newlines inside quotes)
-function parseCsv(text) {
-  const rows = []
-  let row = []
-  let cur = ''
-  let inQ = false
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i]
-    if (inQ) {
-      if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++ } else inQ = false }
-      else cur += ch
-    } else if (ch === '"') inQ = true
-    else if (ch === ',') { row.push(cur); cur = '' }
-    else if (ch === '\n' || ch === '\r') {
-      if (ch === '\r' && text[i + 1] === '\n') i++
-      row.push(cur); cur = ''
-      if (row.length > 1 || row[0] !== '') rows.push(row)
-      row = []
-    } else cur += ch
-  }
-  if (cur !== '' || row.length) { row.push(cur); if (row.length > 1 || row[0] !== '') rows.push(row) }
-  return rows
-}
 
 const FIELDS = [
   { id: 'name', label: 'Name' },
@@ -36,17 +13,6 @@ const FIELDS = [
   { id: 'notes', label: 'Notes' },
   { id: '', label: '(skip)' },
 ]
-
-function guessField(header) {
-  const h = (header || '').trim().toLowerCase()
-  if (/^(full ?name|name|contact ?name)$/.test(h)) return 'name'
-  if (/e-?mail/.test(h)) return 'email'
-  if (/phone|mobile|cell|tel/.test(h)) return 'phone'
-  if (/title|role|position/.test(h)) return 'title'
-  if (/company|account|organi[sz]ation|business/.test(h)) return 'company'
-  if (/note/.test(h)) return 'notes'
-  return ''
-}
 
 export default function ImportCsvModal({ accounts, onClose, onDone }) {
   const [step, setStep] = useState('pick') // pick | map | done
@@ -91,7 +57,7 @@ export default function ImportCsvModal({ accounts, onClose, onDone }) {
       if (!parsed.length) throw new Error('File appears to be empty')
       setRows(parsed)
       setHeaders(parsed[0])
-      setMapping(parsed[0].map(h => guessField(h)))
+      setMapping(parsed[0].map(h => guessContactField(h)))
       setStep('map')
     } catch (e) { setErr(e.message || 'Could not read file') }
   }

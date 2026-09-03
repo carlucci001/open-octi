@@ -3,6 +3,8 @@ import ThemedSelect from './ThemedSelect'
 import { useState, useEffect, useMemo } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { isOpenOcti } from "@/lib/edition";
+import { OpenOctiConfigurationLinks } from "./OpenOctiConfigurationNotice";
 
 function api(url, body) {
   return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json());
@@ -238,7 +240,9 @@ export default function PaymentForm(props) {
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)" }} onClick={props.onClose}>
         <div className="w-full max-w-md rounded-xl p-6" style={{ background: "var(--surface)", border: "1px solid var(--border)" }} onClick={e => e.stopPropagation()}>
           <h2 className="text-lg font-semibold mb-2" style={{ color: "var(--text)" }}>Stripe not configured</h2>
-          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Add <code>NEXT_PUBLIC_STRIPE_PK</code> to <code>.env.local</code> and restart the dev server.</p>
+          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>{isOpenOcti()
+            ? <OpenOctiConfigurationLinks needs={["NEXT_PUBLIC_STRIPE_PK"]} prefix="Open settings for" />
+            : <>Add <code>NEXT_PUBLIC_STRIPE_PK</code> to <code>.env.local</code> and restart the dev server.</>}</p>
           <button onClick={props.onClose} className="px-4 py-2 rounded-lg text-sm" style={{ background: "var(--surface2)", color: "var(--text)" }}>Close</button>
         </div>
       </div>

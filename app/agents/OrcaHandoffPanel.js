@@ -2,6 +2,8 @@
 // Orca handoff panel — shows who handed what to Orca, which model answered,
 // and the per-agent switch that allows/blocks handoffs. Lives on the Agents page.
 import { useCallback, useEffect, useState } from 'react'
+import { isOpenOcti } from '@/lib/edition'
+import { OpenOctiConfigurationLinks } from '../components/OpenOctiConfigurationNotice'
 
 function fmtWhen(iso) {
   if (!iso) return ''
@@ -114,7 +116,9 @@ export default function OrcaHandoffPanel({ agents = [] }) {
       {error && <div style={{ color: 'var(--danger, #b91c1c)', fontSize: 12, marginTop: 8 }}>{error}</div>}
       {data && !data.orcaConfigured && (
         <div role="status" style={{ marginTop: 10, padding: 10, borderRadius: 8, border: '1px solid var(--amber, #f59e0b)', background: 'var(--amber-soft, #fffbeb)', fontSize: 12 }}>
-          Not configured — add <code>ORCAROUTER_API_KEY</code> to enable OrcaRouter handoffs.
+          Not configured — {isOpenOcti()
+            ? <OpenOctiConfigurationLinks needs={['ORCAROUTER_API_KEY']} prefix="open settings for" />
+            : <>add <code>ORCAROUTER_API_KEY</code> to enable OrcaRouter handoffs.</>}
         </div>
       )}
 

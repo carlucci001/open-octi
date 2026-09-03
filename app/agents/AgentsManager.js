@@ -11,6 +11,8 @@ import { OPENAI_REALTIME_VOICES, GEMINI_VOICES, GEMINI_VOICE_MODELS } from '@/li
 import { AGENT_CHANNEL_OPTIONS } from '@/lib/agent-channels'
 import { IMAGE_GENERATION_PROVIDER_OPTIONS, imageGenerationProviderOption, normalizeImageGenerationPreference } from '@/lib/image-generation-preferences'
 import { Bot, FlaskConical, Globe2, Hash, Link2, Mail, MessageSquare, Mic2, Phone, Plus, RefreshCw, Search, Send, Wrench } from 'lucide-react'
+import OpenOctiConfigurationNotice from '../components/OpenOctiConfigurationNotice'
+import { isOpenOcti } from '@/lib/edition'
 
 const STORAGE_KEY = 'farrington.agents.viewState.v1'
 const DEFAULT_VIEW_MODE = 'list'
@@ -513,6 +515,7 @@ export default function AgentsManager({ labMode = false }) {
   const [activeTab, setActiveTab] = useState('identity')
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState(null)
+  const [modelSetupNeeded, setModelSetupNeeded] = useState(false)
 
   const initial = loadView()
   const [filterCat, setFilterCat] = useState(initial.filterCat || 'all')
@@ -521,6 +524,13 @@ export default function AgentsManager({ labMode = false }) {
   const [selectedTenantId, setSelectedTenantId] = useState(initial.selectedTenantId || 'all')
   const [query, setQuery] = useState(initial.query || '')
   const [viewMode, setViewMode] = useState(() => normalizeViewMode(initial.viewMode))
+
+  useEffect(() => {
+    if (!isOpenOcti() || labMode) return
+    fetch('/api/openocti/setup', {
+      method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'visit-agents' }),
+    }).catch(() => {})
+  }, [labMode])
 
   useEffect(() => { saveView({ filterCat, filterStatus, filterRuntime, selectedTenantId, query, viewMode }) }, [filterCat, filterStatus, filterRuntime, selectedTenantId, query, viewMode])
   useEffect(() => {
@@ -562,6 +572,10 @@ export default function AgentsManager({ labMode = false }) {
       try {
         const capabilitiesResponse = await fetch('/api/platform-admin/v1/capabilities', { cache: 'no-store' })
         const capabilities = await capabilitiesResponse.json()
+        const modelIds = new Set(['anthropic', 'openai', 'gemini', 'openrouter'])
+        setModelSetupNeeded(!capabilities.capabilities?.some(
+          capability => modelIds.has(capability.id) && capability.status === 'configured'
+        ))
         loadElevenLabsMetrics = capabilities.capabilities?.some(
           capability => capability.id === 'elevenlabs' && capability.status === 'configured'
         ) === true
@@ -588,15 +602,19 @@ export default function AgentsManager({ labMode = false }) {
     } else {
       setElSyncStatus({})
     }
-    try {
-      const pr = await fetch('/api/notes?action=promptSync', { cache: 'no-store' })
-      const pj = await pr.json()
-      if (pj.ok) {
-        const map = {}
-        for (const row of (pj.rows || [])) map[row.agentId] = row
-        setPromptSyncStatus(map)
-      }
-    } catch {}
+    if (process.env.NEXT_PUBLIC_FCC_EDITION !== 'openocti') {
+      try {
+        const pr = await fetch('/api/notes?action=promptSync', { cache: 'no-store' })
+        const pj = await pr.json()
+        if (pj.ok) {
+          const map = {}
+          for (const row of (pj.rows || [])) map[row.agentId] = row
+          setPromptSyncStatus(map)
+        }
+      } catch {}
+    } else {
+      setPromptSyncStatus({})
+    }
     // Tenants — used by the dropdown and to determine each agent's home
     try {
       const tr = await fetch('/api/tenants', { cache: 'no-store' })
@@ -1029,6 +1047,14 @@ export default function AgentsManager({ labMode = false }) {
       />
 
       <Toast toast={toast} />
+
+      {isOpenOcti() && modelSetupNeeded && (
+        <div style={{ marginBottom: 16 }}>
+          <OpenOctiConfigurationNotice needs={['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'OPENROUTER_API_KEY']} title="Your agents need one model key">
+            Add any one provider key to bring Maggie, Craig, Sasha, Linda, and Matilda online.
+          </OpenOctiConfigurationNotice>
+        </div>
+      )}
 
       {labMode ? (
         <>

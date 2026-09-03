@@ -1,13 +1,184 @@
 {
   "tasks": [
     {
-      "id": "tk_demo_followup",
-      "projectId": "pr_demo_launch",
-      "title": "Review the demo workspace",
+      "id": "sample-workitem-1",
+      "title": "Confirm project brief",
+      "description": "Sample task — use it to explore task views.",
       "status": "todo",
+      "priority": "high",
+      "dueDate": "2026-09-05",
+      "linkedTo": {
+        "projectId": "sample-project-1",
+        "accountId": "sample-account-1"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-workitem-2",
+      "title": "Prepare kickoff agenda",
+      "description": "Sample task — use it to explore task views.",
+      "status": "in_progress",
       "priority": "medium",
-      "createdAt": "2026-01-01T12:00:00.000Z",
-      "updatedAt": "2026-01-01T12:00:00.000Z"
+      "dueDate": "2026-09-06",
+      "linkedTo": {
+        "projectId": "sample-project-2",
+        "accountId": "sample-account-2"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-workitem-3",
+      "title": "Review first milestone",
+      "description": "Sample task — use it to explore task views.",
+      "status": "done",
+      "priority": "low",
+      "dueDate": "2026-09-07",
+      "linkedTo": {
+        "projectId": "sample-project-3",
+        "accountId": "sample-account-3"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-workitem-4",
+      "title": "Send weekly update",
+      "description": "Sample task — use it to explore task views.",
+      "status": "todo",
+      "priority": "high",
+      "dueDate": "2026-09-08",
+      "linkedTo": {
+        "projectId": "sample-project-4",
+        "accountId": "sample-account-4"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-workitem-5",
+      "title": "Confirm project brief",
+      "description": "Sample task — use it to explore task views.",
+      "status": "in_progress",
+      "priority": "medium",
+      "dueDate": "2026-09-09",
+      "linkedTo": {
+        "projectId": "sample-project-5",
+        "accountId": "sample-account-5"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-workitem-6",
+      "title": "Prepare kickoff agenda",
+      "description": "Sample task — use it to explore task views.",
+      "status": "done",
+      "priority": "low",
+      "dueDate": "2026-09-10",
+      "linkedTo": {
+        "projectId": "sample-project-6",
+        "accountId": "sample-account-6"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-workitem-7",
+      "title": "Review first milestone",
+      "description": "Sample task — use it to explore task views.",
+      "status": "todo",
+      "priority": "high",
+      "dueDate": "2026-09-11",
+      "linkedTo": {
+        "projectId": "sample-project-7",
+        "accountId": "sample-account-7"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-workitem-8",
+      "title": "Send weekly update",
+      "description": "Sample task — use it to explore task views.",
+      "status": "in_progress",
+      "priority": "medium",
+      "dueDate": "2026-09-12",
+      "linkedTo": {
+        "projectId": "sample-project-8",
+        "accountId": "sample-account-8"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-workitem-9",
+      "title": "Confirm project brief",
+      "description": "Sample task — use it to explore task views.",
+      "status": "done",
+      "priority": "low",
+      "dueDate": "2026-09-13",
+      "linkedTo": {
+        "projectId": "sample-project-9",
+        "accountId": "sample-account-9"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-workitem-10",
+      "title": "Prepare kickoff agenda",
+      "description": "Sample task — use it to explore task views.",
+      "status": "todo",
+      "priority": "high",
+      "dueDate": "2026-09-14",
+      "linkedTo": {
+        "projectId": "sample-project-10",
+        "accountId": "sample-account-10"
+      },
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
     }
   ]
 }

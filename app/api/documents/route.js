@@ -512,9 +512,9 @@ function buildPdf({ title, body, signature }) {
     const logoPath = path.join(process.cwd(), 'public', ...(brand.openOcti ? ['openocti', 'logo-horizontal.png'] : ['brand', 'fd-brand-dark.png']))
     if (fs.existsSync(logoPath)) doc.image(logoPath, 50, 40, { width: 240 })
     doc.fontSize(9).font('Helvetica').fillColor('#6B6F78')
-    doc.text('Farrington Development LLC', 50, 115)
-    doc.text('City, STrth Carolina')
-    doc.text('company.example.com')
+    doc.text(brand.openOcti ? 'OpenOcti' : 'Farrington Development LLC', 50, 115)
+    if (!brand.openOcti) doc.text('City, STrth Carolina')
+    doc.text(brand.openOcti ? 'openocti.com' : 'company.example.com')
 
     doc.moveTo(50, 150).lineTo(562, 150).strokeColor('#6B6F78').lineWidth(0.5).stroke()
 
@@ -668,7 +668,8 @@ export async function POST(request) {
     }
 
     const title = String(w.title || body.title || body.name || '').trim()
-    const providerName = String(w.providerName || 'Farrington Development LLC').trim() || 'Farrington Development LLC'
+    const defaultProviderName = isOpenOcti() ? 'Your business' : 'Farrington Development LLC'
+    const providerName = String(w.providerName || defaultProviderName).trim() || defaultProviderName
     const counterpartyLabel = String(w.counterpartyLabel || 'Client').trim() || 'Client'
     const scopeKey = w.scopeStyle === 'services' ? 'scope_of_services' : 'scope_of_work'
 
@@ -709,7 +710,8 @@ export async function POST(request) {
         else text = `# ${title}\n\n${text}`
       }
       if (!/^\s*>\s*\*\*LEGAL NOTICE/i.test(text)) {
-        const notice = `> **LEGAL NOTICE (TEMPLATE - NOT LEGAL ADVICE):** This document is a starting template, not a finished legal contract. Have a licensed attorney review and customize before use. Remove any internal/template notes before sending for signature. Farrington Development LLC and any AI that filled in this template are not your lawyers.\n\n---\n\n`
+        const publisher = isOpenOcti() ? 'OpenOcti' : 'Farrington Development LLC'
+        const notice = `> **LEGAL NOTICE (TEMPLATE - NOT LEGAL ADVICE):** This document is a starting template, not a finished legal contract. Have a licensed attorney review and customize before use. Remove any internal/template notes before sending for signature. ${publisher} and any AI that filled in this template are not your lawyers.\n\n---\n\n`
         text = notice + text
       }
       if (!/##\s+Template Notes/i.test(text)) {

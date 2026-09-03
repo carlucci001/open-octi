@@ -1,12 +1,144 @@
 {
   "projects": [
     {
-      "id": "pr_demo_launch",
-      "accountId": "ac_demo_company",
-      "name": "Demo launch project",
+      "id": "sample-project-1",
+      "accountId": "sample-account-1",
+      "name": "Northstar Studio launch",
+      "status": "planning",
+      "priority": "high",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-project-2",
+      "accountId": "sample-account-2",
+      "name": "Brightline Foods launch",
       "status": "active",
-      "createdAt": "2026-01-01T12:00:00.000Z",
-      "updatedAt": "2026-01-01T12:00:00.000Z"
+      "priority": "medium",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-project-3",
+      "accountId": "sample-account-3",
+      "name": "Harbor & Pine launch",
+      "status": "active",
+      "priority": "low",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-project-4",
+      "accountId": "sample-account-4",
+      "name": "Summit Works launch",
+      "status": "review",
+      "priority": "high",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-project-5",
+      "accountId": "sample-account-5",
+      "name": "Copper Finch launch",
+      "status": "active",
+      "priority": "medium",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-project-6",
+      "accountId": "sample-account-6",
+      "name": "Meadow Labs launch",
+      "status": "planning",
+      "priority": "low",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-project-7",
+      "accountId": "sample-account-7",
+      "name": "Atlas Workshop launch",
+      "status": "active",
+      "priority": "high",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-project-8",
+      "accountId": "sample-account-8",
+      "name": "Oak & Tide launch",
+      "status": "active",
+      "priority": "medium",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-project-9",
+      "accountId": "sample-account-9",
+      "name": "Evergreen Supply launch",
+      "status": "review",
+      "priority": "low",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-project-10",
+      "accountId": "sample-account-10",
+      "name": "Bluebird Collective launch",
+      "status": "active",
+      "priority": "high",
+      "notes": "Sample project with linked work.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
     }
   ]
 }

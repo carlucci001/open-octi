@@ -2,11 +2,14 @@ import { NextResponse } from 'next/server'
 import { getCred } from '@/lib/agent-creds'
 import { readData, writeData } from '@/lib/dataStore'
 import { requireAdmin } from '@/lib/auth'
+import { isOpenOcti } from '@/lib/edition'
+import { resolveProviderKey } from '@/lib/openocti-keys'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 function getKey() {
+  if (isOpenOcti()) return resolveProviderKey('elevenlabs').key || null
   const cred = getCred('elevenlabs') || getCred('eleven')
   return cred?.key || process.env.ELEVENLABS_API_KEY || null
 }

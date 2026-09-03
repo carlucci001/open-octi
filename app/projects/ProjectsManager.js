@@ -9,6 +9,8 @@ import ViewModeToggle from '../components/ViewModeToggle'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
 import { FolderKanban } from 'lucide-react'
+import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
+import { isOpenOcti } from '@/lib/edition'
 
 const STATUS = [
   { id: 'active', label: 'Active', color: 'var(--green)', bg: 'var(--green-soft)' },
@@ -697,7 +699,7 @@ export default function ProjectsManager({ onNavigate }) {
           </div>
         )
         : filtered.length === 0 ? (
-          <div className="text-center py-16">
+          projects.length === 0 && isOpenOcti() ? <OpenOctiEmptyState objectType="projects" title="Plan the work" description="Projects connect delivery milestones and tasks to the accounts you serve." /> : <div className="text-center py-16">
             <div className="text-4xl mb-3">P</div>
             <p style={{ color: 'var(--text-muted)' }}>{projects.length === 0 ? 'No projects yet.' : 'No projects match these filters.'}</p>
           </div>

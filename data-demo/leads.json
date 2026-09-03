@@ -1,14 +1,154 @@
 {
   "leads": [
     {
-      "id": "ld_demo_inquiry",
-      "name": "Demo Inquiry",
-      "company": "Sample Workshop",
+      "id": "sample-lead-1",
+      "name": "Avery Stone",
+      "businessName": "Summit Works",
+      "phone": "555-0200",
       "status": "new",
-      "source": "demo",
-      "notes": "Synthetic OpenOcti starter record.",
-      "createdAt": "2026-01-01T12:00:00.000Z",
-      "updatedAt": "2026-01-01T12:00:00.000Z"
+      "source": "website",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-lead-2",
+      "name": "Jordan Lee",
+      "businessName": "Copper Finch",
+      "phone": "555-0201",
+      "status": "contacted",
+      "source": "referral",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-lead-3",
+      "name": "Morgan Reed",
+      "businessName": "Meadow Labs",
+      "phone": "555-0202",
+      "status": "qualified",
+      "source": "event",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-lead-4",
+      "name": "Casey Brooks",
+      "businessName": "Atlas Workshop",
+      "phone": "555-0203",
+      "status": "new",
+      "source": "outbound",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-lead-5",
+      "name": "Riley Chen",
+      "businessName": "Oak & Tide",
+      "phone": "555-0204",
+      "status": "contacted",
+      "source": "website",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-lead-6",
+      "name": "Taylor Grant",
+      "businessName": "Evergreen Supply",
+      "phone": "555-0205",
+      "status": "qualified",
+      "source": "referral",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-lead-7",
+      "name": "Cameron Diaz",
+      "businessName": "Bluebird Collective",
+      "phone": "555-0206",
+      "status": "new",
+      "source": "event",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-lead-8",
+      "name": "Parker Wells",
+      "businessName": "Northstar Studio",
+      "phone": "555-0207",
+      "status": "contacted",
+      "source": "outbound",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-lead-9",
+      "name": "Jamie Quinn",
+      "businessName": "Brightline Foods",
+      "phone": "555-0208",
+      "status": "converted",
+      "source": "website",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-lead-10",
+      "name": "Drew Harper",
+      "businessName": "Harbor & Pine",
+      "phone": "555-0209",
+      "status": "new",
+      "source": "referral",
+      "notes": "Sample lead ready for follow-up.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
     }
   ]
 }

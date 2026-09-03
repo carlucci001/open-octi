@@ -6,6 +6,8 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import PageHeader from '../components/PageHeader'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
+import { isOpenOcti } from '@/lib/edition'
+import { OpenOctiConfigurationLinks } from '../components/OpenOctiConfigurationNotice'
 
 function api(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()) }
 function logPaymentTerminalStage(stage, extra = {}) {
@@ -338,7 +340,9 @@ export default function PaymentTerminal() {
       <div className="p-4 sm:p-5">
         <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--red)' }}>
           <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--red)' }}>Stripe not configured</h2>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Add <code>NEXT_PUBLIC_STRIPE_PK</code> to <code>.env.local</code> and restart the dev server.</p>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{isOpenOcti()
+            ? <OpenOctiConfigurationLinks needs={['NEXT_PUBLIC_STRIPE_PK']} prefix="Open settings for" />
+            : <>Add <code>NEXT_PUBLIC_STRIPE_PK</code> to <code>.env.local</code> and restart the dev server.</>}</p>
         </div>
       </div>
     )

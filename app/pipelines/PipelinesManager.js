@@ -5,6 +5,8 @@ import PageHeader from '../components/PageHeader'
 import BoardWorkbench from '../components/BoardWorkbench'
 import ComponentSettings, { useComponentSettings } from '../components/ComponentSettings'
 import ViewModeToggle from '../components/ViewModeToggle'
+import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
+import { isOpenOcti } from '@/lib/edition'
 
 function api(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()) }
 
@@ -952,7 +954,7 @@ export default function PipelinesManager({ onNavigate }) {
       ) : view === 'list' ? (
         <div className="rounded-xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           {oppsInPipeline.length === 0 ? (
-            <div className="p-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>No opportunities in this pipeline yet.</div>
+            isOpenOcti() ? <OpenOctiEmptyState objectType="opportunities" title="Move deals through your pipeline" description="Import opportunities to see value and progress across every stage." /> : <div className="p-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>No opportunities in this pipeline yet.</div>
           ) : oppsInPipeline.map((o, i) => {
             const stage = activePipeline.stages.find(s => s.id === o.stageId)
             const isSelected = bulkSelected.has(o.id)
@@ -996,7 +998,7 @@ export default function PipelinesManager({ onNavigate }) {
       ) : view === 'card' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {oppsInPipeline.length === 0 ? (
-            <div className="rounded-lg p-6 text-center text-sm" style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>No opportunities in this pipeline yet.</div>
+            isOpenOcti() ? <OpenOctiEmptyState objectType="opportunities" title="Move deals through your pipeline" description="Import opportunities to see value and progress across every stage." /> : <div className="rounded-lg p-6 text-center text-sm" style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>No opportunities in this pipeline yet.</div>
           ) : oppsInPipeline.map(o => {
             const stage = activePipeline.stages.find(s => s.id === o.stageId)
             const isSelected = bulkSelected.has(o.id)

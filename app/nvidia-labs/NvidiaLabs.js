@@ -22,6 +22,8 @@ import {
   Zap,
 } from 'lucide-react'
 import PageHeader, { ViewToggle } from '../components/PageHeader'
+import OpenOctiConfigurationNotice from '../components/OpenOctiConfigurationNotice'
+import { isOpenOcti } from '@/lib/edition'
 import {
   canRunModelComparison,
   countSelectedProviders,
@@ -327,6 +329,14 @@ export default function NvidiaLabs() {
           <span>{refreshing ? 'Refreshing lab data...' : `Lab data updated ${new Date(lastRefreshedAt).toLocaleTimeString()}`}</span>
           {refreshCount > 0 && <span>Refresh clicks: {refreshCount}</span>}
           {latestRun && <span>Visible run: {latestRun.id}</span>}
+        </div>
+      )}
+
+      {isOpenOcti() && configuredProviders.length === 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <OpenOctiConfigurationNotice needs={providers.map(provider => provider.envKey).filter(Boolean)} title="Live model tests need a provider key">
+            Add a supported key, then refresh this page to run real model comparisons.
+          </OpenOctiConfigurationNotice>
         </div>
       )}
 

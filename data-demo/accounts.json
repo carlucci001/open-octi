@@ -1,15 +1,164 @@
 {
   "accounts": [
     {
-      "id": "ac_demo_company",
-      "name": "Demo Company",
+      "id": "sample-account-1",
+      "name": "Northstar Studio",
+      "type": "client",
+      "stage": "active",
+      "priority": "high",
+      "industry": "Design",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-account-2",
+      "name": "Brightline Foods",
+      "type": "client",
+      "stage": "active",
+      "priority": "medium",
+      "industry": "Food services",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-account-3",
+      "name": "Harbor & Pine",
+      "type": "client",
+      "stage": "active",
+      "priority": "normal",
+      "industry": "Retail",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-account-4",
+      "name": "Summit Works",
+      "type": "prospect",
+      "stage": "active",
+      "priority": "high",
+      "industry": "Consulting",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-account-5",
+      "name": "Copper Finch",
       "type": "prospect",
       "stage": "active",
       "priority": "medium",
-      "industry": "Professional services",
-      "tags": ["demo"],
-      "createdAt": "2026-01-01T12:00:00.000Z",
-      "updatedAt": "2026-01-01T12:00:00.000Z"
+      "industry": "Hospitality",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-account-6",
+      "name": "Meadow Labs",
+      "type": "prospect",
+      "stage": "active",
+      "priority": "normal",
+      "industry": "Technology",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-account-7",
+      "name": "Atlas Workshop",
+      "type": "prospect",
+      "stage": "active",
+      "priority": "high",
+      "industry": "Manufacturing",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-account-8",
+      "name": "Oak & Tide",
+      "type": "prospect",
+      "stage": "active",
+      "priority": "medium",
+      "industry": "Wellness",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-account-9",
+      "name": "Evergreen Supply",
+      "type": "prospect",
+      "stage": "active",
+      "priority": "normal",
+      "industry": "Distribution",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-account-10",
+      "name": "Bluebird Collective",
+      "type": "prospect",
+      "stage": "active",
+      "priority": "high",
+      "industry": "Media",
+      "website": "",
+      "notes": "Sample account — replace with your own business relationship.",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
     }
   ]
 }

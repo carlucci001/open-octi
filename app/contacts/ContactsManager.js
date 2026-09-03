@@ -10,6 +10,8 @@ import ItemActionsMenu from '../components/ItemActionsMenu'
 import { gvCallUrl } from '@/lib/google-voice'
 import CallButton from '../components/CallButton'
 import ImportCsvModal from './ImportCsvModal'
+import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
+import { isOpenOcti } from '@/lib/edition'
 
 const initials = (n = '') => n.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?'
 
@@ -351,7 +353,7 @@ export default function ContactsManager({ onNavigate }) {
 
       {loading ? <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>Loading...</div>
         : filtered.length === 0 ? (
-          <div className="text-center py-16">
+          contacts.length === 0 && isOpenOcti() ? <OpenOctiEmptyState objectType="contacts" title="Your people live here" description="Import contacts to keep names, roles, phone numbers, and account relationships together." /> : <div className="text-center py-16">
             <div className="text-4xl mb-3">👤</div>
             <p style={{ color: 'var(--text-muted)' }}>{contacts.length === 0 ? 'No contacts yet. Add one or qualify a lead.' : 'No contacts match.'}</p>
           </div>

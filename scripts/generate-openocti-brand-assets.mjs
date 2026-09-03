@@ -18,11 +18,10 @@ await mkdir(brandDir, { recursive: true })
 const octopus = await readFile(sourcePath)
 const embeddedOctopus = `data:image/png;base64,${octopus.toString('base64')}`
 
-function wordmark({ centerX = 600, commandY, commandSize, commandSpacing, centerY, centerSize, centerSpacing }) {
+function wordmark({ centerX = 600, wordY, wordSize, wordSpacing }) {
   return `
     <g text-anchor="middle" font-family="${FONT_STACK}" paint-order="stroke fill" stroke="${BRAND_DARK}" stroke-opacity="0.32" stroke-width="3">
-      <text x="${centerX}" y="${commandY}" fill="url(#openocti-blue)" font-size="${commandSize}" font-weight="700" letter-spacing="${commandSpacing}">COMMAND</text>
-      <text x="${centerX}" y="${centerY}" fill="url(#openocti-blue)" font-size="${centerSize}" font-weight="600" letter-spacing="${centerSpacing}">CENTER</text>
+      <text x="${centerX}" y="${wordY}" fill="url(#openocti-blue)" font-size="${wordSize}" font-weight="700" letter-spacing="${wordSpacing}">OPENOCTI</text>
     </g>`
 }
 
@@ -38,27 +37,27 @@ function defs() {
 
 const verticalSvg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="960" viewBox="0 0 1200 960" role="img" aria-labelledby="openocti-title openocti-description">
-  <title id="openocti-title">OpenOcti Command Center</title>
-  <desc id="openocti-description">A blue octopus above the words Command Center.</desc>
+  <title id="openocti-title">OpenOcti</title>
+  <desc id="openocti-description">The official blue octopus mark above the OpenOcti wordmark.</desc>
   ${defs()}
   <image x="229" y="36" width="742" height="480" preserveAspectRatio="xMidYMid meet" href="${embeddedOctopus}" xlink:href="${embeddedOctopus}" />
-  ${wordmark({ commandY: 718, commandSize: 178, commandSpacing: 13, centerY: 860, centerSize: 92, centerSpacing: 35 })}
+  ${wordmark({ wordY: 760, wordSize: 176, wordSpacing: 10 })}
 </svg>
 `
 
 const horizontalSvg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="openocti-horizontal-title openocti-horizontal-description">
-  <title id="openocti-horizontal-title">OpenOcti Command Center</title>
-  <desc id="openocti-horizontal-description">A blue octopus beside the words Command Center.</desc>
+  <title id="openocti-horizontal-title">OpenOcti</title>
+  <desc id="openocti-horizontal-description">The official blue octopus mark beside the OpenOcti wordmark.</desc>
   ${defs()}
   <image x="24" y="41" width="430" height="278" preserveAspectRatio="xMidYMid meet" href="${embeddedOctopus}" xlink:href="${embeddedOctopus}" />
-  ${wordmark({ centerX: 820, commandY: 164, commandSize: 104, commandSpacing: 7, centerY: 270, centerSize: 64, centerSpacing: 25 })}
+  ${wordmark({ centerX: 810, wordY: 220, wordSize: 112, wordSpacing: 7 })}
 </svg>
 `
 
 const bannerSvg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="openocti-banner-title openocti-banner-description">
-  <title id="openocti-banner-title">OpenOcti — the open-source Command Center</title>
+  <title id="openocti-banner-title">OpenOcti — open-source AI operations</title>
   <desc id="openocti-banner-description">A dark navy OpenOcti banner with the official blue octopus mark.</desc>
   <defs>
     <linearGradient id="banner-bg" x1="0" y1="0" x2="1" y2="1">
@@ -75,7 +74,7 @@ const bannerSvg = `<?xml version="1.0" encoding="UTF-8"?>
   <circle cx="1050" cy="170" r="260" fill="url(#banner-glow)" />
   <image x="62" y="50" width="386" height="250" preserveAspectRatio="xMidYMid meet" href="${embeddedOctopus}" xlink:href="${embeddedOctopus}" />
   <text x="470" y="154" fill="#fff" font-family="Space Grotesk,Segoe UI,sans-serif" font-size="76" font-weight="700" letter-spacing="2">OPENOCTI</text>
-  <text x="474" y="215" fill="#30c0f0" font-family="Space Grotesk,Segoe UI,sans-serif" font-size="31" font-weight="600">the open-source Command Center</text>
+  <text x="474" y="215" fill="#30c0f0" font-family="Space Grotesk,Segoe UI,sans-serif" font-size="31" font-weight="600">open-source AI operations</text>
   <text x="475" y="265" fill="#8ba0c4" font-family="Segoe UI,sans-serif" font-size="20">CRM · AI staff · voice · documents · e-sign · your server</text>
 </svg>
 `

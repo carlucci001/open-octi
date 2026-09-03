@@ -6,7 +6,7 @@ export function manifestFor(env) {
     id: '/',
     name: brand.openOcti ? 'OpenOcti' : 'Farrington Command Center',
     short_name: brand.openOcti ? 'OpenOcti' : 'Command Center',
-    description: brand.openOcti ? 'Open-source AI command center for business operations' : 'Domains, clients, payments, credentials — Farrington Development LLC',
+    description: brand.openOcti ? 'Open-source AI operations workspace' : 'Domains, clients, payments, credentials — Farrington Development LLC',
     start_url: '/',
     scope: '/',
     ...(!brand.openOcti ? { scope_extensions: [

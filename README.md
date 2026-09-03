@@ -18,7 +18,7 @@ Set the six required values at the top of `.env` before starting. The CRM works 
 
 ## One key lights it up
 
-Add one of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `OPENROUTER_API_KEY`, then restart the containers. OpenClaw selects that provider at first boot and registers the five starter agents. Existing OpenClaw configuration is never overwritten.
+After login, open **Settings → Models & Keys**, paste one Anthropic, OpenAI, Gemini, or OpenRouter key, and select **Save & test**. OpenOcti encrypts the key and OpenClaw applies it without a container restart. Environment variables remain available as the advanced path.
 
 The dashboard asks for a business name and owner name to fill the starter workspaces. Matilda's Gemini Live voice needs `GEMINI_API_KEY`; Maggie, Sasha, and Linda need ElevenLabs and Twilio settings for telephone workflows. Missing providers stay visible as **Not configured** instead of failing silently.
 
@@ -26,6 +26,7 @@ The dashboard asks for a business name and owner name to fill the starter worksp
 
 | Agent | Role |
 | --- | --- |
+| **Octi** | Onboarding guide grounded in the shipped package, capabilities, data model, and agent roster. |
 | **Maggie** | Office coordinator for priorities, CRM follow-up, calendar, tasks, and handoffs. |
 | **Craig** | Engineering assistant for evidence-led troubleshooting and technical work. |
 | **Sasha** | Creative partner for social drafts, campaign ideas, and visual briefs. |

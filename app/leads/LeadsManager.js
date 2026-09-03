@@ -13,6 +13,8 @@ import LeadCallScripts from '../components/LeadCallScripts'
 import EmailTemplateEditor from '../components/EmailTemplateEditor'
 import ItemActionsMenu from '../components/ItemActionsMenu'
 import { BookOpen, CheckCircle2, ExternalLink, Globe, Mail, Phone, Plus, Sprout, Trash2, Video, XCircle } from 'lucide-react'
+import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
+import { isOpenOcti } from '@/lib/edition'
 
 const STATUS = [
   { id: 'new',          label: 'New',          color: 'var(--accent)',     bg: 'var(--accent-soft)' },
@@ -932,7 +934,7 @@ export default function LeadsManager({ onNavigate }) {
 
       {firstLoad ? <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}><span className="inline-block w-3 h-3 rounded-full mr-2 animate-pulse" style={{ background: 'var(--accent)' }}></span>Fetching leads…</div>
         : filtered.length === 0 ? (
-          <div className="text-center py-16">
+          leads.length === 0 && isOpenOcti() ? <OpenOctiEmptyState objectType="leads" title="Start your lead pipeline" description="Import prospects here, then qualify them into accounts, contacts, and opportunities." /> : <div className="text-center py-16">
             <div className="text-4xl mb-3">🌱</div>
             <p style={{ color: 'var(--text-muted)' }}>{leads.length === 0 ? 'No leads yet. Add one to get started.' : 'No leads match these filters.'}</p>
           </div>

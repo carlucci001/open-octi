@@ -17,6 +17,14 @@
         "tools": { "alsoAllow": ["fcc_call", "fcc_dashboard", "fcc_search", "fcc_list_accounts", "fcc_get_account", "fcc_list_calendar_events", "fcc_create_lead", "fcc_qualify_lead", "fcc_create_task", "fcc_complete_task", "fcc_log_activity", "fcc_read_note", "fcc_write_note", "fcc_send_email", "fcc_send_signature_document", "fcc_list_tools", "fcc_open_record", "fcc_navigate_to"] }
       },
       {
+        "id": "octi",
+        "name": "Octi",
+        "workspace": "/data/openclaw/workspace/octi",
+        "model": { "primary": "openai/gpt-4.1", "fallbacks": [] },
+        "identity": { "name": "Octi", "emoji": "🐙" },
+        "tools": { "alsoAllow": ["fcc_call", "fcc_capability_status", "fcc_list_agents", "fcc_open_page", "fcc_import_start", "fcc_import_commit", "fcc_list_tools"] }
+      },
+      {
         "id": "coding",
         "name": "Craig",
         "workspace": "/data/openclaw/workspace/coding",

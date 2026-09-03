@@ -1,0 +1,92 @@
+{
+  "events": [
+    {
+      "id": "sample-calendar-1",
+      "title": "Team kickoff",
+      "description": "Sample calendar entry",
+      "relativeDay": -2,
+      "hour": 9,
+      "durationMinutes": 45,
+      "calendarName": "OpenOcti samples",
+      "calendarColor": "#30c0f0",
+      "sample": true
+    },
+    {
+      "id": "sample-calendar-2",
+      "title": "Discovery call",
+      "description": "Sample calendar entry",
+      "relativeDay": -1,
+      "hour": 10,
+      "durationMinutes": 45,
+      "calendarName": "OpenOcti samples",
+      "calendarColor": "#30c0f0",
+      "sample": true
+    },
+    {
+      "id": "sample-calendar-3",
+      "title": "Proposal review",
+      "description": "Sample calendar entry",
+      "relativeDay": 0,
+      "hour": 11,
+      "durationMinutes": 45,
+      "calendarName": "OpenOcti samples",
+      "calendarColor": "#30c0f0",
+      "sample": true
+    },
+    {
+      "id": "sample-calendar-4",
+      "title": "Project check-in",
+      "description": "Sample calendar entry",
+      "relativeDay": 1,
+      "hour": 12,
+      "durationMinutes": 45,
+      "calendarName": "OpenOcti samples",
+      "calendarColor": "#30c0f0",
+      "sample": true
+    },
+    {
+      "id": "sample-calendar-5",
+      "title": "Client workshop",
+      "description": "Sample calendar entry",
+      "relativeDay": 2,
+      "hour": 13,
+      "durationMinutes": 45,
+      "calendarName": "OpenOcti samples",
+      "calendarColor": "#30c0f0",
+      "sample": true
+    },
+    {
+      "id": "sample-calendar-6",
+      "title": "Pipeline review",
+      "description": "Sample calendar entry",
+      "relativeDay": 3,
+      "hour": 9,
+      "durationMinutes": 45,
+      "calendarName": "OpenOcti samples",
+      "calendarColor": "#30c0f0",
+      "sample": true
+    },
+    {
+      "id": "sample-calendar-7",
+      "title": "Delivery milestone",
+      "description": "Sample calendar entry",
+      "relativeDay": 4,
+      "hour": 10,
+      "durationMinutes": 45,
+      "calendarName": "OpenOcti samples",
+      "calendarColor": "#30c0f0",
+      "sample": true
+    },
+    {
+      "id": "sample-calendar-8",
+      "title": "Monthly planning",
+      "description": "Sample calendar entry",
+      "relativeDay": 5,
+      "hour": 11,
+      "durationMinutes": 45,
+      "calendarName": "OpenOcti samples",
+      "calendarColor": "#30c0f0",
+      "sample": true
+    }
+  ]
+}

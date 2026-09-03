@@ -303,6 +303,7 @@ function stripDraftLead(content) {
 
 export default function ChatPanel() {
   const [open, setOpen] = useState(false)
+  const [guideMode, setGuideMode] = useState(false)
   const [openedByHover, setOpenedByHover] = useState(false)
   const [messages, setMessages] = useState([])
   // Track which assistant messages we've already saved as leads.
@@ -345,7 +346,13 @@ export default function ChatPanel() {
   const sectionAgent = getSectionAgent(wizardSection)
   const section = { label: sectionAgent.label, prompts: sectionAgent.prompts }
   const sectionLabel = section?.label || activeSection || 'Dashboard'
-  const activeAgent = {
+  const activeAgent = guideMode ? {
+    id: 'octi',
+    name: 'Octi',
+    role: 'OpenOcti onboarding guide',
+    avatar: OPENOCTI_AVATAR,
+    intro: "I'm Octi. Ask me how this package works.",
+  } : {
     id: sectionAgent.agentId,
     name: sectionAgent.name,
     role: sectionAgent.role,
@@ -365,6 +372,7 @@ export default function ChatPanel() {
   useEffect(() => {
     const handler = (event) => {
       const detail = event.detail || {}
+      setGuideMode(detail.agentId === 'octi')
       const requestedSection = typeof detail === 'string'
         ? detail
         : detail.section || detail.tab || window.__fccActiveSection || activeSection
@@ -381,6 +389,19 @@ export default function ChatPanel() {
     window.addEventListener('fcc:toggle-ai', handler)
     return () => window.removeEventListener('fcc:toggle-ai', handler)
   }, [activeSection])
+
+  useEffect(() => {
+    const handler = event => {
+      const prompt = String(event.detail?.prompt || '')
+      setGuideMode(true)
+      setWizardSectionOverride('settings')
+      setOpen(true)
+      setMessages([{ role: 'assistant', content: "Hi — I'm Octi. I can guide you through this OpenOcti package." }])
+      if (prompt) setInput(prompt)
+    }
+    window.addEventListener('openocti:ask', handler)
+    return () => window.removeEventListener('openocti:ask', handler)
+  }, [])
 
   // Expose voice-live state to header icons
   useEffect(() => {
@@ -566,7 +587,7 @@ export default function ChatPanel() {
   const send = async (overrideText, options = {}) => {
     const text = String(overrideText ?? input).trim()
     if (!text || loading) return
-    const operatorTool = options.operatorTool || null
+    const operatorTool = options.operatorTool || (guideMode ? { agentId: 'octi', role: 'OpenOcti onboarding guide', runtimeProvider: 'openclaw-hetzner' } : null)
     const requestSection = options.section || resolveWizardAgentSection(activeSection, text)
     setWizardSectionOverride(requestSection !== activeSection ? requestSection : null)
     const requestOperatorContext = options.operatorContext || operatorContext

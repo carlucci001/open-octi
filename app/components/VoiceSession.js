@@ -11,6 +11,8 @@ import { buildWakeStartOptions } from '@/lib/voiceWakeStart'
 import { appendVoiceTranscriptChunk, isVoiceEndIntent } from '@/lib/voice-end-intent'
 import { parseCrmActionArgs, rankCrmCapabilities } from '@/lib/crm-operator-tools'
 import { clientCapabilityStatus } from '@/lib/client-capabilities'
+import { isOpenOcti } from '@/lib/edition'
+import { OpenOctiConfigurationLinks } from './OpenOctiConfigurationNotice'
 import {
   escapeRegExp,
   findRosterAgent,
@@ -411,7 +413,9 @@ function stopAllChirpAudio() {
       } catch {}
     })
   } catch {}
-  try { window.speechSynthesis?.cancel?.() } catch {}
+  if (!isOpenOcti()) {
+    try { window.speechSynthesis?.cancel?.() } catch {}
+  }
 }
 
 function emitVoiceLabTest(event = {}) {
@@ -1143,6 +1147,7 @@ function VoiceButton({ activeContext, activeSection }) {
   const [manualTransferTargetId, setManualTransferTargetId] = useState('')
   const [activeVoiceRuntime, setActiveVoiceRuntime] = useState(null)
   const [latestVoiceLabRun, setLatestVoiceLabRun] = useState(null)
+  const [voiceSetupNeeded, setVoiceSetupNeeded] = useState(false)
   const [lastHeard, setLastHeard] = useState('') // Most recent wake-word transcript (for debug visibility)
   const transferInFlightRef = useRef(false)
   const pendingVoiceTransferRef = useRef(null)
@@ -1176,6 +1181,7 @@ function VoiceButton({ activeContext, activeSection }) {
       if (cancelled) return
       const merged = mergeVoiceRoster(Array.isArray(j.agents) ? j.agents : [])
       setRoster(merged)
+      setVoiceSetupNeeded(voiceCapability.status !== 'configured')
       if (voiceCapability.status === 'configured') {
         const warmable = merged.filter(a => (a.voiceProfile?.provider || a.voiceProvider || 'elevenlabs') === 'elevenlabs')
         warmable.slice(0, 8).forEach((agent, index) => {
@@ -1516,7 +1522,7 @@ function VoiceButton({ activeContext, activeSection }) {
     stopAllChirpAudio()
     setLastEvent(reason)
     const farewellText = String(farewell || '').trim()
-    if (farewellText && typeof window !== 'undefined') {
+    if (farewellText && typeof window !== 'undefined' && !isOpenOcti()) {
       try {
         const Utterance = window.SpeechSynthesisUtterance
         if (Utterance && window.speechSynthesis?.speak) {
@@ -4602,6 +4608,11 @@ function VoiceButton({ activeContext, activeSection }) {
           {manualTransferTarget?.id && (
             <button onClick={manualTransfer} title="Force-transfer this live voice session" className="shrink-0 inline-flex items-center justify-center px-2 rounded-md font-semibold" style={{ minHeight: 32, background: 'var(--surface2)', border: '1px solid var(--accent)', color: 'var(--accent)', fontSize: 12 }}>Transfer</button>
           )}
+        </div>
+      )}
+      {isOpenOcti() && voiceSetupNeeded && !showState && (
+        <div className="text-[10px] max-w-[300px] text-right" style={{ color: 'var(--text-muted)' }}>
+          Voice needs a key. <OpenOctiConfigurationLinks needs={['ELEVENLABS_API_KEY']} prefix="Add" />
         </div>
       )}
       <VoiceTelemetryStrip

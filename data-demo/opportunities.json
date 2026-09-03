@@ -1,14 +1,184 @@
 {
   "opportunities": [
     {
-      "id": "op_demo_first",
-      "accountId": "ac_demo_company",
+      "id": "sample-opportunity-1",
+      "accountId": "sample-account-1",
+      "contactId": "sample-contact-1",
       "pipelineId": "sales",
       "stageId": "new",
-      "name": "Demo first opportunity",
-      "value": 2500,
-      "createdAt": "2026-01-01T12:00:00.000Z",
-      "updatedAt": "2026-01-01T12:00:00.000Z"
+      "name": "Northstar Studio growth engagement",
+      "value": 1800,
+      "probability": 10,
+      "expectedClose": "2026-09-10",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-opportunity-2",
+      "accountId": "sample-account-2",
+      "contactId": "sample-contact-2",
+      "pipelineId": "sales",
+      "stageId": "working",
+      "name": "Brightline Foods growth engagement",
+      "value": 2525,
+      "probability": 50,
+      "expectedClose": "2026-09-11",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-opportunity-3",
+      "accountId": "sample-account-3",
+      "contactId": "sample-contact-3",
+      "pipelineId": "sales",
+      "stageId": "working",
+      "name": "Harbor & Pine growth engagement",
+      "value": 3250,
+      "probability": 50,
+      "expectedClose": "2026-09-12",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-opportunity-4",
+      "accountId": "sample-account-4",
+      "contactId": "sample-contact-4",
+      "pipelineId": "sales",
+      "stageId": "won",
+      "name": "Summit Works growth engagement",
+      "value": 3975,
+      "probability": 100,
+      "expectedClose": "2026-09-13",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-opportunity-5",
+      "accountId": "sample-account-5",
+      "contactId": "sample-contact-5",
+      "pipelineId": "sales",
+      "stageId": "new",
+      "name": "Copper Finch growth engagement",
+      "value": 4700,
+      "probability": 10,
+      "expectedClose": "2026-10-14",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-opportunity-6",
+      "accountId": "sample-account-6",
+      "contactId": "sample-contact-6",
+      "pipelineId": "sales",
+      "stageId": "working",
+      "name": "Meadow Labs growth engagement",
+      "value": 5425,
+      "probability": 50,
+      "expectedClose": "2026-10-15",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-opportunity-7",
+      "accountId": "sample-account-7",
+      "contactId": "sample-contact-7",
+      "pipelineId": "sales",
+      "stageId": "won",
+      "name": "Atlas Workshop growth engagement",
+      "value": 6150,
+      "probability": 100,
+      "expectedClose": "2026-10-16",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-opportunity-8",
+      "accountId": "sample-account-8",
+      "contactId": "sample-contact-8",
+      "pipelineId": "sales",
+      "stageId": "new",
+      "name": "Oak & Tide growth engagement",
+      "value": 6875,
+      "probability": 10,
+      "expectedClose": "2026-10-17",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-opportunity-9",
+      "accountId": "sample-account-9",
+      "contactId": "sample-contact-9",
+      "pipelineId": "sales",
+      "stageId": "lost",
+      "name": "Evergreen Supply growth engagement",
+      "value": 7600,
+      "probability": 10,
+      "expectedClose": "2026-11-18",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-opportunity-10",
+      "accountId": "sample-account-10",
+      "contactId": "sample-contact-10",
+      "pipelineId": "sales",
+      "stageId": "working",
+      "name": "Bluebird Collective growth engagement",
+      "value": 8325,
+      "probability": 50,
+      "expectedClose": "2026-11-19",
+      "notes": "Sample opportunity",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
     }
   ]
 }

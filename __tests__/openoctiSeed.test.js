@@ -40,7 +40,7 @@ describe('OpenOcti demo seed', () => {
     vi.resetModules()
 
     const { readData } = await import('../lib/dataStore')
-    expect(readData('leads.json')?.leads?.[0]?.id).toBe('ld_demo_inquiry')
+    expect(readData('leads.json')?.leads?.[0]?.id).toBe('sample-lead-1')
     expect(readData('agents.json')?.agents?.['octi-guide']?.name).toBe('Octi Guide')
   })
 

@@ -6,6 +6,8 @@ import { buildVoiceUsageEvent, logVoiceUsage } from '@/lib/voiceUsage'
 import { generateVibeVoiceSpeech, hasVibeVoiceEndpoint, VIBEVOICE_DEMO_URL, VIBEVOICE_MODEL_URL, VIBEVOICE_MODELS, VIBEVOICE_REPO_URL } from '@/lib/vibevoice'
 import { PRESET_BY_ID } from '@/lib/agent-presets'
 import { CHIRP3_MODEL, CHIRP3_VOICES } from '@/lib/chirp3-tts'
+import { isOpenOcti } from '@/lib/edition'
+import { resolveProviderKey } from '@/lib/openocti-keys'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -25,6 +27,7 @@ function jsonError(message, status = 400, extra = {}) {
 }
 
 function getGeminiKey() {
+  if (isOpenOcti()) return resolveProviderKey('gemini').key
   return getCred('gemini')?.key || getCred('google gemini')?.key || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || ''
 }
 
@@ -38,6 +41,7 @@ function usageHeader(event) {
 }
 
 function getElevenKey() {
+  if (isOpenOcti()) return resolveProviderKey('elevenlabs').key
   return getCred('elevenlabs')?.key || getCred('eleven')?.key || process.env.ELEVENLABS_API_KEY || ''
 }
 

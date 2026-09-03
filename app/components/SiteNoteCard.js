@@ -3,6 +3,8 @@
 // Same notes Maggie posts by voice via her post_site_note tool.
 import { useCallback, useEffect, useState } from "react";
 import { clientCapabilityStatus } from "@/lib/client-capabilities";
+import { isOpenOcti } from "@/lib/edition";
+import OpenOctiConfigurationNotice from "./OpenOctiConfigurationNotice";
 
 export default function SiteNoteCard() {
   const [notes, setNotes] = useState([]);
@@ -58,9 +60,13 @@ export default function SiteNoteCard() {
     return (
       <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
         <h2 className="text-base font-semibold" style={{ fontFamily: "'Outfit', sans-serif" }}>Site Notes</h2>
-        <div role="status" className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
-          Not configured — add <code>{capability.missing?.[0] || "SITE_NOTE_ENDPOINT"}</code> to your .env.
-        </div>
+        {isOpenOcti() ? (
+          <div className="mt-3"><OpenOctiConfigurationNotice needs={capability.missing?.length ? capability.missing : ["SITE_NOTE_ENDPOINT"]}>Add the service endpoint and secret to enable public site notes.</OpenOctiConfigurationNotice></div>
+        ) : (
+          <div role="status" className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
+            Not configured — add <code>{capability.missing?.[0] || "SITE_NOTE_ENDPOINT"}</code> to your .env.
+          </div>
+        )}
       </div>
     );
   }

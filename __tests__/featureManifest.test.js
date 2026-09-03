@@ -27,4 +27,15 @@ describe('external capability manifest', () => {
     expect(serialized).not.toContain(env.OPENAI_API_KEY)
     expect(serialized).not.toContain(env.VERCEL_TOKEN)
   })
+
+  it('maps every declared requirement to a real settings anchor', () => {
+    const manifest = buildFeatureManifest({ CRM_SESSION_SECRET: 'test-only', FCC_EDITION: 'openocti' })
+    for (const capability of manifest.capabilities) {
+      for (const need of capability.needs) {
+        const link = capability.settings.find(item => item.need === need)
+        expect(link, `${capability.id}:${need}`).toBeTruthy()
+        expect(link.href, `${capability.id}:${need}`).toMatch(/^\/settings(?:\/models)?#[-a-z0-9]+$/)
+      }
+    }
+  })
 })

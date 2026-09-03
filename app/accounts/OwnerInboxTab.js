@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Archive, Check, Inbox, Mail, RefreshCw, ShieldCheck, Trash2, X } from 'lucide-react'
 import ThemedSelect from '../components/ThemedSelect'
+import { isOpenOcti } from '@/lib/edition'
+import { OpenOctiConfigurationLinks } from '../components/OpenOctiConfigurationNotice'
 
 function fmtDate(value) {
   if (!value) return ''
@@ -180,7 +182,11 @@ export default function OwnerInboxTab({ account }) {
           ))}
         </div>
         <div className="text-xs mt-3" style={{ color: status.nylasConfigured ? 'var(--green)' : 'var(--peach)' }}>
-          {status.nylasConfigured ? `Nylas configured${status.configuredGrantCount ? ` with ${status.configuredGrantCount} grant(s)` : '; grants will be discovered on sync'}.` : 'Nylas is not configured in env/vault yet; the inbox is ready but cannot scan mail.'}
+          {status.nylasConfigured
+            ? `Nylas configured${status.configuredGrantCount ? ` with ${status.configuredGrantCount} grant(s)` : '; grants will be discovered on sync'}.`
+            : isOpenOcti()
+              ? <><span>The inbox cannot scan mail yet. </span><OpenOctiConfigurationLinks needs={['NYLAS_API_KEY', 'NYLAS_GRANT_ID']} prefix="Open settings for" /></>
+              : 'Nylas is not configured in env/vault yet; the inbox is ready but cannot scan mail.'}
         </div>
         {notice && <div className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>{notice}</div>}
       </div>

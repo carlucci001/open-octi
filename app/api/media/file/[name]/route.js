@@ -5,7 +5,9 @@ import { NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const PUBLIC_DIR = path.join(process.cwd(), 'public', 'media')
+const PUBLIC_DIR = process.env.CRM_DATA_DIR
+  ? path.join(process.env.CRM_DATA_DIR, 'media')
+  : path.join(process.cwd(), 'public', 'media')
 
 function mimeFromExt(name) {
   const ext = String(name || '').split('.').pop()?.toLowerCase()

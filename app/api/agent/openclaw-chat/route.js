@@ -13,7 +13,7 @@ import { readData, writeData } from '@/lib/dataStore'
 import { getSectionAgent, resolveWizardAgentSection, sectionPersonaLine } from '@/lib/section-agents'
 import { runDeepResearchDossier } from '@/lib/deep-research'
 import { DEERFLOW_READONLY_TOOL_DEFS } from '@/lib/deerflow-tools'
-import { openclawRuntimeLogLabel } from '@/lib/edition'
+import { isOpenOcti, openclawRuntimeLogLabel } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -601,7 +601,8 @@ export async function POST(request) {
   }
   const screenControl = isScreenControlRequest(last.content)
   const effectiveSection = resolveWizardAgentSection(section, last.content)
-  const agentId = agentForSection(section, last.content)
+  const selectedAgentId = String(activeOperatorTool?.agentId || '').trim()
+  const agentId = selectedAgentId || agentForSection(section, last.content)
   const contextLines = []
   contextLines.push(
     OFFICE_AGENT_CONDUCT,
@@ -654,6 +655,7 @@ export async function POST(request) {
           message: prompt,
           sessionKey: screenControl ? `agent:main:screen-control-live-${Date.now()}` : (sessionKey || `agent:${agentId}:ai-wizard-${Date.now()}`),
           token,
+          firstChunkMs: isOpenOcti() ? 120000 : undefined,
           onChunk: (text) => write({ text }),
         })
         console.log(`[ai-wizard] done requestId=${requestId} runId=${r.runId || 'none'} chars=${String(r.text || '').length}`)

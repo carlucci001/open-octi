@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { manifestFor } from '../app/manifest.js'
-import { brandAssetsFor } from '../lib/brand-assets.js'
+import { brandAssetsFor, brandMetadataFor } from '../lib/brand-assets.js'
 
 const root = process.cwd()
 const asset = name => path.join(root, 'public', 'openocti', name)
@@ -29,8 +29,8 @@ describe('OpenOcti octopus logo lockup', () => {
     expect(svg).toContain('Space Grotesk')
     expect(svg).toContain('#0070d0')
     expect(svg).toContain('#30c0f0')
-    expect(svg).toContain('>COMMAND</text>')
-    expect(svg).toContain('>CENTER</text>')
+    expect(svg).toContain('>OPENOCTI</text>')
+    expect(svg).not.toMatch(/Command Center|Farrington/i)
 
     const ico = fs.readFileSync(asset('favicon.ico'))
     expect(ico.readUInt16LE(2)).toBe(1)
@@ -62,6 +62,15 @@ describe('OpenOcti octopus logo lockup', () => {
     expect(pwa.icons).toEqual([
       { src: '/openocti/favicon.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
     ])
+  })
+
+  it('keeps OpenOcti metadata and manifest free of legacy product names', () => {
+    const rendered = JSON.stringify({
+      metadata: brandMetadataFor({ FCC_EDITION: 'openocti' }),
+      manifest: manifestFor({ FCC_EDITION: 'openocti' }),
+    })
+    expect(rendered).toContain('OpenOcti')
+    expect(rendered).not.toMatch(/Command Center|Farrington/i)
   })
 
   it('routes every active app brand surface through the edition asset map', () => {

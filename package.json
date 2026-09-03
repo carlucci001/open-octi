@@ -1,6 +1,6 @@
 {
   "name": "openocti",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "private": false,
   "engines": {
     "node": ">=24"
@@ -45,6 +45,7 @@
     "react-dom": "^18.2.0",
     "react-force-graph-2d": "^1.29.1",
     "react-force-graph-3d": "^1.29.1",
+    "read-excel-file": "^9.3.10",
     "recharts": "^3.8.1",
     "remotion": "^4.0.465",
     "resend": "^6.12.2",

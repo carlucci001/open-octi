@@ -15,6 +15,8 @@ import PaymentForm from '../components/PaymentForm'
 import SupportManager from '../support/SupportManager'
 import OwnerInboxTab from './OwnerInboxTab'
 import { Power } from 'lucide-react'
+import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
+import { isOpenOcti } from '@/lib/edition'
 
 const TYPES = [
   { id: 'client',   label: 'Client',   color: 'var(--green)',  bg: 'var(--green-soft)' },
@@ -2010,7 +2012,7 @@ export default function AccountsManager({ onNavigate }) {
 
       {loading ? <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>Loading...</div>
         : filtered.length === 0 ? (
-          <div className="text-center py-16">
+          stats.clients === 0 && isOpenOcti() ? <OpenOctiEmptyState objectType="accounts" title="Build your account book" description="Accounts organize the companies and customers behind your contacts, deals, projects, and activity." /> : <div className="text-center py-16">
             <div className="text-4xl mb-3">🏢</div>
             <p style={{ color: 'var(--text-muted)' }}>{stats.clients === 0 ? 'No client accounts yet.' : 'No client accounts match these filters.'}</p>
           </div>

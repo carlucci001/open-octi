@@ -1,6 +1,6 @@
 # Model providers
 
-OpenOcti's first boot chooses the first configured provider in this order: Anthropic, OpenAI, Gemini, then OpenRouter. One key is enough for the five starter agents to use the OpenClaw gateway.
+Open **Settings → Models & Keys** to save and test a provider. OpenOcti chooses the first configured provider in this order: Anthropic, OpenAI, Gemini, then OpenRouter. One key is enough for Octi and the five specialist agents to use the OpenClaw gateway.
 
 | Variable | Unlocks |
 | --- | --- |
@@ -10,6 +10,6 @@ OpenOcti's first boot chooses the first configured provider in this order: Anthr
 | `OPENROUTER_API_KEY` | OpenRouter model routing for OpenClaw. |
 | `ORCAROUTER_API_KEY` | Optional Orca handoff routing; it is separate from OpenRouter. |
 
-Provider values stay in `.env` and are passed to the relevant container. The UI reports only configured or not configured; it never displays a key.
+App-saved provider values are encrypted in `/data/openocti-keys.json`; the UI returns only source and last-four status. Environment variables remain an advanced alternative, and app-saved values take precedence.
 
-The generated OpenClaw configuration is first-boot-only. To change its model after data already exists, edit the configuration deliberately or start with a new empty volume after backing up the existing one.
+The initial OpenClaw configuration is first-boot-only. A successful in-app key save updates the managed provider and agent model blocks in the shared config; OpenClaw's file watcher applies that change without a container restart.

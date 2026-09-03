@@ -5,6 +5,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { generateThirdPartyNotices } from './generate-third-party-notices.mjs'
+import { generateOctiKnowledge } from './generate-octi-knowledge.mjs'
 import { isOpenOctiExcluded, OPENOCTI_EXCLUDES } from './openocti-excludes.mjs'
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
@@ -529,6 +530,7 @@ export function exportOpenOcti(output = DEFAULT_OUTPUT, { version, exportedAt = 
   installOverlays(output)
   stampExportVersion(output, version, exportedAt)
   installOpenClawPlugin(output)
+  const octiKnowledge = generateOctiKnowledge(output)
   fs.writeFileSync(path.join(output, 'THIRD_PARTY_NOTICES.md'), thirdParty.content)
   const scrubbedOccurrenceCount = scrubKnownInfrastructure(output)
   const listedFileCount = writeFileList(output)
@@ -542,6 +544,7 @@ export function exportOpenOcti(output = DEFAULT_OUTPUT, { version, exportedAt = 
     productDenylist: 'PASS (0 hits)',
     gitleaks,
     starterAgentPack,
+    octiKnowledge,
   })
   scanOpenOctiDenylist(output)
   return { output, manifest }

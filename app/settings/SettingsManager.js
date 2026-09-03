@@ -11,15 +11,20 @@ import SecurityLogSettings from './SecurityLogSettings'
 import ComponentSettingsHub from './ComponentSettingsHub'
 import PageHeader from '../components/PageHeader'
 import { ShieldCheck } from 'lucide-react'
+import { isOpenOcti } from '@/lib/edition'
+import OpenOctiModelsSettings from './OpenOctiModelsSettings'
+
+const OPENOCTI = isOpenOcti()
 
 const SUB_TABS = [
+  ...(OPENOCTI ? [{ id: 'models', label: 'Models & Keys' }] : []),
   { id: 'components', label: 'Screens' },
   { id: 'control-services', label: 'Control Services' },
   { id: 'users', label: 'Users' },
   { id: 'roles', label: 'Roles' },
   { id: 'voice', label: 'Voice' },
   { id: 'inbound-channels', label: 'Inbound Channels' },
-  { id: 'ai-keys', label: 'AI Keys' },
+  ...(!OPENOCTI ? [{ id: 'ai-keys', label: 'AI Keys' }] : []),
   { id: 'security-log', label: 'Security Log' },
 ]
 
@@ -100,6 +105,7 @@ export default function SettingsManager({ initialSub = 'control-services' }) {
       </div>
 
       {sub === 'components' && <ComponentSettingsHub />}
+      {sub === 'models' && me && ['owner', 'admin'].includes(me.role) && <OpenOctiModelsSettings />}
       {sub === 'voice' && <VoiceSettings />}
       {sub === 'ai-keys' && me?.role === 'owner' && <AIKeysSettings />}
       {sub === 'inbound-channels' && <InboundChannelsSettings />}

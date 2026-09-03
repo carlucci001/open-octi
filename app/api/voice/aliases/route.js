@@ -6,6 +6,8 @@ import { getCred } from '@/lib/agent-creds'
 import { readData, writeData } from '@/lib/dataStore'
 import { requireCapability } from '@/lib/permissions'
 import { buildVoiceUsageEvent, logVoiceUsage } from '@/lib/voiceUsage'
+import { isOpenOcti } from '@/lib/edition'
+import { resolveProviderKey } from '@/lib/openocti-keys'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -25,6 +27,7 @@ function jsonError(message, status = 400) {
 }
 
 function getGeminiKey() {
+  if (isOpenOcti()) return resolveProviderKey('gemini').key
   return getCred('gemini')?.key || getCred('google gemini')?.key || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || ''
 }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { loadAll, create, update, remove, findById, saveAll } from '@/lib/entityStore'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
 import { ensureCommandCenterPipeline } from '@/lib/salesPipelines'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -25,7 +26,7 @@ export async function GET(request) {
     if (!pl) return NextResponse.json({ error: 'not found' }, { status: 404 })
     return NextResponse.json({ pipeline: pl })
   }
-  ensureCommandCenterPipeline()
+  if (!isOpenOcti()) ensureCommandCenterPipeline()
   return NextResponse.json({ pipelines: loadAll('pipelines') })
 }
 

@@ -19,6 +19,11 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   fcc_send_signature_document: 'Send a document for electronic signature after approval.',
   fcc_open_record: 'Open a CRM record in the connected interface.',
   fcc_navigate_to: 'Navigate the connected interface to an OpenOcti module.',
+  fcc_import_start: 'Preview and map a contacts, accounts, leads, deals, projects, or tasks import.',
+  fcc_import_commit: 'Commit an approved OpenOcti import and return its undo batch ID.',
+  fcc_capability_status: 'Read live OpenOcti capabilities, configured sources, missing requirements, and Settings links.',
+  fcc_list_agents: 'List OpenOcti agents, roles, and enabled state.',
+  fcc_open_page: 'Return a safe OpenOcti page link that the chat panel can render as a button.',
 }
 
 const configSchema = {

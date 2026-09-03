@@ -8,6 +8,7 @@ import DocumentsManager from './documents/DocumentsManager'
 import ResearchPage from '@closed/research-page'
 import { isOpenOcti } from '@/lib/edition'
 import { brandAssetsFor } from '@/lib/brand-assets'
+import OpenOctiAskButton from './components/OpenOctiAskButton'
 import DomainManager from './domains/DomainManager'
 import CredentialsVault from './credentials/CredentialsVault'
 import Dashboard from './dashboard/Dashboard'
@@ -61,7 +62,7 @@ import { canUseTab } from '@/lib/roles'
 import { Activity, Bot, Boxes, BrainCircuit, Cable, CircleDollarSign, FlaskConical, Hammer, KeyRound, LifeBuoy, Megaphone, Mic2, Newspaper, Package, PhoneCall, Radio, Server, Settings2, ShieldAlert, Wrench } from 'lucide-react'
 
 const APP_BUILD_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 10) || '2026.06.11-api-lab-mobile'
-const PRODUCT_VERSION = '2.1'
+const PRODUCT_VERSION = isOpenOcti() ? '1.1' : '2.1'
 // Build stamp baked in by next.config.js at build time. Shown in the sidebar
 // footer so the running build is confirmable at a glance — no deploy logs.
 const BUILD_NUMBER = process.env.NEXT_PUBLIC_FCC_BUILD_NUMBER || ''
@@ -438,7 +439,7 @@ const EDITION_BRAND = brandAssetsFor()
 const OPENOCTI_CLOSED_TABS = new Set(['research', 'platforms', 'SearchSuite3'])
 
 const NAV_MAIN = [
-  { id: 'dashboard', icon: <CommandCenterNavIcon />, label: 'Command Center', desc: 'Command Center dashboard and today\'s priorities' },
+  { id: 'dashboard', icon: <CommandCenterNavIcon />, label: OPENOCTI ? 'OpenOcti' : 'Command Center', desc: OPENOCTI ? 'OpenOcti dashboard and today\'s priorities' : 'Command Center dashboard and today\'s priorities' },
   { id: 'feed', icon: '📰', label: 'Feed', desc: 'Live activity, online users, and direct messages' },
   { id: 'leads', icon: <LeadsNavIcon />, label: 'Leads', desc: 'Working leads, scripts, statuses, intake, and qualification' },
   { id: 'pipelines', icon: '🎯', label: 'Pipelines', desc: 'Select a pipeline and work the opportunities inside it' },
@@ -1078,7 +1079,7 @@ function UserAvatarMenu({ user, isAdmin, isOwner, theme, onThemeChange, networkM
               />
             )}
             {!OPENOCTI && isAdmin && <AvatarToolButton icon={<MenuIcon type="portal" />} label={portalBusy ? 'Opening Client Portal' : 'Client Portal'} onClick={openPortal} disabled={portalBusy} />}
-            <AvatarToolButton icon={<MenuIcon type="external" />} label="Website" href="https://company.example.com" />
+            {!OPENOCTI && <AvatarToolButton icon={<MenuIcon type="external" />} label="Website" href="https://company.example.com" />}
             <ThemeModeToggle theme={theme} onChange={onThemeChange} compact menuIcon />
           </div>
           <div className="avatar-menu-main-scroll">
@@ -1103,7 +1104,7 @@ function UserAvatarMenu({ user, isAdmin, isOwner, theme, onThemeChange, networkM
             </div>
             {!OPENOCTI && isAdmin && <PortalHeaderLink menuItem />}
             <div className="avatar-menu-divider" />
-            <AvatarMenuItem icon={<MenuIcon type="logout" />} label="Log out" detail="End this Command Center session" onClick={logout} />
+            <AvatarMenuItem icon={<MenuIcon type="logout" />} label="Log out" detail={`End this ${EDITION_BRAND.editionName} session`} onClick={logout} />
           </div>
         </div>
       )}
@@ -2299,7 +2300,7 @@ export default function Page() {
       <div className="mobile-topbar lg:hidden fixed top-0 left-0 right-0 z-30 grid items-center gap-2 px-3 py-2" style={{ gridTemplateColumns: 'minmax(0, 1fr) auto', background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         <button type="button" onClick={() => { handleNavTo('dashboard'); setNavOpen(false) }} aria-label={`Go to ${EDITION_BRAND.editionName}`} style={{ minWidth: 0, justifySelf: 'start', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}>
           <span style={mobileLogoFrameStyle}>
-            <img src={brandLogoSrc} alt={OPENOCTI ? 'OpenOcti Command Center' : 'Farrington Development'} style={mobileLogoImgStyle} />
+            <img src={brandLogoSrc} alt={OPENOCTI ? 'OpenOcti' : 'Farrington Development'} style={mobileLogoImgStyle} />
           </span>
         </button>
         <div className="flex items-center gap-2 shrink-0">
@@ -2460,6 +2461,7 @@ export default function Page() {
       {/* Right column: masthead on top + main content below. Masthead sits to the RIGHT of the side menu only — logo stays in top-left of side menu. */}
       <div className="flex flex-col flex-1 overflow-hidden">
       <header className="desktop-toolbar hidden lg:flex shrink-0 items-center justify-end px-5 py-2.5 z-30 gap-2" style={{ height: topChromeHeight, boxSizing: 'border-box', background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+        {OPENOCTI && <OpenOctiAskButton />}
         {isAdmin && (
           <SettingsGearButton size={32} onNavigate={handleNavTo} />
         )}

@@ -18,6 +18,8 @@ import SiteNoteCard from "../components/SiteNoteCard";
 import { playQueuedLoginWelcomeAudio } from "../login/loginWelcomeAudio";
 import { reportClientError } from "../components/reportClientError";
 import OpenOctiFirstRun from './OpenOctiFirstRun'
+import OpenOctiSampleChip from './OpenOctiSampleChip'
+import OpenOctiGuidePanel from '../components/OpenOctiGuidePanel'
 import { brandAssetsFor } from '@/lib/brand-assets'
 
 // Dashboard charts use the cool dark-theme palette: blues, cyan, slate, and white.
@@ -507,7 +509,7 @@ export default function Dashboard({ onNavigate }) {
         { label: "Sponsors",       value: campaignBuckets.sponsors,       color: CAMPAIGN_COLORS.sponsors },
         { label: "Newspapers",     value: campaignBuckets.newspaper,      color: CAMPAIGN_COLORS.newspaper },
         { label: "TDAs",           value: campaignBuckets.tda,            color: CAMPAIGN_COLORS.tda },
-        { label: "Farrington Dev", value: campaignBuckets.farrington_dev, color: CAMPAIGN_COLORS.farrington_dev },
+        { label: BRAND_ASSETS.openOcti ? "Business Development" : "Farrington Dev", value: campaignBuckets.farrington_dev, color: CAMPAIGN_COLORS.farrington_dev },
       ].filter(s => s.value > 0);
 
       // Activity pulse — multi-series daily activity across 6 categories, last 7/14/30 days.
@@ -578,11 +580,13 @@ export default function Dashboard({ onNavigate }) {
     <div className="command-workspace p-6 stagger-children" style={{ color: "var(--text)" }}>
       <PageHeader
         icon={<CommandCenterIcon />}
-        title="Command Center Dashboard"
-        subtitle={`Farrington Development Command Center - ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`}
+        title={BRAND_ASSETS.openOcti ? "OpenOcti Dashboard" : "Command Center Dashboard"}
+        subtitle={`${BRAND_ASSETS.openOcti ? "Your AI operations workspace" : "Farrington Development Command Center"} - ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`}
       />
 
       <OpenOctiFirstRun />
+      <OpenOctiSampleChip />
+      {BRAND_ASSETS.openOcti && <div className="mb-6"><OpenOctiGuidePanel compact /></div>}
 
       <div className="command-stat-grid grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard icon="🎯" label="Dev Pipeline"     value={data.devLeadCount + " leads"}       sub={(data.devByStatus.new || data.devByStatus.discovery || 0) + " new · " + (data.devByStatus.qualified || 0) + " qualified"} onClick={() => onNavigate("leads")} />

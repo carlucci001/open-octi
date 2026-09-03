@@ -39,6 +39,8 @@ import {
   signingConfiguration,
 } from '@/lib/documentSignatures'
 import { isOpenOcti } from '@/lib/edition'
+import { listOpenOctiKeyStatus, resolveProviderKey } from '@/lib/openocti-keys'
+import { buildFeatureManifest } from '@/lib/feature-manifest'
 import { getProductCatalog, normalizeProduct, saveProductCatalog } from '@/lib/productCatalog'
 import { loadProductOrders } from '@/lib/productCheckout'
 import { deleteLicense, getLicenseStore, publicLicense, upsertLicense, verifyLicense } from '@/lib/licenseManager'
@@ -54,6 +56,7 @@ import { normalizeImageGenerationPreference } from '@/lib/image-generation-prefe
 import { getCreditWallet, issuePrepaidCredits } from '@/lib/credit-wallet'
 import { stripeBillingCatalogHash } from '@/lib/stripe-billing-catalog.mjs'
 import { getRuntimeStripeBillingCatalogDefinitions } from '@/lib/stripe-billing-catalog-source'
+import { commitOpenOctiImport, detectImportMapping, previewOpenOctiImport } from '@/lib/openocti-import'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -156,6 +159,7 @@ const TOOL_RISK_POLICIES = {
   copy_subscription_plan: { risk: 'billing_catalog_change', approvalRequired: true, reason: 'creates a new subscription plan copy' },
   delete_subscription_plan: { risk: 'billing_catalog_delete', approvalRequired: true, reason: 'deletes a subscription plan' },
   issue_client_credits: { risk: 'credit_ledger_change', approvalRequired: true, reason: 'issues real service credits to a client wallet' },
+  import_commit: { risk: 'crm_bulk_write', approvalRequired: true, reason: 'creates a batch of CRM records' },
 }
 
 function hasExplicitApproval(args = {}) {
@@ -3802,7 +3806,7 @@ const TOOLS = {
   dispatch_outbound_call: {
     description: "Place an outbound phone call FROM Doreen's number PHONE_REDACTED to a recipient. Doreen runs the call independently — Carl is NOT in the audio path. Use for: confirmation calls, demo bookings, reactivation, follow-ups. Args: { to_phone, reason, name? }. Always confirm out loud with Carl ('Calling Marjorie now about Wednesday demo — placing it') BEFORE calling.",
     run: async (args) => {
-      const apiKey = process.env.ELEVENLABS_API_KEY
+      const apiKey = isOpenOcti() ? resolveProviderKey('elevenlabs').key : process.env.ELEVENLABS_API_KEY
       if (!apiKey) throw new Error('ELEVENLABS_API_KEY not set')
       const DOREEN_AGENT_ID = 'agent_9401kqcyv15he32rprgj859pj62w'
       const DOREEN_PHONE_NUMBER_ID = 'phnum_9701kqftpyqrexmsgw9egqawdzvw'
@@ -3906,6 +3910,49 @@ const TOOLS = {
       return { opportunity: updated, leadRequirements }
     },
   },
+  import_start: {
+    description: 'Start an OpenOcti data import. Args: { objectType, headers?, rows? }. Returns detected mapping, validation preview, and an Import Center link.',
+    run: (args = {}) => {
+      if (!isOpenOcti()) throw new Error('OpenOcti import tools are unavailable in this edition')
+      const objectType = String(args.objectType || 'contacts')
+      const rows = Array.isArray(args.rows) ? args.rows : []
+      return { objectType, mapping: detectImportMapping(args.headers || [], objectType), preview: rows.length ? previewOpenOctiImport(objectType, rows) : null, link: `/settings/import?type=${encodeURIComponent(objectType)}` }
+    },
+  },
+  import_commit: {
+    description: 'Commit a validated OpenOcti import batch. Args: { objectType, rows, approved:true }. Duplicate rows are skipped and the result includes an undo batch ID.',
+    run: (args = {}) => {
+      if (!isOpenOcti()) throw new Error('OpenOcti import tools are unavailable in this edition')
+      return commitOpenOctiImport(String(args.objectType || 'contacts'), Array.isArray(args.rows) ? args.rows : [], { skipDuplicates: args.skipDuplicates !== false })
+    },
+  },
+  capability_status: {
+    description: 'Read the live OpenOcti capability manifest including configured state, source, missing requirements, and Settings links.',
+    run: () => {
+      if (!isOpenOcti()) throw new Error('OpenOcti guide tools are unavailable in this edition')
+      return buildFeatureManifest(process.env, { providerStatuses: listOpenOctiKeyStatus() })
+    },
+  },
+  list_agents: {
+    description: 'List the OpenOcti starter agents, their roles, and whether a model key makes them available.',
+    run: () => {
+      if (!isOpenOcti()) throw new Error('OpenOcti guide tools are unavailable in this edition')
+      const stored = readData('agents.json')?.agents || {}
+      const modelReady = listOpenOctiKeyStatus().some(item => ['anthropic', 'openai', 'gemini', 'openrouter'].includes(item.id) && item.source)
+      return Object.entries(stored).map(([id, agent]) => ({ id: id === 'octi-guide' ? 'octi' : id, name: id === 'octi-guide' ? 'Octi' : agent.name, role: agent.role || agent.title || '', enabled: modelReady && agent.disabled !== true }))
+    },
+  },
+  open_page: {
+    description: 'Return a safe link button for an OpenOcti page. Args: { page }.',
+    run: (args = {}) => {
+      if (!isOpenOcti()) throw new Error('OpenOcti guide tools are unavailable in this edition')
+      const page = String(args.page || 'dashboard').toLowerCase().replace(/[^a-z-]/g, '')
+      const links = { dashboard: '/', agents: '/?tab=agents', contacts: '/?tab=contacts', accounts: '/?tab=accounts', leads: '/?tab=leads', pipelines: '/?tab=pipelines', projects: '/?tab=projects', tasks: '/?tab=tasks', import: '/settings/import', settings: '/settings', models: '/settings/models', samples: '/settings/sample-data' }
+      const href = links[page]
+      if (!href) throw new Error('Unknown OpenOcti page')
+      return { label: `Open ${page}`, href }
+    },
+  },
 }
 
 function toolList() {
@@ -3921,6 +3968,11 @@ const TOOL_ALIASES = {
   fcc_finance_due_items: 'finance_due_items',
   fcc_prepare_bill_payment: 'prepare_bill_payment',
   fcc_navigate_to: 'navigate_to',
+  fcc_import_start: 'import_start',
+  fcc_import_commit: 'import_commit',
+  fcc_capability_status: 'capability_status',
+  fcc_list_agents: 'list_agents',
+  fcc_open_page: 'open_page',
   navigate_to: 'navigate_to',
   fcc_api_spend_monitor: 'api_spend_monitor',
   api_spend_monitor: 'api_spend_monitor',

@@ -1,4 +1,89 @@
 {
-  "lastUpdated": "2026-09-02T00:00:00.000Z",
-  "activities": []
+  "lastUpdated": "2026-09-02T12:00:00.000Z",
+  "activities": [
+    {
+      "id": "sample-activity-1",
+      "type": "call",
+      "subject": "Follow-up call with Avery Stone",
+      "body": "Synthetic starter activity.",
+      "at": "2026-09-02T12:00:00.000Z",
+      "linkedTo": {
+        "contactId": "sample-contact-1",
+        "accountId": "sample-account-1"
+      },
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-activity-2",
+      "type": "email",
+      "subject": "Proposal sent with Jordan Lee",
+      "body": "Synthetic starter activity.",
+      "at": "2026-09-02T12:00:00.000Z",
+      "linkedTo": {
+        "contactId": "sample-contact-2",
+        "accountId": "sample-account-2"
+      },
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-activity-3",
+      "type": "meeting",
+      "subject": "Discovery meeting with Morgan Reed",
+      "body": "Synthetic starter activity.",
+      "at": "2026-09-02T12:00:00.000Z",
+      "linkedTo": {
+        "contactId": "sample-contact-3",
+        "accountId": "sample-account-3"
+      },
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-activity-4",
+      "type": "call",
+      "subject": "Follow-up call with Casey Brooks",
+      "body": "Synthetic starter activity.",
+      "at": "2026-09-02T12:00:00.000Z",
+      "linkedTo": {
+        "contactId": "sample-contact-4",
+        "accountId": "sample-account-4"
+      },
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-activity-5",
+      "type": "email",
+      "subject": "Proposal sent with Riley Chen",
+      "body": "Synthetic starter activity.",
+      "at": "2026-09-02T12:00:00.000Z",
+      "linkedTo": {
+        "contactId": "sample-contact-5",
+        "accountId": "sample-account-5"
+      },
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-activity-6",
+      "type": "meeting",
+      "subject": "Discovery meeting with Taylor Grant",
+      "body": "Synthetic starter activity.",
+      "at": "2026-09-02T12:00:00.000Z",
+      "linkedTo": {
+        "contactId": "sample-contact-6",
+        "accountId": "sample-account-6"
+      },
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    }
+  ]
 }

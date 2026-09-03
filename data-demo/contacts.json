@@ -1,13 +1,154 @@
 {
   "contacts": [
     {
-      "id": "ct_demo_contact",
-      "accountId": "ac_demo_company",
-      "firstName": "Demo",
-      "lastName": "Contact",
-      "title": "Operations Lead",
-      "createdAt": "2026-01-01T12:00:00.000Z",
-      "updatedAt": "2026-01-01T12:00:00.000Z"
+      "id": "sample-contact-1",
+      "accountId": "sample-account-1",
+      "name": "Avery Stone",
+      "phone": "555-0100",
+      "title": "Founder",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-contact-2",
+      "accountId": "sample-account-2",
+      "name": "Jordan Lee",
+      "phone": "555-0101",
+      "title": "Operations Director",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-contact-3",
+      "accountId": "sample-account-3",
+      "name": "Morgan Reed",
+      "phone": "555-0102",
+      "title": "Marketing Lead",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-contact-4",
+      "accountId": "sample-account-4",
+      "name": "Casey Brooks",
+      "phone": "555-0103",
+      "title": "General Manager",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-contact-5",
+      "accountId": "sample-account-5",
+      "name": "Riley Chen",
+      "phone": "555-0104",
+      "title": "Founder",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-contact-6",
+      "accountId": "sample-account-6",
+      "name": "Taylor Grant",
+      "phone": "555-0105",
+      "title": "Operations Director",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-contact-7",
+      "accountId": "sample-account-7",
+      "name": "Cameron Diaz",
+      "phone": "555-0106",
+      "title": "Marketing Lead",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-contact-8",
+      "accountId": "sample-account-8",
+      "name": "Parker Wells",
+      "phone": "555-0107",
+      "title": "General Manager",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-contact-9",
+      "accountId": "sample-account-9",
+      "name": "Jamie Quinn",
+      "phone": "555-0108",
+      "title": "Founder",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
+    },
+    {
+      "id": "sample-contact-10",
+      "accountId": "sample-account-10",
+      "name": "Drew Harper",
+      "phone": "555-0109",
+      "title": "Operations Director",
+      "primary": true,
+      "notes": "Sample contact",
+      "tags": [
+        "sample"
+      ],
+      "sample": true,
+      "createdAt": "2026-09-02T12:00:00.000Z",
+      "updatedAt": "2026-09-02T12:00:00.000Z"
     }
   ]
 }

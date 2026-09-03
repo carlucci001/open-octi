@@ -8,6 +8,8 @@ import ViewModeToggle from '../components/ViewModeToggle'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
 import { CheckCircle2, Circle, Pencil, RotateCcw, Trash2 } from 'lucide-react'
+import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
+import { isOpenOcti } from '@/lib/edition'
 
 const STATUS = [
   { id: 'todo', label: 'To Do', color: 'var(--text-muted)', bg: 'var(--surface2)' },
@@ -524,7 +526,7 @@ export default function TasksManager() {
       {/* Body */}
       {loading ? <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>Loading...</div>
         : filtered.length === 0 ? (
-          <div className="text-center py-16">
+          tasks.length === 0 && isOpenOcti() ? <OpenOctiEmptyState objectType="tasks" title="Turn plans into next actions" description="Import tasks or create them here to track ownership, priority, and due dates." /> : <div className="text-center py-16">
             <div className="text-4xl mb-3">âœ…</div>
             <p style={{ color: 'var(--text-muted)' }}>{tasks.length === 0 ? 'No tasks yet. Add your first task to get started.' : 'No tasks match these filters.'}</p>
           </div>
