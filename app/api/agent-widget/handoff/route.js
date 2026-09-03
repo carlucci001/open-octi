@@ -69,8 +69,8 @@ async function notify({ profile, action, name, email, phone, when, message, tran
   const resend = new Resend(resendKey)
   const result = await resend.emails.send({
     from: 'WNC Times Receptionist <redacted@example.invalid>',
-    to: [profile.handoffEmail || 'redacted@example.invalid'],
-    replyTo: email || 'redacted@example.invalid',
+    to: [profile.handoffEmail || 'personal@example.invalid'],
+    replyTo: email || 'personal@example.invalid',
     subject,
     text,
   })

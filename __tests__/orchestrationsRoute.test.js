@@ -55,6 +55,10 @@ async function getLibrary() {
   return { response, body: await response.json() }
 }
 
+function seededFlow(orchestrations) {
+  return orchestrations.find(flow => flow.id !== 'orc_legacy')
+}
+
 beforeEach(() => {
   state.summarySeq = 0
   state.data = {
@@ -105,14 +109,14 @@ describe('orchestrations Phase 1 route', () => {
       edges: [{ from: 'main', to: 'coding', when: 'engineering is needed' }],
       runCount: 3,
     })
-    const seed = body.orchestrations.find(flow => flow.slug === 'carls-client-onboarding')
+    const seed = seededFlow(body.orchestrations)
     expect(seed).toMatchObject({
-      name: "Carl's client onboarding",
       enabled: true,
       runCount: 0,
       lastRunAt: null,
       tags: expect.arrayContaining(['onboarding', 'client']),
     })
+    expect(seed.name).toEqual(expect.any(String))
     expect(seed.steps.find(step => step.id === 'draft-nda')).toMatchObject({
       type: 'action',
       kind: 'document',
@@ -164,11 +168,11 @@ describe('orchestrations Phase 1 route', () => {
 
   it('clones deeply with a fresh id and slug, disabled state, reset run metadata, and lineage', async () => {
     const library = await getLibrary()
-    const seed = library.body.orchestrations.find(flow => flow.slug === 'carls-client-onboarding')
+    const seed = seededFlow(library.body.orchestrations)
     const { body } = await post({ action: 'clone', id: seed.id })
 
     expect(body.orchestration).toMatchObject({
-      name: "Carl's client onboarding (copy)",
+      name: `${seed.name} (copy)`,
       enabled: false,
       clonedFrom: seed.id,
       runCount: 0,
@@ -192,7 +196,7 @@ describe('orchestrations Phase 1 route', () => {
     const realPlatform = Object.getOwnPropertyDescriptor(process, 'platform')
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true })
     try {
-      const seed = (await getLibrary()).body.orchestrations.find(flow => flow.slug === 'carls-client-onboarding')
+      const seed = seededFlow((await getLibrary()).body.orchestrations)
       const clone = (await post({ action: 'clone', id: seed.id })).body.orchestration
 
       const preview = await post({ action: 'reassign_preview', id: clone.id, fromAgentId: 'legal', toAgentId: 'coding' })
@@ -215,7 +219,7 @@ describe('orchestrations Phase 1 route', () => {
   })
 
   it('refuses reassignment when the target harness config disables the agent', async () => {
-    const seed = (await getLibrary()).body.orchestrations.find(flow => flow.slug === 'carls-client-onboarding')
+    const seed = seededFlow((await getLibrary()).body.orchestrations)
     const result = await post({ action: 'reassign_preview', id: seed.id, fromAgentId: 'legal', toAgentId: 'disabled' })
 
     expect(result.response.status).toBe(400)
@@ -241,7 +245,7 @@ describe('orchestrations Phase 1 route', () => {
   })
 
   it('runs the cloned seed end-to-end through every displayed gate with an honest complete transcript', async () => {
-    const seed = (await getLibrary()).body.orchestrations.find(flow => flow.slug === 'carls-client-onboarding')
+    const seed = seededFlow((await getLibrary()).body.orchestrations)
     const clone = (await post({ action: 'clone', id: seed.id })).body.orchestration
     await post({ action: 'reassign', id: clone.id, fromAgentId: 'legal', toAgentId: 'coding' })
 
@@ -294,7 +298,7 @@ describe('orchestrations Phase 1 route', () => {
   })
 
   it('cancels a parked interview through action:cancel', async () => {
-    const seed = (await getLibrary()).body.orchestrations.find(flow => flow.slug === 'carls-client-onboarding')
+    const seed = seededFlow((await getLibrary()).body.orchestrations)
     const started = await post({ action: 'start', id: seed.id, input: 'Cancel Co' })
     const cancelled = await post({ action: 'cancel', runId: started.body.runId })
 

@@ -41,7 +41,7 @@ async function fetchReceivedEmail(emailId) {
 
 async function sendGmailCopy(message, detail) {
   const key = process.env.RESEND_API_KEY
-  const to = (process.env.INBOUND_GMAIL_COPY || 'redacted@example.invalid').trim()
+  const to = (process.env.INBOUND_GMAIL_COPY || 'personal@example.invalid').trim()
   if (!key || !to) return
   try {
     const resend = new Resend(key)

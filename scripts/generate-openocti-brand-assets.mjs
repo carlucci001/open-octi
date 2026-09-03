@@ -6,6 +6,7 @@ import sharp from 'sharp'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const sourcePath = path.join(root, 'openocti', 'docs', 'brand', 'octopus-mark.png')
 const outputDir = path.join(root, 'public', 'openocti')
+const brandDir = path.join(root, 'openocti', 'docs', 'brand')
 
 const BRAND_DARK = '#001040'
 const BRAND_BLUE = '#0070d0'
@@ -13,6 +14,7 @@ const BRAND_CYAN = '#30c0f0'
 const FONT_STACK = "'Space Grotesk', 'Bahnschrift', 'Arial Narrow', Arial, sans-serif"
 
 await mkdir(outputDir, { recursive: true })
+await mkdir(brandDir, { recursive: true })
 const octopus = await readFile(sourcePath)
 const embeddedOctopus = `data:image/png;base64,${octopus.toString('base64')}`
 
@@ -51,6 +53,30 @@ const horizontalSvg = `<?xml version="1.0" encoding="UTF-8"?>
   ${defs()}
   <image x="24" y="41" width="430" height="278" preserveAspectRatio="xMidYMid meet" href="${embeddedOctopus}" xlink:href="${embeddedOctopus}" />
   ${wordmark({ centerX: 820, commandY: 164, commandSize: 104, commandSpacing: 7, centerY: 270, centerSize: 64, centerSpacing: 25 })}
+</svg>
+`
+
+const bannerSvg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="openocti-banner-title openocti-banner-description">
+  <title id="openocti-banner-title">OpenOcti — the open-source Command Center</title>
+  <desc id="openocti-banner-description">A dark navy OpenOcti banner with the official blue octopus mark.</desc>
+  <defs>
+    <linearGradient id="banner-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#001040" />
+      <stop offset="1" stop-color="#000010" />
+    </linearGradient>
+    <radialGradient id="banner-glow">
+      <stop stop-color="#30c0f0" stop-opacity=".28" />
+      <stop offset="1" stop-color="#30c0f0" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="360" rx="28" fill="url(#banner-bg)" />
+  <path d="M0 334h1280" stroke="#0070d0" stroke-width="6" />
+  <circle cx="1050" cy="170" r="260" fill="url(#banner-glow)" />
+  <image x="62" y="50" width="386" height="250" preserveAspectRatio="xMidYMid meet" href="${embeddedOctopus}" xlink:href="${embeddedOctopus}" />
+  <text x="470" y="154" fill="#fff" font-family="Space Grotesk,Segoe UI,sans-serif" font-size="76" font-weight="700" letter-spacing="2">OPENOCTI</text>
+  <text x="474" y="215" fill="#30c0f0" font-family="Space Grotesk,Segoe UI,sans-serif" font-size="31" font-weight="600">the open-source Command Center</text>
+  <text x="475" y="265" fill="#8ba0c4" font-family="Segoe UI,sans-serif" font-size="20">CRM · AI staff · voice · documents · e-sign · your server</text>
 </svg>
 `
 
@@ -95,6 +121,8 @@ function makeIco(images) {
 await writeFile(path.join(outputDir, 'logo.svg'), verticalSvg)
 await sharp(Buffer.from(verticalSvg)).png().toFile(path.join(outputDir, 'logo.png'))
 await sharp(Buffer.from(horizontalSvg)).png().toFile(path.join(outputDir, 'logo-horizontal.png'))
+await writeFile(path.join(brandDir, 'banner.svg'), bannerSvg)
+await sharp(Buffer.from(bannerSvg)).png().toFile(path.join(brandDir, 'banner.png'))
 
 const faviconImages = []
 for (const size of faviconSizes) faviconImages.push({ size, data: await faviconPng(size) })
@@ -102,4 +130,4 @@ const favicon512 = await faviconPng(512)
 await writeFile(path.join(outputDir, 'favicon.png'), favicon512)
 await writeFile(path.join(outputDir, 'favicon.ico'), makeIco(faviconImages))
 
-console.log('Generated OpenOcti brand assets in public/openocti')
+console.log('Generated OpenOcti brand assets in public/openocti and openocti/docs/brand')

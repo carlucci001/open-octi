@@ -50,7 +50,7 @@ describe('lead sweep run store', () => {
     const run = createSweepRun({
       kind: 'vertical',
       params,
-      startedBy: 'redacted@example.invalid',
+      startedBy: 'operator@example.test',
       stepsTotal: 5,
     })
 
@@ -60,7 +60,7 @@ describe('lead sweep run store', () => {
     expect(run.phase).toBe('starting')
     expect(run.step).toBe(0)
     expect(run.stepsTotal).toBe(5)
-    expect(run.startedBy).toBe('redacted@example.invalid')
+    expect(run.startedBy).toBe('operator@example.test')
     expect(run.params).toEqual(params)
     expect(run.result).toBeNull()
     expect(run.error).toBeNull()
@@ -135,12 +135,12 @@ describe('lead sweep run store', () => {
     const { createSweepRunOnce, getSweepRunByClientRequestId } = await import('@/lib/lead-sweep-runs')
     const first = createSweepRunOnce({
       kind: 'vertical',
-      startedBy: 'redacted@example.invalid',
+      startedBy: 'operator@example.test',
       params: { clientRequestId: 'lead-click-123', category: 'computer-stores' },
     })
     const replay = createSweepRunOnce({
       kind: 'vertical',
-      startedBy: 'redacted@example.invalid',
+      startedBy: 'operator@example.test',
       params: { clientRequestId: 'lead-click-123', category: 'computer-stores' },
     })
 
@@ -148,8 +148,8 @@ describe('lead sweep run store', () => {
     expect(replay.created).toBe(false)
     expect(replay.run.id).toBe(first.run.id)
     expect(storedRuns()).toHaveLength(1)
-    expect(getSweepRunByClientRequestId('lead-click-123', { kind: 'vertical', startedBy: 'redacted@example.invalid' })?.id).toBe(first.run.id)
-    expect(getSweepRunByClientRequestId('lead-click-123', { startedBy: 'redacted@example.invalid' })).toBeNull()
+    expect(getSweepRunByClientRequestId('lead-click-123', { kind: 'vertical', startedBy: 'operator@example.test' })?.id).toBe(first.run.id)
+    expect(getSweepRunByClientRequestId('lead-click-123', { startedBy: 'someone-else@example.test' })).toBeNull()
     expect(getSweepRunByClientRequestId('missing')).toBeNull()
     expect(getSweepRunByClientRequestId('')).toBeNull()
   })

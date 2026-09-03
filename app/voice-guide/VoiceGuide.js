@@ -309,7 +309,7 @@ const GENERAL_GUIDES = {
     intro: 'How phone, SMS, email, video, and chat platforms wire together.',
     sections: [
       { heading: 'Phone (Twilio)', body: 'Inbound calls go to Lucci (the voice-call plugin) who books demos and creates leads. Outbound calls dial through Twilio voice SDK in your browser.' },
-      { heading: 'Email (Resend)', body: 'All outbound email goes through Resend from redacted@example.invalid. Replies come back to redacted@example.invalid.' },
+      { heading: 'Email (Resend)', body: 'All outbound email goes through Resend from redacted@example.invalid. Replies come back to personal@example.invalid.' },
       { heading: 'Video (Jitsi)', body: 'Self-hosted Jitsi on your Ubuntu box, exposed via Tailscale Funnel. Voice command starts a meet room and emails the link.' },
       { heading: 'Discord & Telegram', body: 'Discord plugin enabled in OpenClaw. Telegram approved but needs a bot token to fully wire up.' },
     ],

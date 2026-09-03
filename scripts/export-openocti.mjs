@@ -10,6 +10,59 @@ import { isOpenOctiExcluded, OPENOCTI_EXCLUDES } from './openocti-excludes.mjs'
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 export const SOURCE_ROOT = path.resolve(SCRIPT_DIR, '..')
 export const DEFAULT_OUTPUT = path.resolve(SOURCE_ROOT, '..', 'openocti-export')
+const DEV_VERSION = '0.0.0-dev'
+const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/
+
+const OPENOCTI_REQUIRED_ENV_KEYS = [
+  'CRM_SESSION_SECRET',
+  'INITIAL_ADMIN_PASSWORD',
+  'PUBLIC_APP_URL',
+  'OPENOCTI_BUSINESS_NAME',
+  'OPENOCTI_OWNER_NAME',
+  'OWNER_EMAIL',
+]
+
+const OPENOCTI_DEFAULT_ENV_KEYS = [
+  'CRM_DATA_DIR',
+  'DATA_BACKEND',
+  'FCC_EDITION',
+  'NEXT_PUBLIC_FCC_EDITION',
+]
+
+export const OPENOCTI_HOST_ONLY_ENV_KEYS = new Set([
+  'BACKUP_DIR',
+  'CRM_DB_PATH',
+  'CRM_INTERNAL_ORIGIN',
+  'CRM_LIVE_PATH',
+  'DEMO_BASE_URL',
+  'DEV_ROOT',
+  'FARRINGTON_PUBLIC_URL',
+  'FCC_AUTH_GATE_ORIGIN',
+  'FCC_BUILD_COMMIT',
+  'FCC_BUILD_NUMBER',
+  'FCC_LIVE_PATH',
+  'FCC_OPS_RUNS_DIR',
+  'FCC_SOURCE_BRANCH',
+  'FCC_SOURCE_REMOTE',
+  'FCC_STUDIO_DIR',
+  'FCC_SW_VERSION',
+  'NEXT_DIST_DIR',
+  'NEXT_PHASE',
+  'NEXT_PUBLIC_APP_VERSION',
+  'NEXT_PUBLIC_CRM_URL',
+  'NEXT_PUBLIC_FCC_BUILD_COMMIT',
+  'NEXT_PUBLIC_FCC_BUILD_NUMBER',
+  'NEXT_PUBLIC_FCC_BUILT_AT',
+  'NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA',
+  'NEXT_RUNTIME',
+  'NODE_ENV',
+  'OPENMONTAGE_ROOT',
+  'OPEN_MONTAGE_ROOT',
+  'PORT',
+  'USERPROFILE',
+  'VITEST',
+  'YT_TOKEN_FILE',
+])
 
 const OVERLAYS = new Map([
   ['README.md', 'README.md'],
@@ -20,10 +73,11 @@ const OVERLAYS = new Map([
   ['SECURITY.md', 'SECURITY.md'],
   ['CODE_OF_CONDUCT.md', 'CODE_OF_CONDUCT.md'],
   ['docs/INSTALL.md', 'docs/INSTALL.md'],
+  ['docs/RELEASING.md', 'docs/RELEASING.md'],
   ['.github/workflows/ci.yml', '.github/workflows/ci.yml'],
 ])
 
-const DIRECTORY_OVERLAYS = ['docs/brand', 'docs/guides', 'docs/screenshots']
+const DIRECTORY_OVERLAYS = ['docs/brand', 'docs/guides', 'docs/releases', 'docs/screenshots']
 
 const TEXT_EXTENSIONS = new Set([
   '', '.bat', '.cjs', '.conf', '.css', '.csv', '.dockerignore', '.env', '.example',
@@ -65,6 +119,28 @@ const DATA_DEMO_PATTERNS = [
 function parseOutputArgument(argv) {
   const index = argv.indexOf('--output')
   return index >= 0 && argv[index + 1] ? path.resolve(argv[index + 1]) : DEFAULT_OUTPUT
+}
+
+export function resolveOpenOctiVersion(argv, env = process.env) {
+  const dev = argv.includes('--dev')
+  const versionIndex = argv.indexOf('--version')
+  const cliVersion = versionIndex >= 0 ? argv[versionIndex + 1] : undefined
+
+  if (versionIndex >= 0 && (!cliVersion || cliVersion.startsWith('--'))) {
+    throw new Error('Missing value for --version. Expected --version X.Y.Z.')
+  }
+  if (dev && versionIndex >= 0) {
+    throw new Error('Choose either --version X.Y.Z or --dev, not both.')
+  }
+
+  const version = dev ? DEV_VERSION : (cliVersion || env.OPENOCTI_VERSION || '').trim()
+  if (!version) {
+    throw new Error('OpenOcti version is required. Pass --version X.Y.Z, set OPENOCTI_VERSION, or use --dev.')
+  }
+  if (!SEMVER_PATTERN.test(version)) {
+    throw new Error(`Invalid OpenOcti version "${version}". Expected semantic version X.Y.Z.`)
+  }
+  return version
 }
 
 function assertSafeOutput(output) {
@@ -134,6 +210,44 @@ function installDemoData(output) {
   }
 }
 
+export function writeOpenOctiEnvExample(output, sourceFile = path.join(SOURCE_ROOT, '.env.example')) {
+  const source = fs.readFileSync(sourceFile, 'utf8')
+  const entries = new Map()
+  for (const line of source.split(/\r?\n/)) {
+    const match = line.match(/^([A-Z][A-Z0-9_]*)=(.*)$/)
+    if (match) entries.set(match[1], match[2])
+  }
+
+  const requiredKeys = [...OPENOCTI_REQUIRED_ENV_KEYS, ...OPENOCTI_DEFAULT_ENV_KEYS]
+  const missingKeys = requiredKeys.filter(key => !entries.has(key))
+  if (missingKeys.length) {
+    throw new Error(`Missing required OpenOcti environment keys: ${missingKeys.join(', ')}`)
+  }
+
+  const optionalKeys = [...entries.keys()]
+    .filter(key => !requiredKeys.includes(key) && !OPENOCTI_HOST_ONLY_ENV_KEYS.has(key))
+  for (const key of ['OPENOCTI_PORT', 'DEERFLOW_PORT']) {
+    if (!optionalKeys.includes(key)) optionalKeys.push(key)
+  }
+
+  const lines = [
+    '# OpenOcti environment',
+    '# Copy this file to .env, then replace the six required values below.',
+    '# Never commit .env or real credentials.',
+    '',
+    '# Required - replace all six values',
+    ...OPENOCTI_REQUIRED_ENV_KEYS.map(key => `${key}=${entries.get(key)}`),
+    '',
+    '# OpenOcti defaults - leave unchanged',
+    ...OPENOCTI_DEFAULT_ENV_KEYS.map(key => `${key}=${entries.get(key)}`),
+    '',
+    '# Optional integrations - uncomment only the keys you use',
+    ...optionalKeys.map(key => `# ${key}=`),
+    '',
+  ]
+  fs.writeFileSync(path.join(output, '.env.example'), lines.join('\n'))
+}
+
 function installOverlays(output) {
   for (const [source, target] of OVERLAYS) {
     const sourceFile = path.join(SOURCE_ROOT, 'openocti', source)
@@ -147,27 +261,41 @@ function installOverlays(output) {
     if (!fs.existsSync(sourceDir)) throw new Error(`Missing OpenOcti overlay directory: ${relative}`)
     fs.cpSync(sourceDir, path.join(output, relative), { recursive: true })
   }
-  fs.copyFileSync(path.join(SOURCE_ROOT, '.env.example'), path.join(output, '.env.example'))
+  writeOpenOctiEnvExample(output)
 }
 
-function rewritePackage(output) {
+export function stampExportVersion(output, version, exportedAt = new Date().toISOString()) {
+  if (!SEMVER_PATTERN.test(version || '')) {
+    throw new Error(`Invalid OpenOcti version "${version || ''}". Expected semantic version X.Y.Z.`)
+  }
   const packageFile = path.join(output, 'package.json')
   const pkg = JSON.parse(fs.readFileSync(packageFile, 'utf8'))
   pkg.name = 'openocti'
+  pkg.version = version
   pkg.private = false
   pkg.license = 'AGPL-3.0-only'
   const allowedScripts = new Set(['dev', 'build', 'start', 'test', 'test:watch', 'test:ui', 'inventory', 'verify:data-backend', 'export:openocti'])
   pkg.scripts = Object.fromEntries(Object.entries(pkg.scripts || {}).filter(([name]) => allowedScripts.has(name)))
+  pkg.scripts.build = 'node scripts/openocti-build.mjs'
   fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`)
 
   const lockFile = path.join(output, 'package-lock.json')
   const lock = JSON.parse(fs.readFileSync(lockFile, 'utf8'))
   lock.name = 'openocti'
+  lock.version = version
   if (lock.packages?.['']) {
     lock.packages[''].name = 'openocti'
+    lock.packages[''].version = version
     lock.packages[''].license = 'AGPL-3.0-only'
   }
   fs.writeFileSync(lockFile, `${JSON.stringify(lock, null, 2)}\n`)
+
+  const versionFile = path.join(output, 'VERSION.json')
+  fs.writeFileSync(versionFile, `${JSON.stringify({
+    version,
+    exportedAt,
+    source: 'farrington-command-center',
+  }, null, 2)}\n`)
 }
 
 function installOpenClawPlugin(output) {
@@ -207,9 +335,13 @@ function scrubKnownInfrastructure(output) {
       content = content.replace(pattern, replacement)
     }
     content = content.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, (email) => {
-      if (/@(example\.(?:com|org|net|invalid)|openocti\.com)$/i.test(email)) return email
+      if (/@(example\.(?:com|org|net|invalid|test)|openocti\.com)$/i.test(email)) return email
       replacements += 1
-      return 'redacted@example.invalid'
+      // Preserve the behavior under test without retaining the address: a
+      // personal mailbox must remain distinguishable from a company mailbox.
+      return /@(gmail|hotmail|yahoo|aol|outlook|icloud|live|msn)\./i.test(email)
+        ? 'personal@example.invalid'
+        : 'redacted@example.invalid'
     })
     content = content.replace(/(?:\+?1[ .-]?)?\(?[2-9]\d{2}\)?[ .-]\d{3}[ .-]\d{4}\b/g, () => {
       replacements += 1
@@ -232,7 +364,7 @@ function scanExport(output) {
       if (pattern.test(content)) failures.push(`${path.relative(output, file)}: ${label}`)
     }
     const emails = content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []
-    if (emails.some((email) => !/@(example\.(?:com|org|net|invalid)|openocti\.com)$/i.test(email))) {
+    if (emails.some((email) => !/@(example\.(?:com|org|net|invalid|test)|openocti\.com)$/i.test(email))) {
       failures.push(`${path.relative(output, file)}: personal email address`)
     }
   }
@@ -301,9 +433,12 @@ function writeManifest(output, metadata) {
   return manifest
 }
 
-export function exportOpenOcti(output = DEFAULT_OUTPUT) {
+export function exportOpenOcti(output = DEFAULT_OUTPUT, { version, exportedAt = new Date().toISOString() } = {}) {
   output = path.resolve(output)
   assertSafeOutput(output)
+  if (!version) {
+    throw new Error('OpenOcti version is required. Pass --version X.Y.Z, set OPENOCTI_VERSION, or use --dev.')
+  }
   const starterAgentPack = refreshStarterAgentPack()
   const demoFileCount = validateDataDemo()
   const thirdParty = generateThirdPartyNotices(SOURCE_ROOT)
@@ -312,7 +447,7 @@ export function exportOpenOcti(output = DEFAULT_OUTPUT) {
   copyPublicTree(output)
   installDemoData(output)
   installOverlays(output)
-  rewritePackage(output)
+  stampExportVersion(output, version, exportedAt)
   installOpenClawPlugin(output)
   fs.writeFileSync(path.join(output, 'THIRD_PARTY_NOTICES.md'), thirdParty.content)
   const scrubbedOccurrenceCount = scrubKnownInfrastructure(output)
@@ -332,7 +467,8 @@ export function exportOpenOcti(output = DEFAULT_OUTPUT) {
 
 export function main(argv = process.argv.slice(2)) {
   try {
-    const result = exportOpenOcti(parseOutputArgument(argv))
+    const version = resolveOpenOctiVersion(argv)
+    const result = exportOpenOcti(parseOutputArgument(argv), { version })
     console.log(`OpenOcti export complete: ${result.output}`)
     console.log(`Files: ${result.manifest.fileCount}`)
     console.log(`Tree SHA-256: ${result.manifest.treeSha256}`)

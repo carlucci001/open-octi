@@ -473,7 +473,7 @@ async function sendAgentSignatureEmail({ to, signerName, title, signUrl }) {
   const openEdition = isOpenOcti()
   const from = process.env.RESEND_FROM || (openEdition ? 'OpenOcti <noreply@openocti.com>' : 'Farrington Development <redacted@example.invalid>')
   const fallbackFrom = process.env.RESEND_FALLBACK_FROM || from
-  const replyTo = openEdition ? (process.env.OWNER_EMAIL || '') : (process.env.CARL_EMAIL || 'redacted@example.invalid')
+  const replyTo = openEdition ? (process.env.OWNER_EMAIL || '') : (process.env.CARL_EMAIL || 'personal@example.invalid')
   const senderName = openEdition ? (process.env.OPENOCTI_BUSINESS_NAME || 'Your business') : 'Carl Farrington'
   const bodyHtml = `
     <p>Hi ${signerName || 'there'},</p>
@@ -2340,7 +2340,7 @@ const TOOLS = {
       const r = await resend.emails.send({
         from: 'Carl Farrington <redacted@example.invalid>',
         to: [email],
-        replyTo: 'redacted@example.invalid',
+        replyTo: 'personal@example.invalid',
         subject: doc.title,
         html,
       })
@@ -2415,7 +2415,7 @@ const TOOLS = {
         requestedAt: now,
         requestedBy: isOpenOcti()
           ? { agentName: args.agentName || args.agent || 'Maggie', name: args.ownerName || 'Workspace owner', email: process.env.OWNER_EMAIL || '' }
-          : { agentName: args.agentName || args.agent || 'Maggie', name: 'Carl Farrington', email: process.env.CARL_EMAIL || 'redacted@example.invalid' },
+          : { agentName: args.agentName || args.agent || 'Maggie', name: 'Carl Farrington', email: process.env.CARL_EMAIL || 'personal@example.invalid' },
         expiresAt,
         documentHash,
         consentVersion: 'fcc-esign-v1',
@@ -2427,7 +2427,7 @@ const TOOLS = {
               required: true,
               status: 'pending_client_signature',
               signerName: isOpenOcti() ? (args.ownerName || 'Workspace owner') : 'Carl Farrington',
-              signerEmail: isOpenOcti() ? (process.env.OWNER_EMAIL || '') : (process.env.CARL_EMAIL || 'redacted@example.invalid'),
+              signerEmail: isOpenOcti() ? (process.env.OWNER_EMAIL || '') : (process.env.CARL_EMAIL || 'personal@example.invalid'),
             }
           : { required: false },
         events: [{ id: 'evt_' + Date.now().toString(36), type: 'requested', at: now, by: args.agentName || args.agent || 'Maggie' }],
@@ -2628,7 +2628,7 @@ const TOOLS = {
       const r = await resend.emails.send({
         from: 'NewsroomAIOS <redacted@example.invalid>',
         to: [to],
-        replyTo: 'redacted@example.invalid',
+        replyTo: 'personal@example.invalid',
         subject: args.subject,
         html,
         ...(allAttachments.length ? { attachments: allAttachments } : {}),

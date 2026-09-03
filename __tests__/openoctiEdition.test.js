@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-import { editionFor, isClosedSurface, isOpenOcti } from '../lib/edition'
+import { editionFor, isClosedSurface, isOpenOcti, openclawRuntimeLogLabel } from '../lib/edition'
 import { loginRedirectUrl, middleware } from '../middleware'
 
 afterEach(() => vi.unstubAllEnvs())
@@ -21,6 +21,12 @@ describe('OpenOcti edition boundary', () => {
     vi.stubEnv('FCC_EDITION', '')
     vi.stubEnv('NEXT_PUBLIC_FCC_EDITION', 'openocti')
     expect(isOpenOcti()).toBe(true)
+  })
+
+  it('uses the public gateway label only for OpenOcti logs', () => {
+    expect(openclawRuntimeLogLabel(undefined, { FCC_EDITION: 'openocti' })).toBe('openclaw-gateway')
+    expect(openclawRuntimeLogLabel(undefined, { FCC_EDITION: 'commandcenter' })).toBe('openclaw-hetzner')
+    expect(openclawRuntimeLogLabel('hermes-hetzner', { FCC_EDITION: 'openocti' })).toBe('hermes-hetzner')
   })
 
   it.each([

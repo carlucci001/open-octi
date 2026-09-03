@@ -419,7 +419,7 @@ export async function POST(request) {
       let result = await resend.emails.send({
         from: fromAddr,
         to: [email],
-        replyTo: 'redacted@example.invalid',
+        replyTo: 'personal@example.invalid',
         subject: `Invoice ${invoice.number} from Farrington Development · ${timeTag}`,
         html: wrapEmailBody(bodyHtml),
         attachments: [{ filename: `invoice-${invoice.number}.pdf`, content: pdfBuf.toString('base64') }],
@@ -428,7 +428,7 @@ export async function POST(request) {
         result = await resend.emails.send({
           from: fallbackFromAddr,
           to: [email],
-          replyTo: 'redacted@example.invalid',
+          replyTo: 'personal@example.invalid',
           subject: `Invoice ${invoice.number} from Farrington Development - ${timeTag}`,
           html: wrapEmailBody(bodyHtml),
           attachments: [{ filename: `invoice-${invoice.number}.pdf`, content: pdfBuf.toString('base64') }],

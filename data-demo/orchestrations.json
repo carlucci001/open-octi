@@ -1,21 +1,145 @@
 {
   "orchestrations": [
     {
-      "id": "orc_demo_followup",
-      "slug": "demo-follow-up",
-      "name": "Demo follow-up",
-      "description": "A synthetic starter flow.",
-      "status": "draft",
-      "startStepId": "review",
-      "steps": [
+      "id": "orc_demo_client_onboarding",
+      "slug": "sample-client-onboarding",
+      "name": "Sample client onboarding",
+      "description": "A synthetic starter flow that demonstrates interview gates and deferred CRM actions.",
+      "enabled": true,
+      "runCount": 0,
+      "lastRunAt": null,
+      "tags": [
+        "onboarding",
+        "client",
+        "demo"
+      ],
+      "inputs": [
         {
-          "id": "review",
-          "type": "action",
-          "kind": "tasks",
-          "name": "Create review task",
-          "instruction": "Create a task to review the demo lead."
+          "id": "client",
+          "label": "Client name",
+          "required": true
         }
       ],
+      "steps": [
+        {
+          "id": "nda-gate",
+          "type": "gate",
+          "question": "Does this client need an NDA?",
+          "options": [
+            {
+              "label": "Yes",
+              "next": "draft-nda"
+            },
+            {
+              "label": "No",
+              "next": "domain-gate"
+            }
+          ]
+        },
+        {
+          "id": "draft-nda",
+          "type": "action",
+          "kind": "document",
+          "agentId": "legal",
+          "name": "Draft NDA",
+          "instruction": "Prepare a clearly labeled draft NDA for professional review.",
+          "next": "domain-gate",
+          "footerNote": "Draft only — have a qualified attorney review before use.",
+          "requiredTools": [
+            "fcc_create_document"
+          ]
+        },
+        {
+          "id": "domain-gate",
+          "type": "gate",
+          "question": "Does the client already have a domain?",
+          "options": [
+            {
+              "label": "Has one",
+              "next": "dns-task",
+              "capture": {
+                "field": "domain",
+                "prompt": "Enter the client's domain."
+              }
+            },
+            {
+              "label": "Needs one",
+              "next": "domain-search-task"
+            }
+          ]
+        },
+        {
+          "id": "dns-task",
+          "type": "action",
+          "kind": "tasks",
+          "name": "Prepare DNS task",
+          "instruction": "Create a task to verify the domain and record the DNS work that would be required.",
+          "next": "hosting-gate"
+        },
+        {
+          "id": "domain-search-task",
+          "type": "action",
+          "kind": "tasks",
+          "name": "Prepare domain search task",
+          "instruction": "Create a task to research available domains without purchasing anything.",
+          "next": "hosting-gate"
+        },
+        {
+          "id": "hosting-gate",
+          "type": "gate",
+          "question": "Where will the client host the project?",
+          "options": [
+            {
+              "label": "Vercel",
+              "next": "hosting-task"
+            },
+            {
+              "label": "Other",
+              "next": "database-gate",
+              "capture": {
+                "field": "hosting",
+                "prompt": "Enter the hosting provider."
+              }
+            }
+          ]
+        },
+        {
+          "id": "hosting-task",
+          "type": "action",
+          "kind": "tasks",
+          "name": "Prepare hosting task",
+          "instruction": "Create a task describing the hosting setup that would be required.",
+          "next": "database-gate"
+        },
+        {
+          "id": "database-gate",
+          "type": "gate",
+          "question": "Does the client need a database?",
+          "options": [
+            {
+              "label": "Firebase",
+              "next": "database-task"
+            },
+            {
+              "label": "Skip",
+              "next": "end"
+            }
+          ]
+        },
+        {
+          "id": "database-task",
+          "type": "action",
+          "kind": "tasks",
+          "name": "Prepare database task",
+          "instruction": "Create a task describing the database setup that would be required.",
+          "next": "end"
+        }
+      ],
+      "whatThisFlowDoes": {
+        "text": "Asks four onboarding questions and records the CRM work that a later execution phase would perform.",
+        "flowVersion": 1,
+        "source": "openocti-demo"
+      },
       "createdAt": "2026-01-01T12:00:00.000Z",
       "updatedAt": "2026-01-01T12:00:00.000Z"
     }

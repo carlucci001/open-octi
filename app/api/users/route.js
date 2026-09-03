@@ -21,7 +21,7 @@ async function sendInviteEmail({ to, displayName, username, password, loginUrl, 
   if (!to) return { ok: false, error: 'no email address on file' }
   const from = process.env.RESEND_FROM || 'Farrington Development <redacted@example.invalid>'
   const fallbackFrom = process.env.RESEND_FALLBACK_FROM || 'Farrington Development <redacted@example.invalid>'
-  const cc = process.env.INVITE_CC_EMAIL || process.env.CARL_EMAIL || 'redacted@example.invalid'
+  const cc = process.env.INVITE_CC_EMAIL || process.env.CARL_EMAIL || 'personal@example.invalid'
   const subject = 'You have access to Farrington Command Center'
   const senderName = sender?.displayName || sender?.username || 'Carl Farrington'
   const bodyHtml = `

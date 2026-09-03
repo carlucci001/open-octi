@@ -1,10 +1,13 @@
 {
   "name": "openocti",
-  "version": "2.0.0",
+  "version": "1.0.1",
   "private": false,
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/openocti-build.mjs",
     "start": "next start",
     "verify:data-backend": "node scripts/verify-data-backend.js",
     "inventory": "node scripts/feature-inventory.mjs",

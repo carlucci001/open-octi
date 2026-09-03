@@ -62,8 +62,8 @@ async function sendProductInquiryEmails({ buyer, company, productName, offerName
   const resend = new Resend(resendKey)
   const from = process.env.RESEND_FROM || 'Farrington Development <redacted@example.invalid>'
   const fallbackFrom = process.env.RESEND_FALLBACK_FROM || 'Farrington Development <redacted@example.invalid>'
-  const replyTo = process.env.RESEND_REPLY_TO || 'redacted@example.invalid'
-  const carlEmail = process.env.LEAD_NOTIFY_EMAIL || 'redacted@example.invalid'
+  const replyTo = process.env.RESEND_REPLY_TO || 'personal@example.invalid'
+  const carlEmail = process.env.LEAD_NOTIFY_EMAIL || 'personal@example.invalid'
   const range = estimatedLow || estimatedHigh ? `${money(estimatedLow)}-${money(estimatedHigh)}` : 'Review required'
 
   const internalBody = `

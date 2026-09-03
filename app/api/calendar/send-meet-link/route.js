@@ -75,7 +75,7 @@ export async function POST(request) {
     const result = await resend.emails.send({
       from: from || 'NewsroomAIOS <redacted@example.invalid>',
       to: [to],
-      replyTo: 'redacted@example.invalid',
+      replyTo: 'personal@example.invalid',
       subject: `Video link for our ${appointmentLabel} — ${eventTitle || 'Farrington Development'}`,
       html,
     })

@@ -13,6 +13,7 @@ import { readData, writeData } from '@/lib/dataStore'
 import { getSectionAgent, resolveWizardAgentSection, sectionPersonaLine } from '@/lib/section-agents'
 import { runDeepResearchDossier } from '@/lib/deep-research'
 import { DEERFLOW_READONLY_TOOL_DEFS } from '@/lib/deerflow-tools'
+import { openclawRuntimeLogLabel } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -470,7 +471,7 @@ export async function POST(request) {
 
   let prompt = last.content
   const invoiceContext = hasRecentInvoiceDraftContext(messages || [])
-  console.log(`[ai-wizard] request requestId=${requestId} section=${String(section || 'unknown').replace(/[^a-z0-9_-]/gi, '') || 'unknown'} runtime=${String(activeOperatorTool?.runtimeProvider || 'openclaw-hetzner').replace(/[^a-z0-9_-]/gi, '') || 'unknown'} agent=${String(activeOperatorTool?.agentId || 'none').replace(/[^a-z0-9_-]/gi, '') || 'none'} invoiceContext=${invoiceContext} chars=${String(last.content || '').length}`)
+  console.log(`[ai-wizard] request requestId=${requestId} section=${String(section || 'unknown').replace(/[^a-z0-9_-]/gi, '') || 'unknown'} runtime=${openclawRuntimeLogLabel(activeOperatorTool?.runtimeProvider).replace(/[^a-z0-9_-]/gi, '') || 'unknown'} agent=${String(activeOperatorTool?.agentId || 'none').replace(/[^a-z0-9_-]/gi, '') || 'none'} invoiceContext=${invoiceContext} chars=${String(last.content || '').length}`)
   if (isHermesOperator(activeOperatorTool)) {
     const profile = String(activeOperatorTool?.agentId || '').trim().toLowerCase()
     try {

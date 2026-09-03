@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { getCred } from '@/lib/agent-creds'
 
-const TO = process.env.VOICEMAIL_NOTIFY_TO || 'redacted@example.invalid'
+const TO = process.env.VOICEMAIL_NOTIFY_TO || 'personal@example.invalid'
 const FROM = process.env.VOICEMAIL_NOTIFY_FROM || 'Farrington Command Center <redacted@example.invalid>'
 
 export async function POST(request) {

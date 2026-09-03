@@ -10,7 +10,7 @@ import { getMode } from '@/lib/mode'
 // In demo mode, redirect every video invite to Carl's real inbox so the demo
 // flow is end-to-end (clicked → email arrives → join from phone) without
 // blasting fake addresses.
-const DEMO_RECIPIENT = 'redacted@example.invalid'
+const DEMO_RECIPIENT = 'personal@example.invalid'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -144,7 +144,7 @@ ${when ? `<p>When: ${whenText}</p>` : ''}
     const sendPayload = {
       from: primaryFromAddr,
       to: recipients,
-      replyTo: 'redacted@example.invalid',
+      replyTo: 'personal@example.invalid',
       subject: finalSubject,
       text: bodyText,
       html: bodyHtml,

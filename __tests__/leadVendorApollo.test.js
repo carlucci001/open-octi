@@ -18,8 +18,8 @@ const SF_LEAD = {
   employee_id: '42617447',
   fullName: 'Russell Sherman',
   title: 'Co-founder & CTO',
-  email: 'redacted@example.invalid',
-  all_emails: 'redacted@example.invalid, redacted@example.invalid',
+  email: 'personal@example.invalid',
+  all_emails: 'personal@example.invalid, personal@example.invalid',
   phone_numbers: 'PHONE_REDACTED, 9892255375',
   organizationName: 'VISO Trust',
   organizationAddress: 'PO Box 193152',
@@ -117,7 +117,7 @@ describe('apollo lead vendor', () => {
     expect(place.website).toBe('https://visotrust.com')
     expect(place.address).toBe('PO Box 193152, San Francisco, CA, 94119')
     expect(place.phone).toBe('PHONE_REDACTED')
-    expect(place.email).toBe('redacted@example.invalid')
+    expect(place.email).toBe('personal@example.invalid')
   })
 
   it('flags freemail so a personal address is never mistaken for a work one', () => {

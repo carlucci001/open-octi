@@ -230,7 +230,7 @@ export async function POST(request) {
         headers: { Authorization: `Bearer ${RESEND}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           from: 'FCC Leads <redacted@example.invalid>',
-          to: ['redacted@example.invalid'],
+          to: ['personal@example.invalid'],
           reply_to: email,
           subject: `New lead: ${name} — ${company} [${source}]`,
           text: `New website lead captured in Command Center.\n\nName: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone || '(none)'}\n\n${notes}\n\nOpportunity: ${opportunity.name}\nOpen FCC: https://openocti.local`,

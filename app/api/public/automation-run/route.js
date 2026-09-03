@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const PROOF_AUTOMATION_ID = 'auto_marge_wnc_plumber_lead_sweep'
-const DEFAULT_RECIPIENT = 'redacted@example.invalid'
+const DEFAULT_RECIPIENT = 'personal@example.invalid'
 
 function recipientFrom(body = {}, automation = {}) {
   const requested = String(body.recipientEmail || '').trim()

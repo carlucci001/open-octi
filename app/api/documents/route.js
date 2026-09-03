@@ -472,7 +472,7 @@ async function sendSignatureEmail({ to, signerName, title, signUrl }) {
   const openEdition = isOpenOcti()
   const from = process.env.RESEND_FROM || (openEdition ? 'OpenOcti <noreply@openocti.com>' : 'Farrington Development <redacted@example.invalid>')
   const fallbackFrom = process.env.RESEND_FALLBACK_FROM || from
-  const replyTo = openEdition ? (process.env.OWNER_EMAIL || '') : (process.env.CARL_EMAIL || 'redacted@example.invalid')
+  const replyTo = openEdition ? (process.env.OWNER_EMAIL || '') : (process.env.CARL_EMAIL || 'personal@example.invalid')
   const senderName = openEdition ? (process.env.OPENOCTI_BUSINESS_NAME || 'Your business') : 'Carl Farrington'
   const bodyHtml = `
     <p>Hi ${signerName || 'there'},</p>
