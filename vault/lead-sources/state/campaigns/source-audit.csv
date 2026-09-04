@@ -1,0 +1,52 @@
+state,candidate_status,candidate_format,candidate_source,contact_fields,terms_verdict,state_cash_source,build_decision
+AL,gap,no-api,AL-candidates-2026.md,none,pending exact structured source,not verified,excluded
+AK,gap,no-api,AK-candidates-2026.md,none,pending exact structured source,not verified,excluded
+AZ,gap,no-api,AZ-candidates-2026.md,none,pending exact structured source,not verified,excluded
+AR,gap,no-api,AR-candidates-2026.md,none,pending exact structured source,not verified,excluded
+CA,gap,no-api,CA-candidates-2026.md,none,pending exact structured source,not verified,excluded
+CO,gap,no-api,CO-candidates-2026.md,none,pending exact structured source,not verified,excluded
+CT,gap,no-api,CT-candidates-2026.md,none,pending exact structured source,not verified,excluded
+DE,enabled,xlsx,DE-candidates-2026.md,email phone website address,official public candidate workbook,not verified,candidate
+FL,gap,no-api,FL-candidates-2026.md,none,pending exact structured source,not verified,excluded
+GA,gap,no-api,GA-candidates-2026.md,none,pending exact structured source,not verified,excluded
+HI,gap,no-api,HI-candidates-2026.md,none,pending exact structured source,not verified,excluded
+ID,gap,no-api,ID-candidates-2026.md,none,pending exact structured source,not verified,excluded
+IL,gap,no-api,IL-candidates-2026.md,none,pending exact structured source,not verified,excluded
+IN,enabled,xlsx,IN-candidates-2026.md,address,official public candidate workbook,not verified,candidate
+IA,gap,no-api,IA-candidates-2026.md,none,pending exact structured source,not verified,excluded
+KS,gap,no-api,KS-candidates-2026.md,none,pending exact structured source,not verified,excluded
+KY,gap,no-api,KY-candidates-2026.md,none,pending exact structured source,not verified,excluded
+LA,gap,no-api,LA-candidates-2026.md,none,pending exact structured source,not verified,excluded
+ME,enabled,xlsx,ME-candidates-2026.md,address,official public candidate workbook,not verified,candidate
+MD,enabled,csv,MD-candidates-2026.md,email phone address,official public candidate CSV,not verified,candidate
+MA,gap,no-api,MA-candidates-2026.md,none,pending exact structured source,not verified,excluded
+MI,gap,no-api,MI-candidates-2026.md,none,pending exact structured source,not verified,excluded
+MN,gap,no-api,MN-candidates-2026.md,none,pending exact structured source,not verified,excluded
+MS,gap,no-api,MS-candidates-2026.md,none,pending exact structured source,not verified,excluded
+MO,gap,no-api,MO-candidates-2026.md,none,pending exact structured source,not verified,excluded
+MT,gap,no-api,MT-candidates-2026.md,none,pending exact structured source,not verified,excluded
+NE,gap,no-api,NE-candidates-2026.md,none,pending exact structured source,not verified,excluded
+NV,gap,no-api,NV-candidates-2026.md,none,pending exact structured source,not verified,excluded
+NH,gap,no-api,NH-candidates-2026.md,none,pending exact structured source,not verified,excluded
+NJ,gap,no-api,NJ-candidates-2026.md,none,pending exact structured source,not verified,excluded
+NM,gap,no-api,NM-candidates-2026.md,none,pending exact structured source,not verified,excluded
+NY,enabled,json,NY-candidates-2026.md,address,official open-data API mail only,not verified,unproven
+NC,enabled,csv,NC-candidates-2026.md,email phone address,official public candidate CSV,not verified,candidate
+ND,gap,no-api,ND-candidates-2026.md,none,pending exact structured source,not verified,excluded
+OH,gap,no-api,OH-candidates-2026.md,none,pending exact structured source,not verified,excluded
+OK,gap,no-api,OK-candidates-2026.md,none,pending exact structured source,not verified,excluded
+OR,gap,no-api,OR-candidates-2026.md,none,pending exact structured source,not verified,excluded
+PA,gap,no-api,PA-candidates-2026.md,none,pending exact structured source,not verified,excluded
+RI,gap,no-api,RI-candidates-2026.md,none,pending exact structured source,not verified,excluded
+SC,gap,no-api,SC-candidates-2026.md,none,pending exact structured source,not verified,excluded
+SD,gap,no-api,SD-candidates-2026.md,none,pending exact structured source,not verified,excluded
+TN,gap,no-api,TN-candidates-2026.md,none,pending exact structured source,not verified,excluded
+TX,gap,no-api,TX-candidates-2026.md,none,pending exact structured source,not verified,excluded
+UT,gap,no-api,UT-candidates-2026.md,none,pending exact structured source,not verified,excluded
+VT,gap,no-api,VT-candidates-2026.md,none,pending exact structured source,not verified,excluded
+VA,enabled,xlsx,VA-candidates-2026.md,email phone website address,official public candidate workbook,not verified,candidate
+WA,gap,terms-restricted,WA-candidates-2026.md,none,commercial-use restriction,not enabled,excluded
+WV,gap,no-api,WV-candidates-2026.md,none,pending exact structured source,not verified,excluded
+WI,gap,no-api,WI-candidates-2026.md,none,pending exact structured source,not verified,excluded
+WY,gap,no-api,WY-candidates-2026.md,none,pending exact structured source,not verified,excluded
+DC,gap,no-api,DC-candidates-2026.md,none,pending exact structured source,not verified,excluded

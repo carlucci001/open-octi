@@ -161,7 +161,7 @@ function safeProjectRoot(localPath = '') {
   if (!raw) return ''
   const resolved = path.resolve(raw)
   const allowedRoots = [
-    path.resolve('/home/carl/dev'),
+    path.resolve('/srv/openocti/dev'),
     path.resolve('/root/fcc-candidates'),
     path.resolve(process.cwd()),
   ]

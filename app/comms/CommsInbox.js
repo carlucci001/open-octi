@@ -219,7 +219,7 @@ export default function CommsInbox() {
     const arr = (Array.isArray(ids) ? ids : [ids]).filter(Boolean)
     if (arr.length === 0) return
     const label = arr.length === 1 ? 'this email' : `${arr.length} emails`
-    if (!confirm(`Delete ${label} from Command Center Mail? It will no longer appear here after refresh or provider resync.`)) return
+    if (!confirm(`Delete ${label} from Mail? It will no longer appear here after refresh or provider resync.`)) return
     const res = await api('/api/comms-local', { action: 'delete', ids: arr })
     if (res.ok === false) return flash('❌ ' + (res.error || 'Delete failed'))
     setDeleted(res.deleted || [...new Set([...deleted, ...arr])])
@@ -300,7 +300,7 @@ export default function CommsInbox() {
       {/* Header */}
       <div className="flex justify-between items-center px-6 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
         <div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Command Center Mail</h1>
+          <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Mail</h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
             {domains.map(d => d.name).join(', ') || 'No domains'}
           </p>
@@ -424,7 +424,7 @@ export default function CommsInbox() {
                         </span>
                       </div>
                     </div>
-                    <button type="button" aria-label={`Delete ${em.subject || 'email'}`} title="Delete from Command Center Mail" className="w-7 h-7 shrink-0 rounded flex items-center justify-center" onClick={event => { event.stopPropagation(); deleteEmails([em.id]) }} style={{ background: 'transparent', color: 'var(--red)', border: '1px solid transparent' }}>
+                    <button type="button" aria-label={`Delete ${em.subject || 'email'}`} title="Delete from Mail" className="w-7 h-7 shrink-0 rounded flex items-center justify-center" onClick={event => { event.stopPropagation(); deleteEmails([em.id]) }} style={{ background: 'transparent', color: 'var(--red)', border: '1px solid transparent' }}>
                       <Trash2 size={14} aria-hidden="true" />
                     </button>
                   </div>

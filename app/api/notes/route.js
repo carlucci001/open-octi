@@ -12,11 +12,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const SKILL_ROOT_CANDIDATES = [
-  { id: 'fcc', name: 'Command Center', path: '/home/carl/dev/farrington-command-center/.claude/skills' },
-  { id: 'ContentHub', name: 'ContentHub', path: '/home/carl/dev/ContentHub/.claude/skills' },
-  { id: 'openclaw-workspace', name: 'OpenClaw Workspace', path: '/home/carl/.openclaw/workspace/skills' },
-  { id: 'openclaw-system', name: 'OpenClaw System', path: '/home/carl/.local/lib/node_modules/openclaw/skills' },
-  { id: 'win-ContentHub', name: 'ContentHub', path: 'C:/dev/ContentHub/.claude/skills' },
+  { id: 'fcc', name: 'Command Center', path: '/srv/openocti/dev/farrington-command-center/.claude/skills' },
+  { id: 'ContentStudio', name: 'ContentStudio', path: '/srv/openocti/dev/ContentStudio/.claude/skills' },
+  { id: 'openclaw-workspace', name: 'OpenClaw Workspace', path: '/srv/openocti/.openclaw/workspace/skills' },
+  { id: 'openclaw-system', name: 'OpenClaw System', path: '/srv/openocti/.local/lib/node_modules/openclaw/skills' },
+  { id: 'win-ContentStudio', name: 'ContentStudio', path: 'C:/dev/ContentStudio/.claude/skills' },
   { id: 'codex-user', name: 'Codex User Skills', path: 'C:/Users/carlf/.codex/skills' },
   { id: 'codex-system', name: 'Codex System Skills', path: 'C:/Users/carlf/.codex/skills/.system' },
 ]

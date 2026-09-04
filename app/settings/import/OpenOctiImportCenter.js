@@ -5,19 +5,36 @@ import { Download, FileSpreadsheet, RotateCcw, Upload } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import readXlsxFile from 'read-excel-file/browser'
 import { mapTableRows, parseCsv, parseVCard } from '@/lib/import-table'
+import { defaultLeadListForDestination, leadListsForDestination } from '@/lib/lead-list-routing'
+import MigrationCenterWizard from './MigrationCenterWizard'
 
 const buttonStyle = { minHeight: 44, borderRadius: 9, padding: '0 14px', fontWeight: 700 }
+const LEAD_DESTINATIONS = [
+  { id: 'farrington_dev', label: 'Farrington Development' },
+  { id: 'ContentStudio', label: 'ContentStudio' },
+  { id: 'sample_business', label: 'WNC Times' },
+  { id: 'client_automation', label: 'Client automation product' },
+  { id: 'client_command_center', label: 'Client Command Center' },
+]
 
-export default function OpenOctiImportCenter() {
-  const [meta, setMeta] = useState(null); const [objectType, setObjectType] = useState('contacts')
+export default function OpenOctiImportCenter({ initialMode = 'migration', initialObject = '' }) {
+  const [centerMode, setCenterMode] = useState(initialObject ? 'quick' : initialMode)
+  const [meta, setMeta] = useState(null); const [objectType, setObjectType] = useState(initialObject || 'contacts')
   const [headers, setHeaders] = useState([]); const [rows, setRows] = useState([]); const [mapping, setMapping] = useState([])
   const [preview, setPreview] = useState(null); const [result, setResult] = useState(null); const [busy, setBusy] = useState(false); const [error, setError] = useState('')
   const [presetName, setPresetName] = useState(''); const fileRef = useRef(null)
+  const [leadLists, setLeadLists] = useState([]); const [destination, setDestination] = useState('farrington_dev'); const [leadListId, setLeadListId] = useState('')
 
   useEffect(() => {
     fetch('/api/openocti/import', { cache: 'no-store' }).then(response => response.json()).then(setMeta).catch(reason => setError(reason.message))
-    fetch('/api/openocti/setup', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'open-import' }) }).catch(() => {})
+    fetch('/api/lead-lists', { cache: 'no-store' }).then(response => response.json()).then(data => setLeadLists(data.leadLists || [])).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (objectType !== 'leads') return
+    const allowed = leadListsForDestination(leadLists, destination)
+    if (!allowed.some(list => list.id === leadListId)) setLeadListId(defaultLeadListForDestination(leadLists, destination)?.id || '')
+  }, [objectType, destination, leadLists, leadListId])
 
   const mappedRows = useMemo(() => mapTableRows(headers, rows, mapping), [headers, rows, mapping])
   const config = meta?.objects?.[objectType]
@@ -41,7 +58,7 @@ export default function OpenOctiImportCenter() {
   const request = async action => {
     setBusy(true); setError('')
     try {
-      const response = await fetch('/api/openocti/import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action, objectType, rows: mappedRows, batchId: result?.batchId }) })
+      const response = await fetch('/api/openocti/import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action, objectType, rows: mappedRows, batchId: result?.batchId, destination, leadListId }) })
       const data = await response.json(); if (!response.ok || !data.ok) throw new Error(data.error || `${action} failed`)
       if (action === 'preview') setPreview(data)
       if (action === 'commit') setResult(data)
@@ -64,11 +81,12 @@ export default function OpenOctiImportCenter() {
     anchor.href = url; anchor.download = `openocti-${objectType}-template.csv`; anchor.click(); URL.revokeObjectURL(url)
   }
 
-  return (
+  const quickImport = (
     <div className="grid gap-5">
       <section className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex flex-wrap gap-3 items-end">
           <label className="grid gap-1 text-sm font-semibold">Import type<select value={objectType} onChange={event => { setObjectType(event.target.value); setPreview(null); setResult(null); if (headers.length) detect(headers, event.target.value).catch(reason => setError(reason.message)) }} className="rounded-lg px-3" style={{ minHeight: 44, background: 'var(--surface2)', border: '1px solid var(--border)' }}>{Object.entries(meta?.objects || {}).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}</select></label>
+          {objectType === 'leads' && <><label className="grid gap-1 text-sm font-semibold">Destination<select aria-label="Destination" value={destination} onChange={event => setDestination(event.target.value)} className="rounded-lg px-3" style={{ minHeight: 44, background: 'var(--surface2)', border: '1px solid var(--border)' }}>{LEAD_DESTINATIONS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><label className="grid gap-1 text-sm font-semibold">Lead list<select aria-label="Lead list" value={leadListId} onChange={event => setLeadListId(event.target.value)} className="rounded-lg px-3" style={{ minHeight: 44, background: 'var(--surface2)', border: '1px solid var(--border)' }}>{leadListsForDestination(leadLists, destination).map(list => <option key={list.id} value={list.id}>{list.name}</option>)}</select></label></>}
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.vcf,text/csv,text/vcard" className="hidden" onChange={event => loadFile(event.target.files?.[0])} />
           <button type="button" onClick={() => fileRef.current?.click()} style={{ ...buttonStyle, background: 'var(--accent)', color: 'var(--accent-text)' }} className="inline-flex items-center gap-2"><Upload size={17} /> Upload CSV, XLSX, or vCard</button>
           <button type="button" onClick={downloadTemplate} style={{ ...buttonStyle, border: '1px solid var(--border)' }} className="inline-flex items-center gap-2"><Download size={17} /> CSV template</button>
@@ -91,4 +109,12 @@ export default function OpenOctiImportCenter() {
       <Link href="/" className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>Back to dashboard</Link>
     </div>
   )
+
+  return <div className="grid gap-5">
+    <div className="inline-flex w-fit rounded-lg p-1" role="tablist" aria-label="Import Center mode" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+      <button type="button" role="tab" aria-selected={centerMode === 'migration'} onClick={() => setCenterMode('migration')} className="rounded-md px-4 py-2 text-sm font-semibold" style={{ background: centerMode === 'migration' ? 'var(--surface)' : 'transparent', color: centerMode === 'migration' ? 'var(--accent)' : 'var(--text-muted)' }}>Migration Center</button>
+      <button type="button" role="tab" aria-selected={centerMode === 'quick'} onClick={() => setCenterMode('quick')} className="rounded-md px-4 py-2 text-sm font-semibold" style={{ background: centerMode === 'quick' ? 'var(--surface)' : 'transparent', color: centerMode === 'quick' ? 'var(--accent)' : 'var(--text-muted)' }}>Quick import</button>
+    </div>
+    {centerMode === 'migration' ? <MigrationCenterWizard /> : quickImport}
+  </div>
 }

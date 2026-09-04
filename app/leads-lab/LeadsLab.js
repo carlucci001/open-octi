@@ -9,6 +9,12 @@ import ThemedSelect from '../components/ThemedSelect'
 import { FlaskConical } from 'lucide-react'
 import { buildFarringtonLeadQuery, FARRINGTON_LEAD_VERTICALS } from '@/lib/farrington-lead-verticals'
 import { useCachedData } from '@/lib/useCachedData'
+import { defaultLeadListForDestination, leadListBelongsToDestination } from '@/lib/lead-list-routing'
+import LeadSourcesPanel from './LeadSourcesPanel'
+import CampaignSignalsPanel from './CampaignSignalsPanel'
+import { isOpenOcti } from '@/lib/edition'
+
+const OPENOCTI = isOpenOcti()
 
 function describeRun(run) {
   const params = run?.params || {}
@@ -31,8 +37,8 @@ const VERTICAL_SOURCE_TOOLS = [
   { id: 'apify-google-search', label: 'Apify Web Search', status: 'active' },
   { id: 'apify-google-maps', label: 'Apify Maps / Places', status: 'queued' },
   { id: 'industry-directories', label: 'Industry directories', status: 'queued' },
-  { id: 'license-databases', label: 'License databases', status: 'queued' },
-  { id: 'manual-import', label: 'Manual / CSV import', status: 'queued' },
+  { id: 'public-records', label: 'Public records', status: 'queued' },
+  { id: 'manual-import', label: 'Manual / CSV import', status: 'active' },
   { id: 'crm-suppression', label: 'CRM suppression list', status: 'active' },
 ]
 
@@ -42,16 +48,23 @@ const ORGANIZATION_SOURCE_TOOLS = [
   { id: 'crm-suppression', label: 'CRM suppression list', status: 'active' },
 ]
 
-const DESTINATIONS = [
+const COMMAND_CENTER_DESTINATIONS = [
   { id: 'farrington_dev', label: 'Farrington Development' },
-  { id: 'ContentHub', label: 'ContentHub' },
-  { id: 'wnc_times', label: 'WNC Times' },
+  { id: 'ContentStudio', label: 'ContentStudio' },
+  { id: 'sample_business', label: 'WNC Times' },
   { id: 'client_automation', label: 'Client automation product' },
   { id: 'client_command_center', label: 'Client Command Center' },
   { id: 'review_only', label: 'Review only / do not promote' },
 ]
 
-const CRM_DESTINATION_BRANDS = new Set(['farrington_dev', 'ContentHub', 'wnc_times'])
+const OPENOCTI_DESTINATIONS = [
+  { id: 'your_business', label: 'Your business' },
+  { id: 'client_a', label: 'Client A' },
+  { id: 'review_only', label: 'Review only / do not promote' },
+]
+
+const DESTINATIONS = OPENOCTI ? OPENOCTI_DESTINATIONS : COMMAND_CENTER_DESTINATIONS
+const CRM_DESTINATION_BRANDS = new Set(OPENOCTI ? ['your_business', 'client_a'] : ['farrington_dev', 'ContentStudio', 'sample_business'])
 const FARRINGTON_SERVICE_LINES = new Set(['web-development', 'ai-automation', 'crm-command-center', 'custom-software', 'app-build', 'workflow-integration', 'api-data-integration', 'ecommerce', 'seo-marketing-automation', 'hosting-maintenance', 'consulting-scope'])
 
 const CAMPAIGN_MODES = [
@@ -67,18 +80,18 @@ const ORGANIZATION_SCOPES = [
   { id: 'county', label: 'County' },
 ]
 
-const ORGANIZATION_CAMPAIGNS = [
+const COMMAND_CENTER_ORGANIZATION_CAMPAIGNS = [
   {
-    id: 'ContentHub-tda',
-    label: 'ContentHub - Tourist Development Authorities',
-    destination: 'ContentHub',
-    brandContext: 'ContentHub',
+    id: 'ContentStudio-tda',
+    label: 'ContentStudio - Tourist Development Authorities',
+    destination: 'ContentStudio',
+    brandContext: 'ContentStudio',
     serviceLine: 'tourism-authority',
-    campaign: 'ContentHub-tda',
-    campaignType: 'ContentHub_demo',
+    campaign: 'ContentStudio-tda',
+    campaignType: 'ContentStudio_demo',
     organizationType: 'Tourist Development Authority / CVB / DMO',
     tag: 'tda',
-    offer: 'ContentHub local publisher and destination storytelling platform',
+    offer: 'ContentStudio local publisher and destination storytelling platform',
     fit: 'Prioritize tourism offices, convention and visitor bureaus, destination marketing organizations, and chambers with active tourism programs.',
     query: '"tourist development authority" OR "convention and visitors bureau" OR "destination marketing organization" OR "tourism board"',
     mustHave: 'tourism, visitor, destination, contact, staff',
@@ -86,16 +99,16 @@ const ORGANIZATION_CAMPAIGNS = [
     notes: 'Prioritize organizations that publish visitor news, events, grants, destination guides, or partner/sponsor content.',
   },
   {
-    id: 'ContentHub-chambers',
-    label: 'ContentHub - Chambers and regional business groups',
-    destination: 'ContentHub',
-    brandContext: 'ContentHub',
+    id: 'ContentStudio-chambers',
+    label: 'ContentStudio - Chambers and regional business groups',
+    destination: 'ContentStudio',
+    brandContext: 'ContentStudio',
     serviceLine: 'publisher-onboarding',
-    campaign: 'ContentHub-chambers',
-    campaignType: 'ContentHub_demo',
+    campaign: 'ContentStudio-chambers',
+    campaignType: 'ContentStudio_demo',
     organizationType: 'Chamber / regional business association',
     tag: 'chamber',
-    offer: 'ContentHub community publishing and sponsor workflow',
+    offer: 'ContentStudio community publishing and sponsor workflow',
     fit: 'Prioritize chambers and business associations with member news, events, sponsors, newsletters, and public directories.',
     query: '"chamber of commerce" OR "business association" OR "economic development partnership"',
     mustHave: 'members, events, sponsors, newsletter, contact',
@@ -120,6 +133,62 @@ const ORGANIZATION_CAMPAIGNS = [
     notes: 'Good fit when national and local chapter contacts are both visible.',
   },
 ]
+
+const OPENOCTI_ORGANIZATION_CAMPAIGNS = [
+  {
+    id: 'client-a-tda',
+    label: 'Client A - Tourist Development Authorities',
+    destination: 'client_a',
+    brandContext: 'client_a',
+    serviceLine: 'tourism-authority',
+    campaign: 'client-a-tda',
+    campaignType: 'client_demo',
+    organizationType: 'Tourist Development Authority / CVB / DMO',
+    tag: 'tda',
+    offer: 'Local publishing and destination storytelling platform',
+    fit: 'Prioritize tourism offices, convention and visitor bureaus, destination marketing organizations, and chambers with active tourism programs.',
+    query: '"tourist development authority" OR "convention and visitors bureau" OR "destination marketing organization" OR "tourism board"',
+    mustHave: 'tourism, visitor, destination, contact, staff',
+    exclude: 'jobs, careers, agenda, minutes, grant application',
+    notes: 'Prioritize organizations that publish visitor news, events, grants, destination guides, or partner content.',
+  },
+  {
+    id: 'client-a-chambers',
+    label: 'Client A - Chambers and regional business groups',
+    destination: 'client_a',
+    brandContext: 'client_a',
+    serviceLine: 'publisher-onboarding',
+    campaign: 'client-a-chambers',
+    campaignType: 'client_demo',
+    organizationType: 'Chamber / regional business association',
+    tag: 'chamber',
+    offer: 'Community publishing and sponsor workflow',
+    fit: 'Prioritize chambers and business associations with member news, events, sponsors, newsletters, and public directories.',
+    query: '"chamber of commerce" OR "business association" OR "economic development partnership"',
+    mustHave: 'members, events, sponsors, newsletter, contact',
+    exclude: 'jobs, careers, login, board minutes',
+    notes: 'Look for groups that already publish member stories or event calendars and could use repeatable sponsor workflows.',
+  },
+  {
+    id: 'your-business-associations',
+    label: 'Your business - Associations with chapters',
+    destination: 'your_business',
+    brandContext: 'your_business',
+    serviceLine: 'crm-command-center',
+    campaign: 'your-business-association-chapters',
+    campaignType: 'your_business',
+    organizationType: 'National association / chapter network',
+    tag: 'chapter-network',
+    offer: 'CRM workspace for chapter follow-up, member intake, and operations',
+    fit: 'Prioritize organizations with many chapters, complex contact routing, member inquiries, and manual follow-up.',
+    query: '"chapters" "association" "contact" "directory"',
+    mustHave: 'chapters, directory, contact, members',
+    exclude: 'jobs, bylaws, login, pdf only',
+    notes: 'Good fit when national and local chapter contacts are both visible.',
+  },
+]
+
+const ORGANIZATION_CAMPAIGNS = OPENOCTI ? OPENOCTI_ORGANIZATION_CAMPAIGNS : COMMAND_CENTER_ORGANIZATION_CAMPAIGNS
 
 function splitTerms(value = '') {
   return String(value || '').split(',').map(v => v.trim()).filter(Boolean)
@@ -171,22 +240,24 @@ function buildOrganizationQuery({ campaign, scope, location, mustHave, exclude }
 }
 
 function campaignTypeForDestination(brandContext, fallback) {
-  if (brandContext === 'ContentHub') return 'ContentHub_demo'
-  if (brandContext === 'wnc_times') return 'wnc_times'
+  if (OPENOCTI) return fallback
+  if (brandContext === 'ContentStudio') return 'ContentStudio_demo'
+  if (brandContext === 'sample_business') return 'sample_business'
   if (brandContext === 'farrington_dev') return 'farrington_dev'
   return fallback
 }
 
 function serviceLineForDestination(campaign, brandContext) {
-  if (brandContext === 'wnc_times') return campaign.tag === 'tda' ? 'tda' : 'partnership'
+  if (OPENOCTI) return campaign.serviceLine
+  if (brandContext === 'sample_business') return campaign.tag === 'tda' ? 'tda' : 'partnership'
   if (brandContext === 'farrington_dev' && !FARRINGTON_SERVICE_LINES.has(campaign.serviceLine)) return 'crm-command-center'
   return campaign.serviceLine
 }
 
 function findMatchingLeadList(campaign, leadLists = []) {
   const termsByCampaign = {
-    'ContentHub-chambers': ['chamber'],
-    'ContentHub-tda': ['tourism', 'tourist', 'visitor', 'destination', 'tda', 'cvb'],
+    'ContentStudio-chambers': ['chamber'],
+    'ContentStudio-tda': ['tourism', 'tourist', 'visitor', 'destination', 'tda', 'cvb'],
     'command-center-associations': ['association', 'chapter'],
   }
   const terms = termsByCampaign[campaign?.id] || [campaign?.tag, campaign?.organizationType]
@@ -201,6 +272,7 @@ export default function LeadsLab({ onNavigate }) {
   const usersQ = useCachedData('/api/users', { extract: j => j?.users || [] })
   const leadCategoriesQ = useCachedData('/api/lead-categories', { extract: j => j?.leadCategories || [] })
   const presetsQ = useCachedData('/api/lead-run-presets', { extract: j => j || {} })
+  const sourcesQ = useCachedData('/api/lead-signals/sources', { extract: j => j?.sources || [] })
   const leadLists = leadListsQ.data || []
   const users = usersQ.data || []
   const customCategories = leadCategoriesQ.data || []
@@ -208,7 +280,7 @@ export default function LeadsLab({ onNavigate }) {
   const [category, setCategory] = useState(FARRINGTON_LEAD_VERTICALS[0]?.id || 'home-services')
   const [count, setCount] = useState(10)
   const [location, setLocation] = useState('United States')
-  const [destination, setDestination] = useState('farrington_dev')
+  const [destination, setDestination] = useState(DESTINATIONS[0].id)
   const [selectedLeadListId, setSelectedLeadListId] = useState('')
   const [sourceTool, setSourceTool] = useState('web-research')
   // Which kind of lead comes back. 'apify' walks Google Maps and returns
@@ -234,6 +306,7 @@ export default function LeadsLab({ onNavigate }) {
   const [presetName, setPresetName] = useState('')
   const [savingPreset, setSavingPreset] = useState(false)
   const [recentRuns, setRecentRuns] = useState([])
+  const [workspaceTab, setWorkspaceTab] = useState('build')
 
   // These guard the two effects below that overwrite form fields on change.
   // Value-based rather than time-based: each holds the exact value we are about
@@ -259,9 +332,11 @@ export default function LeadsLab({ onNavigate }) {
     }
     return builtInVertical || FARRINGTON_LEAD_VERTICALS[0]
   }, [isNewCategory, savedCategory, builtInVertical, trimmedDraftLabel, draftCategoryTerms])
+  const resolvedSourcesQ = useCachedData(`/api/lead-signals/resolve?type=${encodeURIComponent(vertical.id || vertical.label || '')}&location=${encodeURIComponent(location)}`, { extract: j => j || { sources: [] } })
   const organizationCampaign = ORGANIZATION_CAMPAIGNS.find(c => c.id === organizationPreset) || ORGANIZATION_CAMPAIGNS[0]
   const requestedLeadCount = Math.max(1, Number(count) || 10)
-  const activeSourceTools = mode === 'organization' ? ORGANIZATION_SOURCE_TOOLS : VERTICAL_SOURCE_TOOLS
+  const hasProvenPublicRecords = (sourcesQ.data || []).some(source => source.proving?.status === 'proven')
+  const activeSourceTools = mode === 'organization' ? ORGANIZATION_SOURCE_TOOLS : VERTICAL_SOURCE_TOOLS.map(tool => tool.id === 'public-records' ? { ...tool, status: hasProvenPublicRecords ? 'active' : 'queued' } : tool)
   const selectedDestination = DESTINATIONS.find(d => d.id === destination) || DESTINATIONS[0]
   const destinationBrandContext = CRM_DESTINATION_BRANDS.has(destination) ? destination : organizationCampaign.brandContext
   const destinationCampaignType = campaignTypeForDestination(destinationBrandContext, organizationCampaign.campaignType)
@@ -290,7 +365,7 @@ export default function LeadsLab({ onNavigate }) {
       setNotes(organizationCampaign.notes)
     } else {
       setSourceTool('apify-google-search')
-      setDestination('farrington_dev')
+      setDestination(DESTINATIONS[0].id)
       setMustHave('owner, phone, website')
       setExclude('jobs, hiring, directory')
       setNotes('')
@@ -317,11 +392,14 @@ export default function LeadsLab({ onNavigate }) {
   }, [category])
 
   useEffect(() => {
-    if (mode !== 'organization' || !leadLists.length) return
-    if (selectedLeadListId && leadLists.some(list => list.id === selectedLeadListId)) return
-    const matched = findMatchingLeadList(organizationCampaign, leadLists)
-    setSelectedLeadListId(matched?.id || leadLists[0]?.id || '')
-  }, [mode, organizationCampaign, leadLists, selectedLeadListId])
+    if (!leadLists.length) return
+    const selected = leadLists.find(list => list.id === selectedLeadListId) || null
+    const destinationDefault = defaultLeadListForDestination(leadLists, destination)
+    const campaignMatch = mode === 'organization' ? findMatchingLeadList(organizationCampaign, leadLists) : null
+    const selectedIsValid = selected && leadListBelongsToDestination(selected, destination)
+      && (mode !== 'organization' || !campaignMatch || selected.id === campaignMatch.id)
+    if (!selectedIsValid) setSelectedLeadListId((campaignMatch || destinationDefault)?.id || '')
+  }, [mode, destination, organizationCampaign, leadLists, selectedLeadListId])
 
   const currentConfig = useMemo(() => ({
     mode, category, count: Number(count) || 10, location, destination,
@@ -709,8 +787,8 @@ export default function LeadsLab({ onNavigate }) {
           limit: Number(count) || 10,
           location: location || 'United States',
           query,
-          campaign: destination === 'farrington_dev' ? `fd-cold-${vertical.id}` : `${destination}-${vertical.id}`,
-          leadListId: selectedLeadListId || undefined,
+          campaign: !OPENOCTI && destination === 'farrington_dev' ? `fd-cold-${vertical.id}` : `${destination}-${vertical.id}`,
+          leadListId: selectedLeadList?.id || undefined,
           vendor: buildLeadVendorRequest(leadSource, maxPaidBatches),
           spec: {
             destination,
@@ -745,7 +823,7 @@ export default function LeadsLab({ onNavigate }) {
   }
   const runSummary = mode === 'organization'
     ? `${requestedLeadCount} requested | ${selectedLeadList?.name || 'No lead list'} | ${organizationCampaign.label} | ${organizationScope}`
-    : `${count} leads | ${vertical.label} | ${location} | ${DESTINATIONS.find(d => d.id === destination)?.label}${leadSource === 'apollo' ? ` | up to ${maxPaidBatches} paid ${maxPaidBatches === 1 ? 'search' : 'searches'}` : ''}`
+    : `${count} leads | ${selectedLeadList?.name || 'No lead list'} | ${vertical.label} | ${location} | ${DESTINATIONS.find(d => d.id === destination)?.label}${leadSource === 'apollo' ? ` | up to ${maxPaidBatches} paid ${maxPaidBatches === 1 ? 'search' : 'searches'}` : ''}`
   const runDisabled = running
     || (mode === 'organization' && !selectedLeadList)
     || (mode === 'vertical' && vertical.custom && !trimmedDraftLabel)
@@ -755,9 +833,16 @@ export default function LeadsLab({ onNavigate }) {
       <PageHeader
         icon={<FlaskConical size={20} />}
         title="Leads Lab"
-        subtitle="Build lead specs, test categories, control quality rules, and promote winners into Farrington or client lead workflows."
+        subtitle="Build lead specs, test categories, control quality rules, and promote winners into the right lead workflows."
         actions={<button className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'var(--surface2)', color: 'var(--accent)', border: '1px solid var(--border)' }} onClick={() => onNavigate?.('leads')}>Open Leads</button>}
       />
+
+      <div className="flex gap-2 mb-4" role="tablist" aria-label="Leads Lab workspace">
+        {[['build', 'Build run'], ['sources', 'Sources']].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={workspaceTab === id} onClick={() => setWorkspaceTab(id)} className="rounded-lg px-3 py-2 text-xs font-semibold" style={{ background: workspaceTab === id ? 'var(--accent-soft)' : 'var(--surface2)', border: `1px solid ${workspaceTab === id ? 'var(--accent)' : 'var(--border)'}`, color: workspaceTab === id ? 'var(--accent)' : 'var(--text-muted)' }}>{label}</button>)}
+      </div>
+
+      {workspaceTab === 'sources' && <LeadSourcesPanel query={sourcesQ} onRefresh={sourcesQ.refresh} initialZip={presetsQ.data?.lastUsed?.sourceDiscoveryZip} />}
+      <div style={{ display: workspaceTab === 'build' ? 'block' : 'none' }}>
 
       <section className="rounded-lg p-4 mb-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Lead lab mode">
@@ -906,7 +991,7 @@ export default function LeadsLab({ onNavigate }) {
           {activeSourceTools.map(tool => {
             const selectable = tool.status !== 'queued'
             return (
-            <button key={tool.id} type="button" onClick={() => selectable && setSourceTool(tool.id)}
+            <button key={tool.id} type="button" onClick={() => { if (tool.id === 'manual-import') window.location.assign('/?tab=migrate&object=leads'); else if (selectable) setSourceTool(tool.id) }}
               className="rounded-lg px-3 py-2 text-left"
               style={{ background: sourceTool === tool.id ? 'var(--accent-soft)' : 'var(--surface2)', color: selectable ? 'var(--text)' : 'var(--text-muted)', border: `1px solid ${sourceTool === tool.id ? 'var(--accent)' : 'var(--border)'}`, cursor: selectable ? 'pointer' : 'default' }}>
               <div className="text-xs font-bold">{tool.label}</div>
@@ -915,10 +1000,23 @@ export default function LeadsLab({ onNavigate }) {
           )})}
         </div>
 
+        {mode === 'vertical' && (
+          <div className="mt-3 rounded-lg p-3" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+            <div className="text-xs font-bold" style={{ color: 'var(--text)' }}>Sources for this run</div>
+            <div className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
+              {(resolvedSourcesQ.data?.sources || []).length
+                ? resolvedSourcesQ.data.sources.map(source => `${source.name} — ${source.reason}`).join(' · ')
+                : 'No proven public-record source matches this lead type and location yet. Prove a source in the Sources tab; Places remains the shortfall finder.'}
+            </div>
+          </div>
+        )}
+
         <label className="block text-xs font-semibold mt-3" style={{ color: 'var(--text-muted)' }}>Quality Notes
           <textarea style={{ ...fieldStyle, marginTop: 6, minHeight: 72, resize: 'vertical' }} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Example: prioritize weak websites, emergency call volume, and owner-operated shops." />
         </label>
       </section>
+
+      {mode === 'vertical' && vertical.id === 'political-campaigns' && <CampaignSignalsPanel initialLocation={location} />}
 
       <section className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4">
         <div className="rounded-lg p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -1010,6 +1108,7 @@ export default function LeadsLab({ onNavigate }) {
           )}
         </div>
       </section>
+      </div>
     </div>
   )
 }

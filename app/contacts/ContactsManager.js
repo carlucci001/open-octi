@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader'
 import { Paginator, usePagination } from '../components/Paginator'
 import ViewModeToggle from '../components/ViewModeToggle'
 import ComponentSettings, { useComponentSettings } from '../components/ComponentSettings'
+import CustomFieldsPanel from '../components/CustomFieldsPanel'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
 import { gvCallUrl } from '@/lib/google-voice'
@@ -97,6 +98,7 @@ function ContactDrawer({ contact, account, onClose, onEdit, onChanged }) {
         <button type="button" disabled={saving} onClick={() => logIt('phone_call', `Call with ${contact.name}`)} style={chipBtn}>Log call</button>
         <button type="button" onClick={onEdit} style={chipBtn}>Edit</button>
       </div>
+      <CustomFieldsPanel fields={contact.customFields} compact />
       <div className="flex items-center gap-2 mb-4">
         <label className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Follow-up</label>
         <input type="date" value={followUp} onChange={e => saveFollowUp(e.target.value)} style={{ ...inp, width: 'auto', padding: '6px 10px' }} />

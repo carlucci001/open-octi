@@ -8,8 +8,8 @@ import ThemedSelect from './ThemedSelect'
 
 const BRANDS = [
   { id: 'farrington_dev', label: 'Farrington Development' },
-  { id: 'ContentHub', label: 'ContentHub' },
-  { id: 'wnc_times', label: 'WNC Times' },
+  { id: 'ContentStudio', label: 'ContentStudio' },
+  { id: 'sample_business', label: 'WNC Times' },
 ]
 const brandLabel = (id) => BRANDS.find(b => b.id === id)?.label || id
 

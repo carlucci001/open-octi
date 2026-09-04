@@ -19,7 +19,7 @@ export async function OPTIONS() {
 }
 
 const DOW = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 }
-const ALLOWED_CALENDAR_KEYS = new Set(['farrington-dev', 'ContentHub'])
+const ALLOWED_CALENDAR_KEYS = new Set(['farrington-dev', 'ContentStudio'])
 
 async function authorizeBooking(request) {
   const expected = (process.env.CONCIERGE_TOOL_SECRET || '').trim()
@@ -161,13 +161,13 @@ export async function POST(request) {
     const text = `${summary || ''} ${description || ''} ${kind || ''}`.toLowerCase()
     isDemo = Boolean(isDemo) || /\bdemo\b/.test(text)
     kind = isDemo ? 'demo' : (kind || 'client_call')
-    source = source || (isDemo ? 'ContentHub_demos' : 'manual')
-    calendarKey = calendarKey || (isDemo ? 'ContentHub' : 'farrington-dev')
+    source = source || (isDemo ? 'ContentStudio_demos' : 'manual')
+    calendarKey = calendarKey || (isDemo ? 'ContentStudio' : 'farrington-dev')
     summary = summary || `${isDemo ? 'Demo' : 'Client Call'} - ${name || 'Guest'}`
     if (!ALLOWED_CALENDAR_KEYS.has(calendarKey)) {
       return NextResponse.json({ ok: false, error: 'That calendar is not available for appointment booking.' }, { status: 400, headers: corsHeaders() })
     }
-    if ((calendarKey === 'ContentHub') !== Boolean(isDemo)) {
+    if ((calendarKey === 'ContentStudio') !== Boolean(isDemo)) {
       return NextResponse.json({ ok: false, error: 'The requested appointment type does not match the selected calendar.' }, { status: 400, headers: corsHeaders() })
     }
 

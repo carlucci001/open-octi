@@ -2,6 +2,7 @@ name: openocti
 
 services:
   app:
+    image: ghcr.io/carlucci001/open-octi:${OPENOCTI_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -28,6 +29,7 @@ services:
     restart: unless-stopped
 
   openclaw:
+    image: ghcr.io/carlucci001/open-octi-openclaw:${OPENOCTI_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: deploy/openclaw/Dockerfile

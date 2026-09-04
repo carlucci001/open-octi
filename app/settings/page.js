@@ -24,7 +24,7 @@ export default function OpenOctiSettingsIndexPage() {
         </Link>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <Link href="/settings/sample-data" className="rounded-xl p-4 font-semibold" style={{ color: 'var(--text)', border: '1px solid var(--border)' }}>Sample data <small className="block mt-1 font-normal" style={{ color: 'var(--text-muted)' }}>Install or remove synthetic starter records.</small></Link>
-          <Link href="/settings/import" className="rounded-xl p-4 font-semibold" style={{ color: 'var(--text)', border: '1px solid var(--border)' }}>Import Center <small className="block mt-1 font-normal" style={{ color: 'var(--text-muted)' }}>Import, deduplicate, undo, and export.</small></Link>
+          <Link href="/settings/migrate" className="rounded-xl p-4 font-semibold" style={{ color: 'var(--text)', border: '1px solid var(--border)' }}>Import &amp; migrate <small className="block mt-1 font-normal" style={{ color: 'var(--text-muted)' }}>Stage a complete CRM migration or run a quick import.</small></Link>
         </div>
         <section className="mt-7">
           <h2 className="text-lg font-semibold">Advanced environment settings</h2>

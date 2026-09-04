@@ -15,6 +15,7 @@ const CONFIG_FIELDS = [
   'mode', 'category', 'count', 'location', 'destination', 'selectedLeadListId',
   'sourceTool', 'organizationPreset', 'organizationScope', 'mustHave', 'exclude',
   'notes', 'draftCategoryLabel', 'draftCategoryTerms',
+  'sourceDiscoveryZip',
 ]
 
 // Saved setups are private to the operator. entityStore has no owner-filter
@@ -84,14 +85,30 @@ export async function POST(request) {
   const action = String(body.action || 'save')
   const config = cleanConfig(body.config)
 
+  if (action === 'remember-source-zip') {
+    const sourceDiscoveryZip = String(body.zip || '').trim()
+    if (!/^\d{5}$/.test(sourceDiscoveryZip)) {
+      return NextResponse.json({ ok: false, error: 'A valid five-digit ZIP is required' }, { status: 400 })
+    }
+    const existing = mineOnly(key).find(record => record.slot === 'last')
+    const nextConfig = { ...(existing?.config || {}), sourceDiscoveryZip }
+    const saved = existing
+      ? update('leadRunPresets', existing.id, { config: nextConfig })
+      : create('leadRunPresets', { ownerUserId: key, slot: 'last', name: '', config: nextConfig })
+    return NextResponse.json({ ok: true, sourceDiscoveryZip: saved?.config?.sourceDiscoveryZip || sourceDiscoveryZip })
+  }
+
   // Called after every run so the form comes back as the operator left it.
   // Fired without awaiting on the client, so it must never be noisy.
   if (action === 'remember') {
     if (!config) return NextResponse.json({ ok: true, skipped: true })
     const existing = mineOnly(key).find(record => record.slot === 'last')
+    const remembered = existing?.config?.sourceDiscoveryZip && !config.sourceDiscoveryZip
+      ? { ...config, sourceDiscoveryZip: existing.config.sourceDiscoveryZip }
+      : config
     const saved = existing
-      ? update('leadRunPresets', existing.id, { config })
-      : create('leadRunPresets', { ownerUserId: key, slot: 'last', name: '', config })
+      ? update('leadRunPresets', existing.id, { config: remembered })
+      : create('leadRunPresets', { ownerUserId: key, slot: 'last', name: '', config: remembered })
     return NextResponse.json({ ok: true, lastUsed: saved?.config || null })
   }
 

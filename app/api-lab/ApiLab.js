@@ -318,7 +318,7 @@ export default function ApiLab() {
                   className="rounded-lg px-3 py-2 text-sm font-semibold"
                   style={secondaryButton}
                 >
-                  Load ContentHub search
+                  Load ContentStudio search
                 </button>
                 <button
                   type="button"

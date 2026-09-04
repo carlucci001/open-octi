@@ -55,7 +55,14 @@
       "fcc_import_commit",
       "fcc_capability_status",
       "fcc_list_agents",
-      "fcc_open_page"
+      "fcc_open_page",
+      "fcc_press_query",
+      "fcc_press_list_save",
+      "fcc_press_contact_explain",
+      "fcc_press_campaign_create",
+      "fcc_press_campaign_send",
+      "fcc_press_campaign_report",
+      "fcc_press_suppress"
     ]
   }
 }

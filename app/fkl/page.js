@@ -536,7 +536,7 @@ export default function FKLDashboardPage() {
       <div className="fkl-top">
         <section className="fkl-hero">
           <div>
-            <p>Farrington Knowledge Layer</p>
+            <p>Knowledge Layer</p>
             <h1>Command Vault <strong>semantic map</strong></h1>
           </div>
           <div className="fkl-vault-row">

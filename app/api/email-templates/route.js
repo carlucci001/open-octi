@@ -29,6 +29,26 @@ const FILE = 'email-templates.json'
 // list is only consulted when the store is empty.
 const SEED_TEMPLATES = [
   {
+    id: 'fd-campaign-digital-audit',
+    name: 'Campaign digital audit',
+    brandContext: 'farrington_dev',
+    leadType: 'political-campaigns',
+    subject: 'Digital readiness for {company}',
+    body: 'Hi {contact},\n\nI am reaching out to the committee—not to contributors—from Farrington Development. I help campaigns move faster on web updates, video, rapid-response content, CRM follow-up, and consent-based call workflows.\n\nIf useful, I can prepare a short, party-neutral audit showing the highest-impact fixes that can be live during this election window.\n\nCarl Farrington\nFarrington Development\n[PHYSICAL POSTAL ADDRESS REQUIRED BEFORE SEND]\nReply unsubscribe to stop commercial email immediately.',
+    requiresPhysicalAddress: true,
+    compliance: ['CAN-SPAM', 'committee-contact-only', 'no-party-targeting'],
+  },
+  {
+    id: 'fd-campaign-video-response',
+    name: 'Campaign video and rapid response',
+    brandContext: 'farrington_dev',
+    leadType: 'political-campaigns',
+    subject: 'Rapid-response video workflow for {company}',
+    body: 'Hi {contact},\n\nFarrington Development builds fast, reviewable video and web publishing workflows for campaign committees. The goal is simple: get approved messages live quickly without losing control of the process.\n\nWould a 20-minute workflow review be useful? This outreach uses committee contact information only and is not based on party or contributor records.\n\nCarl Farrington\nFarrington Development\n[PHYSICAL POSTAL ADDRESS REQUIRED BEFORE SEND]\nReply unsubscribe to stop commercial email immediately.',
+    requiresPhysicalAddress: true,
+    compliance: ['CAN-SPAM', 'committee-contact-only', 'no-party-targeting'],
+  },
+  {
     id: 'fd-first-reply',
     name: 'First reply',
     brandContext: 'farrington_dev',
@@ -45,21 +65,21 @@ const SEED_TEMPLATES = [
   {
     id: 'nra-first-reply',
     name: 'First reply',
-    brandContext: 'ContentHub',
-    subject: 'ContentHub next step for {company}',
-    body: 'Hi {contact},\n\nThanks for taking a look at ContentHub. I wanted to follow up with a clear next step for {company} and see whether a short demo would help you evaluate the platform.\n\nContentHub is built to help local publishers create, manage, and monetize modern community news operations with AI-assisted workflows, voice agents, media tools, and sponsor-ready publishing infrastructure.\n\nIf it makes sense, I can walk you through the fit, setup path, and practical numbers.\n\nCarl Farrington\nContentHub',
+    brandContext: 'ContentStudio',
+    subject: 'ContentStudio next step for {company}',
+    body: 'Hi {contact},\n\nThanks for taking a look at ContentStudio. I wanted to follow up with a clear next step for {company} and see whether a short demo would help you evaluate the platform.\n\nContentStudio is built to help local publishers create, manage, and monetize modern community news operations with AI-assisted workflows, voice agents, media tools, and sponsor-ready publishing infrastructure.\n\nIf it makes sense, I can walk you through the fit, setup path, and practical numbers.\n\nCarl Farrington\nContentStudio',
   },
   {
     id: 'nra-demo-followup',
     name: 'Demo follow-up',
-    brandContext: 'ContentHub',
-    subject: 'ContentHub follow-up for {company}',
-    body: 'Hi {contact},\n\nThanks for taking a look at ContentHub. I wanted to follow up with a clear next step for {company} and see whether a short demo would help you evaluate the platform.\n\nContentHub is built to help local publishers create, manage, and monetize modern community news operations with AI-assisted workflows, voice agents, media tools, and sponsor-ready publishing infrastructure.\n\nIf it makes sense, I can walk you through the fit, setup path, and practical numbers.\n\nCarl Farrington\nContentHub',
+    brandContext: 'ContentStudio',
+    subject: 'ContentStudio follow-up for {company}',
+    body: 'Hi {contact},\n\nThanks for taking a look at ContentStudio. I wanted to follow up with a clear next step for {company} and see whether a short demo would help you evaluate the platform.\n\nContentStudio is built to help local publishers create, manage, and monetize modern community news operations with AI-assisted workflows, voice agents, media tools, and sponsor-ready publishing infrastructure.\n\nIf it makes sense, I can walk you through the fit, setup path, and practical numbers.\n\nCarl Farrington\nContentStudio',
   },
   {
     id: 'wnc-first-reply',
     name: 'First reply',
-    brandContext: 'wnc_times',
+    brandContext: 'sample_business',
     subject: 'WNC Times opportunity for {company}',
     body: 'Hi {contact},\n\nI wanted to reach out from WNC Times about a possible local media, coverage, or partnership opportunity for {company}.\n\nIf this is worth exploring, I can send over the right next step and keep it simple.\n\nCarl Farrington\nWNC Times',
   },
@@ -75,7 +95,11 @@ function getTemplates() {
   const data = readData(FILE)
   const templates = Array.isArray(data) ? data : data?.templates
   if (!Array.isArray(templates) || templates.length === 0) return seed()
-  return templates
+  const missing = SEED_TEMPLATES.filter(defaultTemplate => !templates.some(template => template.id === defaultTemplate.id)).map(template => ({ ...template, updatedAt: new Date().toISOString() }))
+  if (!missing.length) return templates
+  const merged = [...templates, ...missing]
+  putTemplates(merged)
+  return merged
 }
 
 function putTemplates(templates) {

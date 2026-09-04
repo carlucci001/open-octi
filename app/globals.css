@@ -3646,6 +3646,16 @@ code, pre, .font-mono {
   text-transform: capitalize;
 }
 
+.operator-rail-record {
+  margin: 2px 0 0;
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .operator-rail-section {
   border: 1px solid var(--border);
   background: var(--surface2);

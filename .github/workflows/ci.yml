@@ -18,6 +18,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --include=dev
+      - run: npm run docs:check
       - run: npm test
       - run: npm run build
       - run: docker build --tag openocti-ci .

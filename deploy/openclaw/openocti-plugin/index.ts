@@ -24,6 +24,13 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   fcc_capability_status: 'Read live OpenOcti capabilities, configured sources, missing requirements, and Settings links.',
   fcc_list_agents: 'List OpenOcti agents, roles, and enabled state.',
   fcc_open_page: 'Return a safe OpenOcti page link that the chat panel can render as a button.',
+  fcc_press_query: 'Query ranked, beat-matched press contacts with reasons and geography fallback.',
+  fcc_press_list_save: 'Save a reviewed Press Desk contact list.',
+  fcc_press_contact_explain: 'Explain a press-contact score and show recent bylines.',
+  fcc_press_campaign_create: 'Create a draft press campaign from a release document and saved list.',
+  fcc_press_campaign_send: 'Preview or send a press campaign through the compliance gate; dryRun defaults true.',
+  fcc_press_campaign_report: 'Report press-campaign sends, opens, replies, bounces, and pickups.',
+  fcc_press_suppress: 'Immediately suppress a press email, domain, or contact.',
 }
 
 const configSchema = {

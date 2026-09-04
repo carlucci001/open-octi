@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { readData, writeData } from '@/lib/dataStore'
-import { DEFAULT_SCRIPTS, NEWSPAPER_SCRIPTS, TDA_SCRIPTS, DEV_SCRIPTS } from '@/lib/sponsor-scripts'
+import { DEFAULT_SCRIPTS, NEWSPAPER_SCRIPTS, TDA_SCRIPTS, DEV_SCRIPTS, CAMPAIGN_SCRIPTS } from '@/lib/sponsor-scripts'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
 
 export const runtime = 'nodejs'
@@ -12,6 +12,7 @@ function seed() {
     ...NEWSPAPER_SCRIPTS.map(s => ({ ...s, campaign: 'newspapers' })),
     ...TDA_SCRIPTS.map(s => ({ ...s, campaign: 'tda_outreach' })),
     ...DEV_SCRIPTS.map(s => ({ ...s, campaign: 'farrington_dev' })),
+    ...CAMPAIGN_SCRIPTS.map(s => ({ ...s, campaign: 'campaigns' })),
   ]
   writeData('scripts.json', all)
   return all
@@ -20,7 +21,12 @@ function seed() {
 function getScripts() {
   const data = readData('scripts.json')
   if (!data || !Array.isArray(data) || data.length === 0) return seed()
-  return data
+  const campaignDefaults = CAMPAIGN_SCRIPTS.map(s => ({ ...s, campaign: 'campaigns' }))
+  const missing = campaignDefaults.filter(defaultScript => !data.some(script => script.id === defaultScript.id))
+  if (!missing.length) return data
+  const merged = [...data, ...missing]
+  writeData('scripts.json', merged)
+  return merged
 }
 
 export async function GET(request) {

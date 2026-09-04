@@ -210,7 +210,7 @@ export default function Dialer({ compact = false } = {}) {
       {!compact && <PageHeader
         icon="📞"
         title="Dialer"
-        subtitle="Call via Google Voice — rings on this PC"
+        subtitle="Place browser-assisted calls with your connected provider"
       />}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">

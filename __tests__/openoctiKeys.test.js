@@ -32,6 +32,44 @@ afterEach(() => {
 })
 
 describe('OpenOcti encrypted provider keys', () => {
+  it('keeps environment values ahead of the credentials vault', () => {
+    const readCredentials = vi.fn(() => ({
+      credentials: [{ name: 'ElevenLabs', fields: [{ label: 'API Key', value: 'vault-provider-value' }] }],
+    }))
+
+    expect(resolveProviderKey('elevenlabs', { ELEVENLABS_API_KEY: 'environment-provider-value' }, { readCredentials })).toMatchObject({
+      key: 'environment-provider-value',
+      source: 'env',
+      envKey: 'ELEVENLABS_API_KEY',
+    })
+    expect(readCredentials).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the named credentials-vault entry when env is absent', () => {
+    const readCredentials = vi.fn(() => ({
+      credentials: [{ name: 'ElevenLabs', fields: [{ label: 'API Key', value: 'vault-provider-value' }] }],
+    }))
+
+    const resolved = resolveProviderKey('elevenlabs', {}, { readCredentials })
+
+    expect(resolved).toMatchObject({ key: 'vault-provider-value', source: 'vault', envKey: 'ELEVENLABS_API_KEY' })
+    expect(readCredentials).toHaveBeenCalledWith('credentials.json')
+    const capability = buildFeatureManifest({}, { providerStatuses: [{ id: 'elevenlabs', status: 'configured', source: resolved.source }] })
+      .capabilities.find(item => item.id === 'elevenlabs')
+    expect(capability).toMatchObject({ status: 'configured', source: 'vault', missing: [] })
+  })
+
+  it('reports a provider missing when neither env nor vault contains a key', () => {
+    const readCredentials = vi.fn(() => ({ credentials: [] }))
+
+    expect(resolveProviderKey('elevenlabs', {}, { readCredentials })).toEqual({
+      key: '',
+      source: null,
+      envKey: 'ELEVENLABS_API_KEY',
+    })
+    expect(readCredentials).toHaveBeenCalledWith('credentials.json')
+  })
+
   it('exposes only owner/admin management UI and never serializes plaintext keys', () => {
     const route = fs.readFileSync(path.join(process.cwd(), 'app/api/openocti/keys/route.js'), 'utf8')
     const page = fs.readFileSync(path.join(process.cwd(), 'app/settings/OpenOctiModelsSettings.js'), 'utf8')

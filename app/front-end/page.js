@@ -5,7 +5,7 @@ export default function FrontEndPage() {
     <main style={{ minHeight: '100vh', margin: 0, background: '#faf7f0' }}>
       <iframe
         src="/cc-front/Farrington.html"
-        title="Farrington front end prototype"
+        title="Front-end workspace"
         style={{
           display: 'block',
           width: '100%',

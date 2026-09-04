@@ -48,7 +48,7 @@ export async function POST(request) {
       html: `<div style="max-width:640px;margin:0 auto;font-family:system-ui,-apple-system,sans-serif;background:#f4f5f7;padding:24px;">
         <h1 style="color:#1a1c2e;font-size:22px;margin-bottom:20px;">Voicemails — Farrington Command Center</h1>
         ${blocks.join('\n')}
-        <div style="margin-top:20px;font-size:11px;color:#6b7084;text-align:center;">Sent from your ContentHub Main Line via Lucci agent</div>
+        <div style="margin-top:20px;font-size:11px;color:#6b7084;text-align:center;">Sent from your ContentStudio Main Line via Lucci agent</div>
       </div>`,
     })
 

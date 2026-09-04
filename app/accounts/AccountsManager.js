@@ -2,6 +2,7 @@
 import ThemedSelect from '../components/ThemedSelect'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import ComponentSettings, { useComponentSettings } from '../components/ComponentSettings'
+import CustomFieldsPanel from '../components/CustomFieldsPanel'
 import PageHeader from '../components/PageHeader'
 import { Paginator, usePagination } from '../components/Paginator'
 import ViewModeToggle from '../components/ViewModeToggle'
@@ -62,9 +63,9 @@ const CLIENT_EMAIL_IDENTITIES = [
   },
   {
     id: 'newsroom',
-    label: 'ContentHub',
+    label: 'ContentStudio',
     brand: 'newsroom',
-    from: 'ContentHub <redacted@example.invalid>',
+    from: 'ContentStudio <redacted@example.invalid>',
     detail: 'Paper partner, newsroom platform, campaign, and publication workflow.',
   },
   {
@@ -694,6 +695,8 @@ function AccountDetail({ account, onBack, onEdit, onRefresh }) {
           <button onClick={() => onEdit(account)} className="px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--surface2)', color: 'var(--accent)', border: '1px solid var(--border)' }}>Edit</button>
         </div>
       </div>
+
+      <CustomFieldsPanel fields={account.customFields} />
 
       {/* 360 stat row — every tile jumps to its tab */}
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3 mb-5">

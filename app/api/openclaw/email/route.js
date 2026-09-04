@@ -17,7 +17,7 @@ export async function POST(request) {
   const toArray = Array.isArray(to) ? to : [to]
 
   const { data, error } = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL || 'ContentHub <redacted@example.invalid>',
+    from: process.env.RESEND_FROM_EMAIL || 'ContentStudio <redacted@example.invalid>',
     to: toArray,
     subject,
     html: html || undefined,

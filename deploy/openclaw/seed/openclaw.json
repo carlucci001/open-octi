@@ -55,6 +55,14 @@
         "model": { "primary": "openai/gpt-4.1", "fallbacks": [] },
         "identity": { "name": "Matilda", "emoji": "✨" },
         "tools": { "alsoAllow": ["fcc_call", "fcc_dashboard", "fcc_search", "fcc_list_accounts", "fcc_get_account", "fcc_list_calendar_events", "fcc_create_task", "fcc_complete_task", "fcc_log_activity", "fcc_read_note", "fcc_write_note", "fcc_list_tools", "fcc_open_record", "fcc_navigate_to"] }
+      },
+      {
+        "id": "press-release-agent",
+        "name": "Reese",
+        "workspace": "/data/openclaw/workspace/press-release-agent",
+        "model": { "primary": "openai/gpt-4.1", "fallbacks": [] },
+        "identity": { "name": "Reese", "emoji": "PR" },
+        "tools": { "alsoAllow": ["fcc_call", "fcc_get_account", "fcc_search", "fcc_press_query", "fcc_press_list_save", "fcc_press_contact_explain", "fcc_press_campaign_create", "fcc_press_campaign_send", "fcc_log_activity", "fcc_list_tools", "fcc_open_record", "fcc_navigate_to"] }
       }
     ]
   },

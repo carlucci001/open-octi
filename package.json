@@ -1,6 +1,6 @@
 {
   "name": "openocti",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": false,
   "engines": {
     "node": ">=24"
@@ -12,6 +12,7 @@
     "verify:data-backend": "node scripts/verify-data-backend.js",
     "inventory": "node scripts/feature-inventory.mjs",
     "export:openocti": "node scripts/export-openocti.mjs",
+    "docs:check": "node scripts/check-docs-links.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui"
@@ -31,6 +32,7 @@
     "better-sqlite3": "^12.9.0",
     "bufferutil": "^4.1.0",
     "date-fns": "^4.1.0",
+    "fflate": "^0.8.2",
     "firebase-admin": "^13.8.0",
     "googleapis": "^171.4.0",
     "iconv-lite": "^0.7.2",
@@ -64,6 +66,7 @@
     "@types/react": "19.2.14",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
+    "esbuild": "^0.28.1",
     "jsdom": "^29.1.1",
     "playwright": "^1.60.0",
     "postcss": "^8.5.12",

@@ -1,5 +1,5 @@
 // Tenants — companies that own/lease agents.
-// In-house tenants are Carl's own brands (Farrington Development, ContentHub).
+// In-house tenants are Carl's own brands (Farrington Development, ContentStudio).
 // Leased tenants are external customers paying a monthly fee for their agent fleet.
 //
 // GET → return all tenants + per-tenant agent count, derived from data/agents.json + data/leases.json.

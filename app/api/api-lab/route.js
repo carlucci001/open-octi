@@ -12,8 +12,8 @@ const DEFAULT_TIMEOUT_MS = 20000
 
 const PRESETS = [
   {
-    id: 'ContentHub',
-    label: 'ContentHub',
+    id: 'ContentStudio',
+    label: 'ContentStudio',
     baseUrl: 'https://www.content.example.com',
     auth: { type: 'header', prefix: '', headerName: 'X-API-Key' },
     docsUrl: 'https://www.content.example.com',
@@ -178,7 +178,7 @@ function cleanHeaders(value) {
 function applyAuth(url, headers, auth = {}) {
   const key = String(auth.key || '').trim()
   if (!key || auth.type === 'none') return
-  if (/(^|\.)ContentHub\.com$/i.test(url.hostname)) {
+  if (/(^|\.)ContentStudio\.com$/i.test(url.hostname)) {
     for (const name of Object.keys(headers)) {
       if (/^authorization$/i.test(name)) delete headers[name]
     }

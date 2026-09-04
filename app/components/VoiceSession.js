@@ -185,7 +185,7 @@ const FALLBACK_VOICE_AGENTS = [
     category: 'communications',
   },
   {
-    id: 'ContentHub-promoter',
+    id: 'ContentStudio-promoter',
     firstName: 'Mark',
     name: 'Mark',
     voiceName: 'Mark',
@@ -603,7 +603,7 @@ const AUTOMATION_BUILDER_AGENTS = [
   { id: 'deerflow-lead-research-analyst', name: 'Leo' },
   { id: 'deerflow-market-competitor-analyst', name: 'Mason' },
   { id: 'deerflow-reputation-risk-analyst', name: 'Rowan' },
-  { id: 'ContentHub-promoter', name: 'Mark' },
+  { id: 'ContentStudio-promoter', name: 'Mark' },
   { id: 'main', name: 'Maggie' },
   { id: 'communications', name: 'Cameron' },
   { id: 'social-media', name: 'Sasha' },
@@ -2918,7 +2918,7 @@ function VoiceButton({ activeContext, activeSection }) {
         ``,
         `CRAIG OPENCLAW / PLUGIN OPERATING BRIEF:`,
         `You know the Command Center OpenClaw/plugin wiring path: app/api/agent/execute/route.js is the CRM-side dispatcher, scripts/fcc-unified-plugin-index.ts exposes fcc_* OpenClaw wrappers, app/api/agents/available-tools/route.js powers discovery, and lib/agent-presets.js carries preset allowlists.`,
-        `OpenClaw runtime config lives on Ubuntu at /home/carl/.openclaw/openclaw.json and is strict. Do not claim you can directly edit it, restart openclaw-gateway, commit, push, deploy, or modify files from voice unless a confirmed engineering tool result says it happened.`,
+        `OpenClaw runtime config lives on Ubuntu at /srv/openocti/.openclaw/openclaw.json and is strict. Do not claim you can directly edit it, restart openclaw-gateway, commit, push, deploy, or modify files from voice unless a confirmed engineering tool result says it happened.`,
         `When Carl asks you to create, modify, or wire a plugin/tool/OpenClaw capability, first use create_openclaw_plugin_spec when he wants a concrete plugin build plan, or create_plugin_change_request for a smaller change request. Include a scoped title, target, likely files, acceptance criteria, and guardrails. Then tell Carl the request was captured for engineering execution.`,
         `For background coding work that should be handed to Jules, use delegate_to_jules only with clear acceptance criteria and production deployment explicitly out of scope unless Carl separately authorizes deployment.`,
         ``,
@@ -3973,8 +3973,8 @@ function VoiceButton({ activeContext, activeSection }) {
                 description,
                 isDemo: requestedAsDemo,
                 kind: requestedAsDemo ? 'demo' : 'client_call',
-                calendarKey: requestedAsDemo ? 'ContentHub' : 'farrington-dev',
-                source: requestedAsDemo ? 'ContentHub_demos' : 'manual',
+                calendarKey: requestedAsDemo ? 'ContentStudio' : 'farrington-dev',
+                source: requestedAsDemo ? 'ContentStudio_demos' : 'manual',
               }),
             }).then(r => r.json())
             if (r.ok) {

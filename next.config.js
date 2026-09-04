@@ -35,13 +35,13 @@ const closedModuleRequests = [
   '@/lib/platforms/registry',
   '@/lib/platforms/ssrf',
   '@/lib/platforms/surfaceSelection',
-  '@/lib/SearchSuite3-client',
-  '@/lib/SearchSuite3-engagements',
+  '@/lib/SearchTools3-client',
+  '@/lib/SearchTools3-engagements',
   '@/lib/VideoHub/channel',
   '@/lib/VideoHub/client',
   '@/lib/VideoHub/sync',
   '@/lib/VideoHub/webhook',
-  '@/lib/ContentHub-web-agent',
+  '@/lib/ContentStudio-web-agent',
   '@/lib/newsroom-director',
 ]
 

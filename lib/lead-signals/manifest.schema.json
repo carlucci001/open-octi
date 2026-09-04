@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Lead source manifest",
+  "type": "object",
+  "required": ["id", "name", "level", "coverage", "triggers", "verticals", "platform", "tier", "endpoint", "request", "fields", "auth", "cadence", "compliance", "proving", "links"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$" },
+    "name": { "type": "string", "minLength": 2 },
+    "level": { "enum": ["federal", "state", "county", "city", "platform"] },
+    "coverage": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "triggers": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "verticals": { "type": "array", "items": { "type": "string" } },
+    "platform": { "enum": ["rest-generic", "arcgis", "socrata", "fec", "structured-download"] },
+    "tier": { "enum": ["A", "B", "C", "D"] },
+    "endpoint": { "type": "string", "pattern": "^https?://" },
+    "request": { "type": "object" },
+    "fields": { "type": "object" },
+    "auth": { "type": "object", "required": ["type"] },
+    "cadence": { "type": "string" },
+    "compliance": {
+      "type": "object",
+      "required": ["channels", "dppa", "fcra", "tosReviewedAt", "tosVerdict"]
+    },
+    "proving": { "type": "object", "required": ["thresholds", "status"] },
+    "discovered": { "type": "boolean" },
+    "excludedReason": { "type": ["string", "null"] },
+    "links": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

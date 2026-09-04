@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import ThemedSelect from '../components/ThemedSelect'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import PageHeader, { LabHeaderButton } from '../components/PageHeader'
@@ -6,15 +7,18 @@ import QualifyWizard from './QualifyWizard'
 import { Paginator, usePagination } from '../components/Paginator'
 import ViewModeToggle from '../components/ViewModeToggle'
 import ComponentSettings, { useComponentSettings } from '../components/ComponentSettings'
+import CustomFieldsPanel from '../components/CustomFieldsPanel'
 import CallButton from '../components/CallButton'
 import { useCachedData } from '@/lib/useCachedData'
 import VideoMeetButton from '../components/VideoMeetButton'
 import LeadCallScripts from '../components/LeadCallScripts'
 import EmailTemplateEditor from '../components/EmailTemplateEditor'
 import ItemActionsMenu from '../components/ItemActionsMenu'
-import { BookOpen, CheckCircle2, ExternalLink, Globe, Mail, Phone, Plus, Sprout, Trash2, Video, XCircle } from 'lucide-react'
+import { BookOpen, CheckCircle2, ExternalLink, Globe, Mail, Phone, Plus, Sprout, Trash2, Upload, Video, XCircle } from 'lucide-react'
 import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
 import { isOpenOcti } from '@/lib/edition'
+
+const OPENOCTI = isOpenOcti()
 
 const STATUS = [
   { id: 'new',          label: 'New',          color: 'var(--accent)',     bg: 'var(--accent-soft)' },
@@ -35,12 +39,20 @@ const SOURCES = [
   { id: 'other',        label: 'Other' },
 ]
 
-const BRAND_CONTEXTS = [
+const COMMAND_CENTER_BRAND_CONTEXTS = [
   { id: 'farrington_dev', label: 'Farrington Development', from: 'Farrington Development', campaignType: 'farrington_dev' },
   { id: 'VideoHub', label: 'VideoHub', from: 'VideoHub', campaignType: 'VideoHub' },
-  { id: 'ContentHub', label: 'ContentHub', from: 'ContentHub', campaignType: 'ContentHub_demo' },
-  { id: 'wnc_times', label: 'WNC Times', from: 'WNC Times', campaignType: 'wnc_times' },
+  { id: 'ContentStudio', label: 'ContentStudio', from: 'ContentStudio', campaignType: 'ContentStudio_demo' },
+  { id: 'sample_business', label: 'WNC Times', from: 'WNC Times', campaignType: 'sample_business' },
 ]
+
+const OPENOCTI_BRAND_CONTEXTS = [
+  { id: 'your_business', label: 'Your business', from: 'Your business', campaignType: 'your_business' },
+  { id: 'client_a', label: 'Client A', from: 'Client A', campaignType: 'client_a' },
+]
+
+const BRAND_CONTEXTS = OPENOCTI ? OPENOCTI_BRAND_CONTEXTS : COMMAND_CENTER_BRAND_CONTEXTS
+const DEFAULT_BRAND_ID = BRAND_CONTEXTS[0].id
 
 const LEAD_CATEGORY_GROUPS = {
   farrington_dev: [
@@ -61,7 +73,7 @@ const LEAD_CATEGORY_GROUPS = {
     { id: 'contact', label: 'General contact' },
     { id: 'funeral-home', label: 'Funeral home partnership' },
   ],
-  ContentHub: [
+  ContentStudio: [
     { id: 'platform-demo', label: 'Platform demo' },
     { id: 'publisher-onboarding', label: 'Publisher onboarding' },
     { id: 'tourism-authority', label: 'Tourism authority / destination org' },
@@ -70,7 +82,7 @@ const LEAD_CATEGORY_GROUPS = {
     { id: 'content-media-workflow', label: 'Content / media workflow' },
     { id: 'tenant-buildout', label: 'Tenant buildout' },
   ],
-  wnc_times: [
+  sample_business: [
     { id: 'sponsor-lead', label: 'Sponsor lead' },
     { id: 'ad-package', label: 'Ad package' },
     { id: 'tda', label: 'TDA' },
@@ -80,20 +92,29 @@ const LEAD_CATEGORY_GROUPS = {
   ],
 }
 
+if (OPENOCTI) {
+  LEAD_CATEGORY_GROUPS.your_business = LEAD_CATEGORY_GROUPS.farrington_dev
+  LEAD_CATEGORY_GROUPS.client_a = LEAD_CATEGORY_GROUPS.farrington_dev
+}
+
 const LEADS_VIEW_MODES = ['list', 'grid', 'kanban', 'lead-lists']
 
 const statusMeta = (s) => STATUS.find(x => x.id === s) || STATUS[0]
 const initials = (n = '') => n.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?'
 const sourceLabel = (id = '') => SOURCES.find(s => s.id === id)?.label || String(id || '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-const categoryOptionsForBrand = (brandId = 'farrington_dev') => LEAD_CATEGORY_GROUPS[brandId] || LEAD_CATEGORY_GROUPS.farrington_dev
-const categoryLabel = (id = '', brandId = 'farrington_dev') => {
+const normalizeBrandId = (brandId = DEFAULT_BRAND_ID) => {
+  if (!OPENOCTI) return brandId || DEFAULT_BRAND_ID
+  return OPENOCTI_BRAND_CONTEXTS.some(brand => brand.id === brandId) ? brandId : DEFAULT_BRAND_ID
+}
+const categoryOptionsForBrand = (brandId = DEFAULT_BRAND_ID) => LEAD_CATEGORY_GROUPS[normalizeBrandId(brandId)] || LEAD_CATEGORY_GROUPS[DEFAULT_BRAND_ID]
+const categoryLabel = (id = '', brandId = DEFAULT_BRAND_ID) => {
   const all = Object.values(LEAD_CATEGORY_GROUPS).flat()
   return categoryOptionsForBrand(brandId).find(c => c.id === id)?.label || all.find(c => c.id === id)?.label || sourceLabel(id)
 }
 const categoryValueForLead = (lead = {}, brandId = lead.brandContext || inferBrand(lead)) => {
   const direct = lead.serviceLine || lead.productOpportunity || ''
   if (direct) return direct
-  if (brandId === 'farrington_dev') return ''
+  if (normalizeBrandId(brandId) === DEFAULT_BRAND_ID) return ''
   return lead.category || lead.campaignType || lead.campaign || lead.legacy?.campaign || ''
 }
 const isFarringtonCategoryValue = (value = '') => {
@@ -217,9 +238,10 @@ function Field({ label, children }) {
 
 function inferBrand(lead = {}) {
   const haystack = [lead.brandContext, lead.source, lead.serviceLine, lead.productOpportunity, lead.notes, ...(lead.tags || [])].join(' ').toLowerCase()
+  if (OPENOCTI) return haystack.includes('client_a') ? 'client_a' : DEFAULT_BRAND_ID
   if (haystack.includes('VideoHub')) return 'VideoHub'
-  if (haystack.includes('wnc')) return 'wnc_times'
-  if (haystack.includes('newsroom')) return 'ContentHub'
+  if (haystack.includes('wnc')) return 'sample_business'
+  if (haystack.includes('newsroom')) return 'ContentStudio'
   return 'farrington_dev'
 }
 
@@ -232,9 +254,9 @@ const fillTemplate = (text = '', lead = {}, brand = {}) => String(text)
 
 function LeadEmailModal({ lead, onClose, onSent }) {
   // Brand follows the lead's pipeline: a Farrington lead sends as Farrington
-  // Development, a ContentHub lead as ContentHub. The /api/sponsor-email
+  // Development, a ContentStudio lead as ContentStudio. The /api/sponsor-email
   // route maps the brand to the actual From address (BRAND_FROM).
-  const [brandId, setBrandId] = useState(() => lead.brandContext || inferBrand(lead))
+  const [brandId, setBrandId] = useState(() => normalizeBrandId(lead.brandContext || inferBrand(lead)))
   const [templates, setTemplates] = useState(null) // null = loading
   const [templateId, setTemplateId] = useState('')
   const [to, setTo] = useState(lead.email || '')
@@ -343,15 +365,15 @@ function LeadEmailModal({ lead, onClose, onSent }) {
 }
 
 function LeadForm({ lead, leadLists, opportunities, onSave, onClose, onQualify, onDelete }) {
-  const defaultLeadListId = leadLists.find(list => list.id === 'farrington_dev')?.id || leadLists[0]?.id || ''
-  const initialBrand = lead?.brandContext || inferBrand(lead || {})
+  const defaultLeadListId = leadLists.find(list => list.id === DEFAULT_BRAND_ID)?.id || leadLists[0]?.id || ''
+  const initialBrand = normalizeBrandId(lead?.brandContext || inferBrand(lead || {}))
   const [f, setF] = useState(lead || {
     name: '', email: '', phone: '', businessName: '', website: '', title: '',
-    source: 'cold_call', status: 'new', brandContext: 'farrington_dev', serviceLine: categoryOptionsForBrand('farrington_dev')[0].id, leadListId: defaultLeadListId, suggestedPipelineId: null, opportunityId: '',
+    source: 'cold_call', status: 'new', brandContext: DEFAULT_BRAND_ID, serviceLine: categoryOptionsForBrand(DEFAULT_BRAND_ID)[0].id, leadListId: defaultLeadListId, suggestedPipelineId: null, opportunityId: '',
     notes: '', tags: [],
   })
   const u = (k, v) => setF(p => ({ ...p, [k]: v }))
-  const activeBrandId = f.brandContext || initialBrand || 'farrington_dev'
+  const activeBrandId = normalizeBrandId(f.brandContext || initialBrand || DEFAULT_BRAND_ID)
   const activeCategoryOptions = categoryOptionsForBrand(activeBrandId)
   const currentCategory = f.serviceLine || categoryValueForLead(f, activeBrandId)
   const selectedCategory = activeCategoryOptions.some(c => c.id === currentCategory)
@@ -454,6 +476,7 @@ function LeadForm({ lead, leadLists, opportunities, onSave, onClose, onQualify, 
         </div>
       )}
       <Field label="Notes"><textarea style={{ ...inp, minHeight: 80, resize: 'vertical' }} value={f.notes} onChange={e => u('notes', e.target.value)} placeholder="Context, pitch points, history..." /></Field>
+      <CustomFieldsPanel fields={lead?.customFields} compact />
       <div className="flex gap-2 mt-4 flex-wrap">
         {lead?.id && lead.status !== 'converted' && onQualify && (
           <button className="px-5 rounded-lg text-base font-semibold" style={{ background: 'var(--green)', color: 'var(--accent-text)', minHeight: 48 }}
@@ -505,6 +528,14 @@ export default function LeadsManager({ onNavigate }) {
   const [adding, setAdding] = useState(false)
   const [qualifying, setQualifying] = useState(null)
   const [showNewList, setShowNewList] = useState(false)
+
+  useEffect(() => {
+    const detail = editing
+      ? { type: 'lead', id: editing.id, name: editing.name || editing.email || 'Lead' }
+      : {}
+    window.dispatchEvent(new CustomEvent('fcc:active-record', { detail }))
+    return () => window.dispatchEvent(new CustomEvent('fcc:active-record', { detail: {} }))
+  }, [editing])
   const [newListName, setNewListName] = useState('')
   const [creatingList, setCreatingList] = useState(false)
 
@@ -783,7 +814,7 @@ export default function LeadsManager({ onNavigate }) {
   const serviceLabelForLead = (lead) => {
     const value = lead.serviceLine || lead.productOpportunity || ''
     const brandId = lead.brandContext || inferBrand(lead)
-    if (brandId === 'farrington_dev' && !isFarringtonCategoryValue(value)) return ''
+    if (normalizeBrandId(brandId) === DEFAULT_BRAND_ID && !isFarringtonCategoryValue(value)) return ''
     return value
   }
   const renderLeadCard = (l, compact = false) => (
@@ -859,6 +890,9 @@ export default function LeadsManager({ onNavigate }) {
           <div style={{ display: 'flex', gap: 8, position: 'relative', flexWrap: 'nowrap' }}>
             <LabHeaderButton onClick={() => onNavigate?.('leads-lab')} label="Open leads lab" />
             <LabHeaderButton onClick={() => onNavigate?.('email-templates')} label="Email Templates" icon={<Mail size={16} strokeWidth={2.25} />} />
+            <button type="button" onClick={() => window.location.assign('/?tab=migrate&object=leads')} aria-label="Import leads" data-tooltip="Import leads" data-tooltip-side="bottom" style={leadHeaderIconButtonStyle}>
+              <Upload size={17} strokeWidth={2.25} />
+            </button>
             <button type="button" onClick={() => setAdding(true)} aria-label="Intake lead" data-tooltip="Intake lead" data-tooltip-side="bottom" style={{ ...leadHeaderIconButtonStyle, background: 'var(--accent)', color: 'var(--accent-text)', borderColor: 'var(--accent)' }}>
               <Plus size={17} strokeWidth={2.25} />
             </button>

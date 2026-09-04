@@ -104,6 +104,7 @@ export default function OperatorContextRail({ activeTab, operatorContext, collap
         <div>
           <div className="operator-rail-kicker">Workspace</div>
           <h2>{context.subtab ? `${workspaceLabel} / ${context.subtab}` : workspaceLabel}</h2>
+          {context.recordName && <p className="operator-rail-record">{context.recordName}</p>}
         </div>
       </div>
 

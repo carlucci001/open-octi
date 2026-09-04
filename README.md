@@ -1,85 +1,104 @@
-![OpenOcti - the open-source Command Center](docs/brand/openocti-banner.png)
+![OpenOcti](docs/brand/openocti-banner.png)
 
-[![AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-30c0f0?labelColor=001040)](LICENSE) [![Docker](https://img.shields.io/badge/run-Docker%20Compose-30c0f0?labelColor=001040)](docs/INSTALL.md) [![Community supported](https://img.shields.io/badge/support-community-30c0f0?labelColor=001040)](#support)
+[![AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-30c0f0?labelColor=001040)](LICENSE) [![Docker](https://img.shields.io/badge/run-Docker%20Compose-30c0f0?labelColor=001040)](docs/INSTALL.md) [![GHCR](https://img.shields.io/badge/images-GHCR-30c0f0?labelColor=001040)](https://github.com/carlucci001/open-octi/pkgs/container/open-octi) [![CI](https://github.com/carlucci001/open-octi/actions/workflows/ci.yml/badge.svg)](https://github.com/carlucci001/open-octi/actions/workflows/ci.yml) [![Community supported](https://img.shields.io/badge/support-community-30c0f0?labelColor=001040)](#support)
 
-**Run your business from one private command center on your own server.** OpenOcti combines a practical CRM, project operations, documents, voice, and a starter AI staff without requiring a hosted control plane.
+# OpenOcti
 
-[openocti.com](https://openocti.com) &middot; Managed edition: [Octi CC](https://octicc.com)
+OpenOcti is a self-hosted business operations workspace: CRM, projects, documents, communications, automations, knowledge, and a configurable AI staff in one local-first application.
+
+[openocti.com](https://openocti.com) · Managed edition: [Octi CC](https://octicc.com)
 
 ## Install in three lines
 
-```sh
+```bash
 git clone https://github.com/carlucci001/open-octi.git openocti
-cd openocti && cp .env.example .env
-docker compose up -d --build
+cd openocti
+docker compose up -d
 ```
 
-Set the six required values at the top of `.env` before starting. The CRM works without an AI provider. Open [http://localhost:3000](http://localhost:3000) after the containers become healthy.
+Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
+
+> The `latest` images for this release are published only after the `v1.1.1` tag exists. Before that tag, use the source-build command above. See the [1.1.1 release notes](docs/releases/1.1.1.md).
 
 ## One key lights it up
 
-After login, open **Settings → Models & Keys**, paste one Anthropic, OpenAI, Gemini, or OpenRouter key, and select **Save & test**. OpenOcti encrypts the key and OpenClaw applies it without a container restart. Environment variables remain available as the advanced path.
+The CRM, projects, documents, and local knowledge tools work without an AI provider. Add any one supported model key in Models & Keys—OpenAI, Anthropic, Google Gemini, or OpenRouter—to activate Octi and the starter staff. Voice, email, calling, and research connectors need their own provider credentials only when you enable those features. Start with [Model providers](docs/guides/model-providers.md).
 
-The dashboard asks for a business name and owner name to fill the starter workspaces. Matilda's Gemini Live voice needs `GEMINI_API_KEY`; Maggie, Sasha, and Linda need ElevenLabs and Twilio settings for telephone workflows. Missing providers stay visible as **Not configured** instead of failing silently.
+## Highlights
+
+- **A starter AI staff, one key to light it up** — Octi, Maggie, Craig, Sasha, Linda and Matilda ship as agent definitions; paste one OpenAI, Anthropic, Google Gemini or OpenRouter key in Models & Keys and they come alive on your own server. [Guide](docs/guides/agents.md) · [Screen](docs/screenshots/agents.jpg)
+- **Context-aware agents on every screen** — the Operator rail follows the section and the record you have open; on a lead, one click gives you Next Calls, an email draft or a clean-data pass built from that lead. [Guide](docs/guides/operator-rail.md) · [Screen](docs/screenshots/operator-rail-lead.jpg)
+- **Command Vault** — an Obsidian-compatible Markdown knowledge base built in: multiple vault roots (one per project), wikilinks, graph view, semantic search, orphan detection and a Prompt Workshop. [Guide](docs/guides/command-vault.md) · [Screen](docs/screenshots/command-vault-graph.jpg)
+- **TruthDiff** — pick a note and see which knowledge is affected by what changed in Git: drift analysis between your docs and your code, built into the vault's Impact view. [Guide](docs/guides/truthdiff.md)
+- **Workflows and automations** — build an automation from guarded templates, review its triggers, steps and approval gates, then run it on a schedule with the built-in runners. [Guide](docs/guides/automations.md) · [Screen](docs/screenshots/automations.jpg)
+- **Built-in e-signature** — send agreements for signature without leaving the CRM: signing tokens, audit trail and email delivery, with Linda drafting the neutral agreements. [Guide](docs/guides/e-sign.md) · [Screen](docs/screenshots/documents-esign.jpg)
+- **Voice, phone and meetings** — a voice receptionist (ElevenLabs + Twilio, or Gemini Live / local VibeVoice), dialer, conference, and Maggie's meeting capture that saves the transcript to Documents. [Guide](docs/guides/communications.md) · [Screen](docs/screenshots/communications.jpg)
+- **Gesture Mode** — hands-free control from your webcam: pinch to click, open palm to scroll, fist to close. MediaPipe runs entirely in the browser; off by default, nothing loads until you switch it on. [Guide](docs/guides/gesture-mode.md)
+- **Labs** — Agent Lab, Agent Sandbox, AI Lab, API Lab, Voice Labs, Ops Lab, Provisioning Lab and Leads Lab: try a model, a prompt, a tool or a lead spec before it touches real data. [Guide](docs/guides/labs.md) · [Screen](docs/screenshots/labs.jpg)
+- **Embeddable agent widget** — put one of your agents on any website as a chat widget with human handoff. [Guide](docs/guides/agent-widget.md) · [Screen](docs/screenshots/agent-widget.jpg)
+- **Yours to run** — Docker or plain Node, SQLite on a persistent volume, installable PWA, Platform Admin API and SDK, the OpenClaw gateway as a sidecar, and no hosted control plane. [Install](docs/INSTALL.md) · [Data model](docs/DATA-MODEL.md)
+
+## Screens
+
+| Dashboard | Pipelines |
+| --- | --- |
+| [![OpenOcti dashboard](docs/screenshots/dashboard.jpg)](docs/screenshots/dashboard.jpg) | [![Sales pipelines](docs/screenshots/pipelines.jpg)](docs/screenshots/pipelines.jpg) |
+| Agents | Command Vault |
+| [![AI staff roster](docs/screenshots/agents.jpg)](docs/screenshots/agents.jpg) | [![Command Vault graph](docs/screenshots/command-vault-graph.jpg)](docs/screenshots/command-vault-graph.jpg) |
+| Automations | Communications |
+| [![Automation Studio](docs/screenshots/automations.jpg)](docs/screenshots/automations.jpg) | [![Communications workspace](docs/screenshots/communications.jpg)](docs/screenshots/communications.jpg) |
+
+## Everything inside
+
+- **Sell:** dashboard, leads, Press Desk, pipelines, accounts, support, contacts, and Finance for invoices and overhead.
+- **Build:** agents, automations, Builder (roadmap card in this edition), campaigns, products, repository status, Ship Desk, Build Board, Switchboard, and Labs.
+- **Projects:** projects, tasks, documents, content, media, Command Vault, communications, calendar, transcription, and activity feed.
+- **Tools:** imports, credentials, model keys, network and account settings, API usage, and operational diagnostics.
 
 ## Meet the staff
 
-| Agent | Role |
+| Agent | Verified role |
 | --- | --- |
-| **Octi** | Onboarding guide grounded in the shipped package, capabilities, data model, and agent roster. |
-| **Maggie** | Office coordinator for priorities, CRM follow-up, calendar, tasks, and handoffs. |
-| **Craig** | Engineering assistant for evidence-led troubleshooting and technical work. |
-| **Sasha** | Creative partner for social drafts, campaign ideas, and visual briefs. |
-| **Linda** | Document drafting and issue-spotting assistant with eight neutral templates. |
-| **Matilda** | Fast in-app navigation and voice assistant, with Gemini Live when configured. |
+| **Octi** | Guides the demo workspace and helps you find the next screen. |
+| **Maggie** | Coordinates office requests, schedules, follow-ups, and CRM records. |
+| **Craig** | Plans, implements, reviews, and verifies software changes. |
+| **Sasha** | Creates visual concepts and plans social campaigns. |
+| **Linda** | Reviews draft agreements and flags issues for qualified human review. |
+| **Matilda** | Handles hands-free questions and approved workspace actions. |
 
-OrcaRouter is an optional handoff router. Add `ORCAROUTER_API_KEY` to enable its panel; tests never make a live Orca call.
-
-## What's inside
-
-- Four Lanes CRM: leads, pipelines, accounts, contacts, opportunities, projects, tasks, documents, calendar, and campaigns
-- Agent Labs, Sandbox, Harness, orchestration designer, Leads Lab, and the OpenClaw gateway
-- Voice paths for ElevenLabs plus Twilio, or Gemini Live and local VibeVoice without ElevenLabs
-- Linda's neutral agreements and website policy drafts
-- Built-in signature tokens, audit trail, and Resend delivery when `SIGNING_PUBLIC_URL` and `RESEND_API_KEY` are set
-- Platform Admin API and SDK, synthetic demo records, and a persistent Docker volume
-
-![OpenOcti dashboard](docs/screenshots/shot-1-dashboard.jpg)
-
-| Pipelines | AI staff |
-| --- | --- |
-| ![Pipelines](docs/screenshots/shot-2-pipelines.jpg) | ![Agents](docs/screenshots/shot-3-agents.jpg) |
+Agents remain disabled until their required model, voice, channel, and tool connections are configured. They do not receive external-system permission merely because a key is present.
 
 ## Free vs. Octi CC
 
-| | **OpenOcti** | **Octi CC** |
-| --- | --- | --- |
-| Price | Free, open source | Managed commercial service |
-| Where it runs | Your server | Your server or managed infrastructure |
-| CRM, projects, documents, campaigns, AI staff | Included | Included |
-| Starter agents and OpenClaw gateway | Included | Installed and operated for you |
-| Client portal and concierge | Not included | Included |
-| Integrated research desk | Not included | Included |
-| Payments and checkout | Not included | Included |
-| Support | Community | Managed support |
+**OpenOcti (free, AGPL)** gives you the self-hosted application, local SQLite data, public modules, starter staff, source updates, and community support.
+
+**Octi CC (managed)** adds hosted operations, managed upgrades and backups, private client portal and concierge workflows, managed billing and payments, private research and platform integrations, and service monitoring. OpenOcti does not silently call those managed services.
 
 ## Guides
 
-- [First run: one key lights it up](docs/guides/first-run.md)
-- [Voice receptionist](docs/guides/voice-receptionist.md)
+- [First run](docs/guides/first-run.md)
+- [Agents](docs/guides/agents.md)
+- [Operator rail](docs/guides/operator-rail.md)
+- [Gesture Mode](docs/guides/gesture-mode.md)
+- [Command Vault](docs/guides/command-vault.md)
+- [TruthDiff](docs/guides/truthdiff.md)
+- [Automations](docs/guides/automations.md)
+- [Communications](docs/guides/communications.md)
+- [Labs](docs/guides/labs.md)
+- [Agent Widget](docs/guides/agent-widget.md)
+- [Ops tools](docs/guides/ops-tools.md)
 - [Model providers](docs/guides/model-providers.md)
-- [E-signature](docs/guides/e-sign.md)
+- [Voice receptionist](docs/guides/voice-receptionist.md)
 - [Documents and Linda](docs/guides/documents-and-linda.md)
+- [E-signatures](docs/guides/e-sign.md)
 - [Run on a VPS](docs/guides/running-on-a-vps.md)
-- [Upgrade safely](docs/guides/upgrading.md)
-- [Full installation reference](docs/INSTALL.md)
+- [Upgrade](docs/guides/upgrading.md)
+- [Screenshot inventory](docs/screenshots/README.md)
 
 ## Support
 
-Use GitHub Discussions for questions and Issues for reproducible bugs. OpenOcti is community-supported and has no service-level agreement. Managed installation and operations are available through Octi CC.
+Use [GitHub Discussions](https://github.com/carlucci001/open-octi/discussions) for setup questions and [GitHub Issues](https://github.com/carlucci001/open-octi/issues) for reproducible bugs. Never include provider keys, cookies, customer records, or private logs in a report.
 
-## License
+## License and credit
 
-OpenOcti is licensed under the [GNU Affero General Public License v3.0](LICENSE). Commercial licensing and Octi CC are available separately; see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
-
-Developed by **Carl Farrington of Farrington Development LLC**.
+OpenOcti is licensed under [GNU AGPL v3](LICENSE). Developed by **Carl Farrington of Farrington Development LLC** with open-source software credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

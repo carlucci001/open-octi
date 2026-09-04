@@ -25,7 +25,7 @@ describe('OpenOcti welcome audio', () => {
     const login = fs.readFileSync(path.join(root, 'app/login/loginWelcomeAudio.js'), 'utf8')
     const session = fs.readFileSync(path.join(root, 'app/components/VoiceSession.js'), 'utf8')
     const ops = fs.readFileSync(path.join(root, 'app/ops/OpsManager.js'), 'utf8')
-    expect(login).toContain('if (isOpenOcti()) return false')
+    expect(login).not.toContain('speechSynthesis')
     expect(session).toContain("farewellText && typeof window !== 'undefined' && !isOpenOcti()")
     expect(ops).toContain("const supported = !isOpenOcti() && typeof window !== 'undefined'")
   })

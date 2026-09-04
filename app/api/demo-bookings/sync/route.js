@@ -5,7 +5,7 @@ import { syncOnce, getChannelStatus } from '@/lib/inboundChannels'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const CHANNEL_ID = 'ContentHub_demos'
+const CHANNEL_ID = 'ContentStudio_demos'
 
 export async function POST() {
   try {

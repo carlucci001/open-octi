@@ -5,7 +5,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next-builder-verify/types/**/*.ts"
+    ".next-builder-verify/types/**/*.ts",
+    ".next-wo9-command/types/**/*.ts",
+    ".next-wo9-openocti/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

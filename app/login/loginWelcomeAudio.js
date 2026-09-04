@@ -36,7 +36,8 @@ function greetingForNow(now = new Date()) {
   return 'Good evening'
 }
 
-export function openOctiWelcomeClipFor({ setupIncomplete = false, now = new Date() } = {}) {
+export function openOctiWelcomeClipFor({ openOcti = isOpenOcti(), setupIncomplete = false, now = new Date() } = {}) {
+  if (!openOcti) return null
   if (setupIncomplete) return `${OPENOCTI_WELCOME_ROOT}/welcome-first-run.mp3`
   const hour = easternHourForNow(now)
   if (hour < 12) return `${OPENOCTI_WELCOME_ROOT}/welcome-morning.mp3`
@@ -116,23 +117,8 @@ export async function playQueuedLoginWelcomeAudio({ delayMs = 120 } = {}) {
   return true
 }
 
-function playBrowserSpeechFallback(text) {
-  if (isOpenOcti()) return false
-  if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return false
-  try {
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.rate = 0.96
-    utterance.pitch = 1
-    utterance.volume = 1
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utterance)
-    return true
-  } catch {
-    return false
-  }
-}
-
 async function openOctiWelcomeState() {
+  if (!isOpenOcti()) return null
   let profile = {}
   try {
     const response = await fetch('/api/openocti/setup', { cache: 'no-store', credentials: 'same-origin' })
@@ -163,6 +149,7 @@ async function markOpenOctiFirstLoginComplete() {
 }
 
 async function playPrerecordedWelcome(src, primedAudio, { maxPlaybackMs = 0, blockedDelayMs = maxPlaybackMs } = {}) {
+  if (!isOpenOcti() || !src) return false
   const startedAt = Date.now()
   const audio = primedAudio?.audio || new Audio()
   try {
@@ -274,7 +261,7 @@ export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio)
       ? { status: openOctiState.elevenLabsConfigured ? 'configured' : 'not_configured' }
       : await clientCapabilityStatus('elevenlabs')
     if (capability.status !== 'configured') {
-      if (!(await prerecordedFallback()) && playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
+      if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: 'elevenlabs not configured' })
       return
     }
     logLoginWelcomeStage('requested')
@@ -293,14 +280,14 @@ export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio)
     })
     if (!response.ok) {
       logLoginWelcomeStage('tts-failed', { status: String(response.status), reason: `lab-tts ${response.status}` })
-      if (!(await prerecordedFallback()) && playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
+      if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: `lab-tts ${response.status}` })
       return
     }
 
     const blob = await response.blob()
     if (!blob.size) {
       logLoginWelcomeStage('tts-failed', { reason: 'empty audio blob' })
-      if (!(await prerecordedFallback()) && playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
+      if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: 'empty audio blob' })
       return
     }
 
@@ -324,7 +311,7 @@ export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio)
     await Promise.race([ended, wait(LOGIN_WELCOME_PLAY_TIMEOUT_MS)])
   } catch (error) {
     logLoginWelcomeStage('failed', { reason: error?.name || error?.message || 'playback failed' })
-    if (!(await prerecordedFallback()) && playBrowserSpeechFallback(text)) logLoginWelcomeStage('fallback-played', { provider: 'browser-speech' })
+    if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: error?.name || error?.message || 'playback failed' })
     // Login must remain fail-open if the browser blocks audio or the TTS service is unavailable.
   } finally {
     if (timeoutId) window.clearTimeout(timeoutId)

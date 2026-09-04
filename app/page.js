@@ -29,6 +29,8 @@ import ContactsManager from './contacts/ContactsManager'
 import PipelinesManager from './pipelines/PipelinesManager'
 import LeadsManager from './leads/LeadsManager'
 import LeadsLab from './leads-lab/LeadsLab'
+import PressDeskManager from './press/PressDeskManager'
+import MigrationCenterTab from './settings/import/MigrationCenterTab'
 import EmailTemplatesManager from './email-templates/EmailTemplatesManager'
 import GestureMode from './components/GestureMode'
 import SponsorCRM from './sponsors/SponsorCRM'
@@ -59,10 +61,10 @@ import PresenceBeacon from './components/PresenceBeacon'
 import MessageBell from './components/MessageBell'
 import ThemeModeToggle from './components/ThemeModeToggle'
 import { canUseTab } from '@/lib/roles'
-import { Activity, Bot, Boxes, BrainCircuit, Cable, CircleDollarSign, FlaskConical, Hammer, KeyRound, LifeBuoy, Megaphone, Mic2, Newspaper, Package, PhoneCall, Radio, Server, Settings2, ShieldAlert, Wrench } from 'lucide-react'
+import { Activity, Bot, Boxes, BrainCircuit, Cable, CircleDollarSign, Database, FlaskConical, Hammer, KeyRound, LifeBuoy, Megaphone, Mic2, Newspaper, Package, PhoneCall, Radio, Server, Settings2, ShieldAlert, Wrench } from 'lucide-react'
 
 const APP_BUILD_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 10) || '2026.06.11-api-lab-mobile'
-const PRODUCT_VERSION = isOpenOcti() ? '1.1' : '2.1'
+const PRODUCT_VERSION = isOpenOcti() ? '1.1.1' : '2.1'
 // Build stamp baked in by next.config.js at build time. Shown in the sidebar
 // footer so the running build is confirmable at a glance — no deploy logs.
 const BUILD_NUMBER = process.env.NEXT_PUBLIC_FCC_BUILD_NUMBER || ''
@@ -436,12 +438,13 @@ function RepositoryNavIcon() {
 
 const OPENOCTI = isOpenOcti()
 const EDITION_BRAND = brandAssetsFor()
-const OPENOCTI_CLOSED_TABS = new Set(['research', 'platforms', 'SearchSuite3'])
+const OPENOCTI_CLOSED_TABS = new Set(['research', 'platforms', 'SearchTools3'])
 
 const NAV_MAIN = [
   { id: 'dashboard', icon: <CommandCenterNavIcon />, label: OPENOCTI ? 'OpenOcti' : 'Command Center', desc: OPENOCTI ? 'OpenOcti dashboard and today\'s priorities' : 'Command Center dashboard and today\'s priorities' },
   { id: 'feed', icon: '📰', label: 'Feed', desc: 'Live activity, online users, and direct messages' },
   { id: 'leads', icon: <LeadsNavIcon />, label: 'Leads', desc: 'Working leads, scripts, statuses, intake, and qualification' },
+  { id: 'press-desk', icon: <Newspaper size={18} strokeWidth={2.25} />, label: 'Press Desk', desc: 'Ranked press contacts, saved lists, compliant campaigns, and reporting' },
   { id: 'pipelines', icon: '🎯', label: 'Pipelines', desc: 'Select a pipeline and work the opportunities inside it' },
   { id: 'accounts', icon: '🏢', label: 'Accounts', desc: 'Companies, clients, prospects, and partners' },
   { id: 'support', icon: <LifeBuoy size={18} strokeWidth={2.25} />, label: 'Support', desc: 'Client support tickets, portal requests, SLA follow-up, and service queue' },
@@ -553,7 +556,7 @@ function LabWorkspaceIcon({ lab, size = 18, strokeWidth = 2.25 }) {
 const NAV_TOOLS = [
   { id: 'switchboard', icon: <SwitchboardNavIcon />, label: 'Switchboard', desc: 'Live agent call monitoring and QA controls' },
   { id: 'agents', icon: <AgentsNavIcon />, label: 'Agents', desc: 'Manage your AI agents — your virtual team' },
-  { id: 'platforms', icon: <Boxes size={18} strokeWidth={2.25} />, label: 'Platforms', desc: 'Register and manage the platforms Farrington runs — SearchSuite3 and future products' },
+  { id: 'platforms', icon: <Boxes size={18} strokeWidth={2.25} />, label: 'Platforms', desc: 'Register and manage the platforms Farrington runs — SearchTools3 and future products' },
   { id: 'automations', icon: <AutomationsNavIcon />, label: 'Automations', desc: 'Build guarded client-service workflows and reusable agent runs' },
   { id: 'builder', icon: <Hammer size={18} strokeWidth={2.25} />, label: 'Builder', desc: 'Create and run full applications in the private owner workspace' },
   { id: 'products', icon: <Package size={18} strokeWidth={2.25} />, label: 'Products', desc: 'Product catalog, licensing, prices, and order flow' },
@@ -608,6 +611,7 @@ const SECTION_BY_ID = (() => {
     else m[it.id] = it
   }
   m['settings'] = { id: 'settings', label: 'Admin', icon: <Server size={16} strokeWidth={2.25} /> }
+  m['migrate'] = { id: 'migrate', label: 'Import & migrate', icon: <Database size={16} strokeWidth={2.25} /> }
   m['control-services'] = { id: 'control-services', label: 'Control Services', icon: <Server size={16} strokeWidth={2.25} /> }
   return m
 })()
@@ -619,10 +623,10 @@ const WS_GLYPH = {
   system: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path strokeLinejoin="round" d="M5 4h14v6H5zM5 14h14v6H5z" /><path strokeLinecap="round" d="M8 7h.01M8 17h.01M12 7h5M12 17h5" /></svg>,
 }
 const WORKSPACES = [
-  { id: 'sell', label: 'Sell', ids: ['dashboard', 'leads', 'pipelines', 'accounts', 'support', 'contacts', 'finance'] },
+  { id: 'sell', label: 'Sell', ids: ['dashboard', 'leads', 'press-desk', 'pipelines', 'accounts', 'support', 'contacts', 'finance'] },
   { id: 'build', label: 'Build', ids: ['agents', 'platforms', 'automations', 'builder', 'campaign-studio', 'social', 'products', 'repository', 'ship-desk', 'build-board', 'switchboard', 'labs'] },
   { id: 'projects', label: 'Projects', ids: ['projects', 'tasks', 'documents', 'research', 'content-lab', 'media', 'notes', 'phone', 'conference', 'calendar', 'meeting-capture', 'feed'] },
-  { id: 'system', label: 'System', ids: ['incident-inbox', 'money-console', 'network', 'domains', 'credentials', 'control-services'] },
+  { id: 'system', label: 'System', ids: ['incident-inbox', 'money-console', 'network', 'domains', 'credentials', 'migrate', 'control-services'] },
 ].map(workspace => ({
   ...workspace,
   ids: OPENOCTI ? workspace.ids.filter(id => !OPENOCTI_CLOSED_TABS.has(id)) : workspace.ids,
@@ -653,17 +657,18 @@ const VALID_TABS = new Set([
   'my-account',
   'voice-guide',
   'outreach-campaigns',
-  ...(!OPENOCTI ? ['SearchSuite3'] : []),
+  ...(!OPENOCTI ? ['SearchTools3'] : []),
 ])
 
 const FINANCE_SUBS = new Set(['overview', 'overhead', 'payments', 'invoices', 'privacy', 'api-spend'])
 const FULL_BLEED_TABS = new Set(['notes', 'repository', 'media', 'content-lab', 'social'])
 const SHOW_OPERATOR_PROMPT_BAR = false
-const HIDE_OPERATOR_RIGHT_RAIL = true
+const HIDE_OPERATOR_RIGHT_RAIL = !OPENOCTI
 
 // Map old tab IDs to new ones so localStorage doesn't break
 const TAB_MIGRATION = {
   // Old tabs → new canonical IDs
+  'migration-center': 'migrate',
   'crm': 'leads',
   'sponsors': 'leads',
   'work-leads': 'leads',
@@ -2502,11 +2507,13 @@ export default function Page() {
           {tab === 'pipelines' && <PipelinesManager onNavigate={handleNavTo} />}
           {tab === 'accounts' && <AccountsManager onNavigate={handleNavTo} />}
           {!OPENOCTI && tab === 'platforms' && <PlatformsModule onNavigate={handleNavTo} isAdmin={isAdmin} />}
-          {!OPENOCTI && tab === 'SearchSuite3' && <PlatformsModule onNavigate={handleNavTo} isAdmin={isAdmin} initialPlatformId="SearchSuite3" />}
+          {!OPENOCTI && tab === 'SearchTools3' && <PlatformsModule onNavigate={handleNavTo} isAdmin={isAdmin} initialPlatformId="SearchTools3" />}
           {tab === 'support' && <SupportManager />}
           {tab === 'contacts' && <ContactsManager onNavigate={handleNavTo} />}
           {tab === 'leads' && <LeadsManager onNavigate={handleNavTo} />}
           {tab === 'leads-lab' && <LeadsLab onNavigate={handleNavTo} />}
+          {tab === 'press-desk' && <PressDeskManager />}
+          {tab === 'migrate' && isAdmin && <MigrationCenterTab />}
           {tab === 'lead-intake' && <LeadsManager onNavigate={handleNavTo} />}
           {tab === 'email-templates' && <EmailTemplatesManager onNavigate={handleNavTo} />}
           {tab === 'projects' && <ProjectsManager onNavigate={handleNavTo} />}

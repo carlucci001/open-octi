@@ -15,7 +15,7 @@ export const EXTERNAL_CAPABILITIES = Object.freeze([
   definition('perplexity', 'Perplexity research', [['PERPLEXITY_API_KEY']]),
   definition('nvidia', 'NVIDIA models', [['NVIDIA_API_KEY', 'NVIDIA_NIM_API_KEY', 'NGC_API_KEY']]),
   definition('mindstudio', 'MindStudio', [['MINDSTUDIO_API_KEY']]),
-  definition('elevenlabs', 'ElevenLabs voice', [['ELEVENLABS_API_KEY']], ['/api/elevenlabs']),
+  definition('elevenlabs', 'ElevenLabs voice', [['ELEVENLABS_API_KEY']], ['/api/elevenlabs'], ['commandcenter']),
   definition('twilio', 'Twilio telephony', [['TWILIO_ACCOUNT_SID'], ['TWILIO_AUTH_TOKEN', 'TWILIO_API_KEY_SECRET']]),
   definition('resend', 'Resend email', [['RESEND_API_KEY']]),
   definition('nylas', 'Nylas email', [['NYLAS_API_KEY', 'NYLAS_KEY'], ['NYLAS_GRANT_ID', 'NYLAS_GRANT_IDS']]),

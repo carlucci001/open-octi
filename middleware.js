@@ -79,11 +79,14 @@ const PUBLIC_EXACT = [
   '/api/releases/report',
   // Hermes/Nightwatch calls the incident poll with its dedicated bearer.
   '/api/ops/incidents/poll',
+  // Tokenized CAN-SPAM opt-out links must work without a CRM login. The route
+  // consumes one-time tokens and exposes no contact or campaign data.
+  '/api/press/unsubscribe',
   // Public platform capability manifest used for registration and discovery.
   '/.well-known/farrington-platform.json',
   // Sanitized public status surface; incident publication remains Carl-only.
   '/status',
-  // SearchSuite3 signs every request with its dedicated HMAC secret. Let the
+  // SearchTools3 signs every request with its dedicated HMAC secret. Let the
   // receiver perform that authentication instead of requiring a CRM session.
   '/api/integrations/seo-visibility',
   // VideoHub signs this one webhook receiver with its dedicated HMAC secret.

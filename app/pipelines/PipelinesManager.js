@@ -1,5 +1,6 @@
 'use client'
 import ThemedSelect from '../components/ThemedSelect'
+import CustomFieldsPanel from '../components/CustomFieldsPanel'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import PageHeader from '../components/PageHeader'
 import BoardWorkbench from '../components/BoardWorkbench'
@@ -429,6 +430,7 @@ function OpportunityForm({ opportunity, accounts, pipelines, currentPipeline, on
         <Field label="Expected Close"><input type="date" style={inp} value={f.expectedClose || ''} onChange={e => u('expectedClose', e.target.value)} /></Field>
       </div>
       <Field label="Notes"><textarea style={{ ...inp, minHeight: 60, resize: 'vertical' }} value={f.notes} onChange={e => u('notes', e.target.value)} /></Field>
+      <CustomFieldsPanel fields={opportunity?.customFields} compact />
       <label className="flex items-center gap-2 mb-3 text-sm" style={{ color: leadGenOn ? 'var(--text)' : 'var(--text-muted)' }}>
         <input type="checkbox" checked={leadGenOn} onChange={e => toggleLeadGen(e.target.checked)} style={{ width: 18, height: 18 }} />
         This opportunity generates leads

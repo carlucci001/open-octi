@@ -22,7 +22,7 @@ import { readData, writeData } from '@/lib/dataStore'
 import { COMMAND_CENTER_MENU_GUIDE } from '@/lib/commandCenterNavigation'
 import { OFFICE_AGENT_CONDUCT } from '@/lib/agentOfficeConduct'
 import { requireCapability } from '@/lib/permissions'
-import { WNC_TIMES_AGENT_ID, WNC_TIMES_FIRST_MESSAGE } from '@/lib/wnc-times-agent'
+import { sample_business_AGENT_ID, sample_business_FIRST_MESSAGE } from '@/lib/wnc-times-agent'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -36,13 +36,13 @@ function getElevenKey() {
 }
 
 function buildFirstMessage(agent, agentId) {
-  if (agentId === WNC_TIMES_AGENT_ID) return WNC_TIMES_FIRST_MESSAGE
+  if (agentId === sample_business_AGENT_ID) return sample_business_FIRST_MESSAGE
   // Phone receptionist agents → formal company greeting (callers expect it).
   // Other agents → minimal in-CRM greeting (Carl shouldn't hear bot-speak when he opens her).
   const isReceptionist = agent.category === 'customer-facing'
     && (agent.channels || []).includes('phone')
   if (isReceptionist) {
-    const company = agentId === 'newsroom-receptionist' ? 'ContentHub' : 'Farrington Development'
+    const company = agentId === 'newsroom-receptionist' ? 'ContentStudio' : 'Farrington Development'
     return `${company}, this is ${agent.name}.`
   }
   return 'Okay Carl.'  // brief pickup for Command Center voice; live sessions may override with a varied pickup.
@@ -50,7 +50,7 @@ function buildFirstMessage(agent, agentId) {
 
 function buildElevenLabsPrompt(agent, agentId) {
   const base = (agent.jobDescription || '').trim()
-  if (agentId === WNC_TIMES_AGENT_ID || agent.publicWidget?.enabled === true) return base
+  if (agentId === sample_business_AGENT_ID || agent.publicWidget?.enabled === true) return base
   const wakePickup = !/COMMAND CENTER VOICE PICKUP|MAGGIE VOICE PICKUP/i.test(base) ? `
 
 COMMAND CENTER VOICE PICKUP:

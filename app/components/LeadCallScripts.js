@@ -15,13 +15,14 @@ const CAMPAIGNS = [
   { id: 'sponsors', label: 'Sponsors' },
   { id: 'newspapers', label: 'Newspapers' },
   { id: 'tda_outreach', label: 'TDA Outreach' },
+  { id: 'campaigns', label: 'Political Campaigns' },
 ]
 
 // Which script set a lead's brand most likely wants on the phone.
 const BRAND_DEFAULT_CAMPAIGN = {
   farrington_dev: 'farrington_dev',
-  ContentHub: 'newspapers',
-  wnc_times: 'sponsors',
+  ContentStudio: 'newspapers',
+  sample_business: 'sponsors',
 }
 
 const OUTCOMES = [
@@ -41,7 +42,7 @@ const inp = { background: 'var(--surface2)', border: '1px solid var(--border)', 
 
 export default function LeadCallScripts({ lead, onClose, onContacted, onEmail }) {
   const [scripts, setScripts] = useState(null) // null = loading
-  const [campaign, setCampaign] = useState(() => BRAND_DEFAULT_CAMPAIGN[lead.brandContext] || 'farrington_dev')
+  const [campaign, setCampaign] = useState(() => lead.signal?.trigger === 'campaign' || lead.tags?.includes('signal:campaign') ? 'campaigns' : BRAND_DEFAULT_CAMPAIGN[lead.brandContext] || 'farrington_dev')
   const [activeId, setActiveId] = useState('')
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(null)

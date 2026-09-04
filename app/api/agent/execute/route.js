@@ -18,6 +18,7 @@ import {
   accountWithRelations, contactWithRelations,
   findAccountMatches, findContactByEmail, logActivity,
 } from '@/lib/entityStore'
+import { assertLeadSignalChannelAllowed } from '@/lib/lead-signals/compliance'
 import { mutateData, readData, writeData } from '@/lib/dataStore'
 import { getCurrentUser } from '@/lib/auth'
 import { wrapEmailBody, getAgentEmailIdentity, buildEmail } from '@/lib/emailSignature'
@@ -57,6 +58,11 @@ import { getCreditWallet, issuePrepaidCredits } from '@/lib/credit-wallet'
 import { stripeBillingCatalogHash } from '@/lib/stripe-billing-catalog.mjs'
 import { getRuntimeStripeBillingCatalogDefinitions } from '@/lib/stripe-billing-catalog-source'
 import { commitOpenOctiImport, detectImportMapping, previewOpenOctiImport } from '@/lib/openocti-import'
+import {
+  PRESS_AGENT_TOOL_DESCRIPTIONS,
+  PRESS_AGENT_TOOL_NAMES,
+  runPressAgentTool,
+} from '@/lib/press/agent-tools'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -2559,6 +2565,14 @@ const TOOLS = {
     },
   ])),
 
+  ...Object.fromEntries(PRESS_AGENT_TOOL_NAMES.map(name => [
+    name,
+    {
+      description: PRESS_AGENT_TOOL_DESCRIPTIONS[name],
+      run: async (args = {}) => runPressAgentTool(name, args),
+    },
+  ])),
+
   list_press_contacts: {
     description: 'List curated press-release recipients for Mark. Args: { q?, topic?, beat?, outlet?, region?, market?, status?="active|all", limit? }. Returns contacts with name, email, outlet, beat, notes, sourceUrl. Use before drafting or sending a press release so Mark knows who should receive it.',
     run: (args = {}) => {
@@ -2591,6 +2605,7 @@ const TOOLS = {
   send_email: {
     description: 'Send email via Resend. Args: { to OR clientName, subject, body, attachments?, agent? }. Pass either to (raw email) OR clientName (we look up the email). attachments: array of media IDs, /media/ paths, or URLs. agent: agent id when YOU are the sender — signature gets your avatar.',
     run: async (args) => {
+      if (args.leadId) assertLeadSignalChannelAllowed({ leadId: args.leadId, channel: 'email' })
       if (!args.subject || !args.body) throw new Error('subject and body required')
       if (wantsSignatureRequestText(args.subject, args.body, args.clientName, args.to)) {
         return TOOLS.send_signature_document.run({
@@ -2630,7 +2645,7 @@ const TOOLS = {
       const userAttachments = await resolveAttachments(args.attachments)
       const allAttachments = [...inlineAttachments, ...userAttachments]
       const r = await resend.emails.send({
-        from: 'ContentHub <redacted@example.invalid>',
+        from: 'ContentStudio <redacted@example.invalid>',
         to: [to],
         replyTo: 'personal@example.invalid',
         subject: args.subject,
@@ -3806,6 +3821,7 @@ const TOOLS = {
   dispatch_outbound_call: {
     description: "Place an outbound phone call FROM Doreen's number PHONE_REDACTED to a recipient. Doreen runs the call independently — Carl is NOT in the audio path. Use for: confirmation calls, demo bookings, reactivation, follow-ups. Args: { to_phone, reason, name? }. Always confirm out loud with Carl ('Calling Marjorie now about Wednesday demo — placing it') BEFORE calling.",
     run: async (args) => {
+      if (args.leadId) assertLeadSignalChannelAllowed({ leadId: args.leadId, channel: 'ai-voice' })
       const apiKey = isOpenOcti() ? resolveProviderKey('elevenlabs').key : process.env.ELEVENLABS_API_KEY
       if (!apiKey) throw new Error('ELEVENLABS_API_KEY not set')
       const DOREEN_AGENT_ID = 'agent_9401kqcyv15he32rprgj859pj62w'

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireCrmWrite } from '@/lib/permissions'
 import { readData } from '@/lib/dataStore'
 import { runUrlReport, UrlReportError, URL_REPORT_TYPES } from '@/lib/url-report-engine'
-import { registerSearchSuite3Completion } from '@/lib/SearchSuite3-engagements'
+import { registerSearchTools3Completion } from '@/lib/SearchTools3-engagements'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,7 +30,7 @@ export async function POST(request) {
       createdBy: user?.id || user?.email || 'crm',
     })
     try {
-      registerSearchSuite3Completion({
+      registerSearchTools3Completion({
         documentId: result.documentId,
         accountId: account.id,
         summary: result.summary,

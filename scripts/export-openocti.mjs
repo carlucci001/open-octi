@@ -76,6 +76,7 @@ const OVERLAYS = new Map([
   ['docs/INSTALL.md', 'docs/INSTALL.md'],
   ['docs/RELEASING.md', 'docs/RELEASING.md'],
   ['.github/workflows/ci.yml', '.github/workflows/ci.yml'],
+  ['.github/workflows/publish-images.yml', '.github/workflows/publish-images.yml'],
 ])
 
 const DIRECTORY_OVERLAYS = ['docs/brand', 'docs/guides', 'docs/releases', 'docs/screenshots']
@@ -91,10 +92,18 @@ const OPENOCTI_REFERENCE_REPLACEMENTS = [
   [new RegExp(['my', 'vtc\\.com'].join(''), 'gi'), 'video.example.com'],
   [new RegExp(['carl', 'farrington\\.com'].join(''), 'gi'), 'owner.example.com'],
   [new RegExp(['farrington', 'development\\.com'].join(''), 'gi'), 'company.example.com'],
-  [new RegExp(['get', 'found'].join(''), 'gi'), 'SearchSuite'],
+  // Keep generic product replacements identifier/path-safe because the scrubber
+  // also processes JavaScript keys, route IDs, import specifiers, and filenames.
+  [new RegExp(['get', 'found'].join(''), 'gi'), 'SearchTools'],
   [new RegExp(['get', 'remedy'].join(''), 'gi'), 'RemedySuite'],
   [new RegExp(['my', 'vtc'].join(''), 'gi'), 'VideoHub'],
-  [new RegExp(['newsroom', '-?', 'aios'].join(''), 'gi'), 'ContentHub'],
+  [new RegExp(['newsroom', '-?', 'aios'].join(''), 'gi'), 'ContentStudio'],
+  [new RegExp(['search', 'suite'].join(''), 'gi'), 'SearchTools'],
+  [new RegExp(['content', 'hub'].join(''), 'gi'), 'ContentStudio'],
+  [new RegExp(['wnc', '_times'].join(''), 'gi'), 'sample_business'],
+  [new RegExp(['farrington', ' knowledge'].join(''), 'gi'), 'Knowledge'],
+  [new RegExp(['command center', ' mail'].join(''), 'gi'), 'Mail'],
+  [new RegExp(['/home/', 'carl'].join(''), 'gi'), '/srv/openocti'],
   [new RegExp(['vibn', 'flow'].join(''), 'gi'), 'WorkflowSuite'],
   [new RegExp(['vibn', 'flip'].join(''), 'gi'), 'PublishingSuite'],
   [new RegExp(['vibin', 'flow'].join(''), 'gi'), 'WorkflowSuite'],
@@ -162,6 +171,12 @@ export const OPENOCTI_PRODUCT_DENYLIST = Object.freeze([
   ['private telephone href', new RegExp(['tel:\\+', '1828'].join(''), 'i')],
   ['private city reference', new RegExp(['ashe', 'ville'].join(''), 'i')],
   ['owner personal identifier', new RegExp(['carl', 'farring'].join(''), 'i')],
+  ['closed search suite reference', new RegExp(['search', 'suite'].join(''), 'i')],
+  ['closed content suite reference', new RegExp(['content', 'hub'].join(''), 'i')],
+  ['private publication identifier', new RegExp(['wnc', '_times'].join(''), 'i')],
+  ['private knowledge label', new RegExp(['farrington', ' knowledge'].join(''), 'i')],
+  ['private mail label', new RegExp(['command center', ' mail'].join(''), 'i')],
+  ['personal home path', new RegExp(['/home/', 'carl'].join(''), 'i')],
 ])
 
 export function matchOpenOctiDenylist(value) {
@@ -169,6 +184,18 @@ export function matchOpenOctiDenylist(value) {
   return OPENOCTI_PRODUCT_DENYLIST
     .filter(([, pattern]) => pattern.test(text))
     .map(([label]) => label)
+}
+
+function isAllowedNcLeadSourceReference(value) {
+  const relative = String(value || '').replaceAll('\\', '/').toLowerCase()
+  if (!relative.startsWith('vault/lead-sources/')) return false
+  return relative.startsWith('vault/lead-sources/state/nc-')
+    || relative.startsWith('vault/lead-sources/county/nc-')
+    || relative.startsWith('vault/lead-sources/county/buncombe-')
+    || relative.startsWith(`vault/lead-sources/city/${['ashe', 'ville-'].join('')}`)
+    || relative.startsWith(`vault/lead-sources/_proving/${['ashe', 'ville-'].join('')}`)
+    || relative.startsWith('vault/lead-sources/_proving/buncombe-')
+    || relative.startsWith('vault/lead-sources/_proving/nc-')
 }
 
 const DATA_DEMO_PATTERNS = [
@@ -338,7 +365,7 @@ export function stampExportVersion(output, version, exportedAt = new Date().toIS
   pkg.version = version
   pkg.private = false
   pkg.license = 'AGPL-3.0-only'
-  const allowedScripts = new Set(['dev', 'build', 'start', 'test', 'test:watch', 'test:ui', 'inventory', 'verify:data-backend', 'export:openocti'])
+  const allowedScripts = new Set(['dev', 'build', 'start', 'test', 'test:watch', 'test:ui', 'inventory', 'verify:data-backend', 'export:openocti', 'docs:check'])
   pkg.scripts = Object.fromEntries(Object.entries(pkg.scripts || {}).filter(([name]) => allowedScripts.has(name)))
   pkg.scripts.build = 'node scripts/openocti-build.mjs'
   fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`)
@@ -420,7 +447,9 @@ function scanExport(output) {
   for (const file of listFiles(output)) {
     if (!isTextFile(file)) continue
     const content = fs.readFileSync(file, 'utf8')
+    const relative = path.relative(output, file).replaceAll('\\', '/')
     for (const [label, pattern] of FORBIDDEN_EXPORT_PATTERNS) {
+      if (label === 'private city' && (isAllowedNcLeadSourceReference(relative) || relative === 'OPENOCTI_FILELIST.txt')) continue
       if (pattern.test(content)) failures.push(`${path.relative(output, file)}: ${label}`)
     }
     const emails = content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []
@@ -436,12 +465,14 @@ export function scanOpenOctiDenylist(output) {
   for (const file of listFiles(output)) {
     const relative = path.relative(output, file).replaceAll('\\', '/')
     for (const label of matchOpenOctiDenylist(relative)) {
+      if (label === 'private city reference' && isAllowedNcLeadSourceReference(relative)) continue
       failures.push(`${relative}:0: ${label} in path`)
     }
     if (!isTextFile(file)) continue
     const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/)
     lines.forEach((line, index) => {
       for (const label of matchOpenOctiDenylist(line)) {
+        if (label === 'private city reference' && (isAllowedNcLeadSourceReference(relative) || (relative === 'OPENOCTI_FILELIST.txt' && isAllowedNcLeadSourceReference(line)))) continue
         failures.push(`${relative}:${index + 1}: ${label}`)
       }
     })

@@ -121,7 +121,7 @@ export async function POST(request) {
       source: profile.source,
       notes,
       tenantId: 'lease-cl_001',
-      campaignType: 'wnc_times',
+      campaignType: 'sample_business',
       meta: { action, agentId: profile.id, brand: profile.brand },
     })
 

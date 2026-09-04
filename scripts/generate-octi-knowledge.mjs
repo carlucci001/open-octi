@@ -10,7 +10,7 @@ function publicKnowledge(content) {
     .replace(/Carl Farrington(?: of Farrington Development LLC)?/gi, 'OpenOcti contributors')
     .replace(/Farrington Development LLC/gi, 'OpenOcti contributors')
 }
-const CLOSED_CAPABILITY_ID = /definition\(['"](?:SearchSuite3|newsroom|platforms|RemedySuite|VideoHub|WorkflowSuite|PublishingSuite|WorkflowSuite)['"]/i
+const CLOSED_CAPABILITY_ID = /definition\(['"](?:SearchTools3|newsroom|platforms|RemedySuite|VideoHub|WorkflowSuite|PublishingSuite|WorkflowSuite)['"]/i
 
 export function publicFeatureManifest(content) {
   const declarations = String(content || '')

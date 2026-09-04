@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 const IN_HOUSE_ACCOUNT_ID = '__in_house__'
 const IN_HOUSE_LABEL = 'Farrington Development'
 const GITEA_API = 'http://127.0.0.1:3001/api/v1'
-const GITEA_AUTH_HEADER = '/home/carl/.config/fcc/gitea-auth-header'
+const GITEA_AUTH_HEADER = '/srv/openocti/.config/fcc/gitea-auth-header'
 const PROTECTED_FOLDERS = new Set(['farrington-command-center', 'farrington-command-center-preview', 'farrington-command-center-ship'])
 
 function enrich(projects) {
@@ -65,7 +65,7 @@ function accountExists(accountId) {
 }
 
 function safeWorkspacePath(project) {
-  const root = process.platform === 'win32' ? 'C:\\dev' : '/home/carl/dev'
+  const root = process.platform === 'win32' ? 'C:\\dev' : '/srv/openocti/dev'
   const raw = process.platform === 'win32'
     ? (project.windowsPath || project.localPath)
     : (project.ubuntuPath || project.repositoryPath)

@@ -48,7 +48,7 @@ function flattenTree(tree) {
 
 const SOURCE_COLORS = {
   'command-center': '#3b82f6',
-  ContentHub: '#10b981',
+  ContentStudio: '#10b981',
   platform: '#10b981',
   template: '#f59e0b',
   'public-site': '#06b6d4',
@@ -317,7 +317,7 @@ function KnowledgeField() {
       <div className="knowledge-copy">
         <div className="text-[10px] uppercase font-semibold mb-2" style={{ color: 'var(--accent)' }}>Unified knowledge map</div>
         <h2>Pick a note, search the vault, or open Graph to watch the project connections move.</h2>
-        <p>Use the ContentHub Unified vault to see platform, template, public site, Command Center, and design notes together.</p>
+        <p>Use the ContentStudio Unified vault to see platform, template, public site, Command Center, and design notes together.</p>
       </div>
     </div>
   )

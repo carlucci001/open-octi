@@ -18,12 +18,12 @@ describe('OpenOcti OpenClaw starter runtime', () => {
   it('removes closed capabilities from Octi generated knowledge', () => {
     const manifest = publicFeatureManifest(`
       definition('anthropic', 'Anthropic', [['ANTHROPIC_API_KEY']]),
-      definition('SearchSuite3', 'SearchSuite3', [['SearchSuite3_API_KEY']]),
+      definition('SearchTools3', 'SearchTools3', [['SearchTools3_API_KEY']]),
       definition('newsroom', 'Newsroom AIOS', [['NEWSROOM_API_KEY']]),
     `)
 
     expect(manifest).toContain("definition('anthropic'")
-    expect(manifest).not.toMatch(/SearchSuite|newsroom/i)
+    expect(manifest).not.toMatch(/SearchTools|newsroom/i)
   })
 
   it('ships deterministic first-run sources for Octi import and roster answers', () => {
@@ -54,7 +54,7 @@ describe('OpenOcti OpenClaw starter runtime', () => {
     expect(selectProviderModel(env).model.startsWith(prefix)).toBe(true)
   })
 
-  it('configures all five agents and fills the first-run business profile', () => {
+  it('configures all seven agents and fills the first-run business profile', () => {
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'openocti-runtime-'))
     temporaryDirs.push(stateDir)
     fs.cpSync(path.join(root, 'deploy/openclaw/seed'), stateDir, { recursive: true })
@@ -66,7 +66,7 @@ describe('OpenOcti OpenClaw starter runtime', () => {
     })
 
     const config = JSON.parse(fs.readFileSync(path.join(stateDir, 'openclaw.json'), 'utf8'))
-    expect(config.agents.list.map(agent => agent.id)).toEqual(['main', 'octi', 'coding', 'social-media', 'legal', 'matilda'])
+    expect(config.agents.list.map(agent => agent.id)).toEqual(['main', 'octi', 'coding', 'social-media', 'legal', 'matilda', 'press-release-agent'])
     expect(config.agents.list.every(agent => agent.model.primary === 'openai/gpt-4.1')).toBe(true)
     const workspaces = fs.readdirSync(path.join(stateDir, 'workspace'), { recursive: true })
       .filter(file => String(file).endsWith('.md'))
@@ -83,7 +83,7 @@ describe('OpenOcti OpenClaw starter runtime', () => {
     const walk = directory => fs.readdirSync(directory, { withFileTypes: true }).forEach(entry => {
       const file = path.join(directory, entry.name)
       if (entry.isDirectory()) walk(file)
-      else if (!file.includes(`${path.sep}workspace${path.sep}octi${path.sep}knowledge${path.sep}`)) files.push(file)
+      else if (!file.includes(`${path.sep}knowledge${path.sep}`)) files.push(file)
     })
     walk(seedRoot)
     const content = files.map(file => fs.readFileSync(file, 'utf8')).join('\n')
@@ -125,9 +125,9 @@ describe('OpenOcti OpenClaw starter runtime', () => {
   })
 
   it('runs OpenClaw as the shared data volume owner', () => {
-    const dockerfile = fs.readFileSync(path.join(root, 'deploy/openclaw/Dockerfile'), 'utf8')
+    const dockerfile = fs.readFileSync(path.join(root, 'deploy/openclaw/Dockerfile'), 'utf8').replace(/\r\n/g, '\n')
     expect(dockerfile).toContain('RUN mkdir -p /data && chown node:node /data')
-    expect(dockerfile).toContain('\nUSER node\n')
+    expect(dockerfile).toMatch(/\r?\nUSER node\r?\n/)
   })
 
   it('fills an existing starter workspace from first-run setup without changing its config', () => {

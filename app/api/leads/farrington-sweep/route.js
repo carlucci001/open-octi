@@ -3,6 +3,8 @@ import { listFarringtonLeadVerticals, runFarringtonLeadSweep } from '@/lib/apify
 import { createSweepRunOnce, finishSweepRun, getSweepRun, reportSweepProgress } from '@/lib/lead-sweep-runs'
 import { normalizeLeadClientRequestId } from '@/lib/lead-run-client'
 import { buildLeadVendorRequest } from '@/lib/lead-paid-search-limit'
+import { resolveLeadListForDestination } from '@/lib/lead-list-routing'
+import { loadLeadLists } from '@/lib/leadLists'
 import { requireCrmWrite } from '@/lib/permissions'
 
 export const runtime = 'nodejs'
@@ -57,6 +59,12 @@ export async function POST(request) {
       vendorOverrides.maxPaidBatches ?? process.env.LEAD_PEOPLE_MAX_PAID_SEARCHES,
     ),
   }
+  const destination = String(body.spec?.destination || body.form?.destination || 'farrington_dev').trim()
+  const selectedLeadList = resolveLeadListForDestination({
+    destination,
+    leadLists: loadLeadLists(),
+    requestedId: body.leadListId || body.form?.selectedLeadListId,
+  })
   const dataSource = {
     category,
     verticalId: body.verticalId || category,
@@ -66,7 +74,7 @@ export async function POST(request) {
     campaign: body.campaign,
     // The Leads Lab list picker — without this the sweep created leads with
     // no lead list and they landed under "No lead list" (found 2026-08-14).
-    leadListId: String(body.leadListId || body.form?.selectedLeadListId || '').trim() || undefined,
+    leadListId: selectedLeadList?.id || undefined,
     spec: body.spec,
     // Per-run vendor choice: { provider: 'apollo' } sources named decision-makers
     // from Apollo instead of businesses from Google Places. Omitted, the

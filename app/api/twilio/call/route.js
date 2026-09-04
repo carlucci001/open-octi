@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireCapability } from '@/lib/permissions'
+import { assertLeadSignalChannelAllowed } from '@/lib/lead-signals/compliance'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,7 +28,8 @@ export async function POST(request) {
   if (error) return error
 
   try {
-    const { to } = await request.json()
+    const { to, leadId } = await request.json()
+    if (leadId) assertLeadSignalChannelAllowed({ leadId, channel: 'manual-phone' })
     const destination = normalize(to)
     if (!destination) return NextResponse.json({ ok: false, error: 'Missing or invalid `to` phone number' }, { status: 400 })
 
