@@ -1,10 +1,10 @@
-![OpenOcti â€” the open-source Command Center](docs/brand/openocti-banner.png)
+![OpenOcti - the open-source Command Center](docs/brand/openocti-banner.png)
 
 [![AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-30c0f0?labelColor=001040)](LICENSE) [![Docker](https://img.shields.io/badge/run-Docker%20Compose-30c0f0?labelColor=001040)](docs/INSTALL.md) [![Community supported](https://img.shields.io/badge/support-community-30c0f0?labelColor=001040)](#support)
 
 **Run your business from one private command center on your own server.** OpenOcti combines a practical CRM, project operations, documents, voice, and a starter AI staff without requiring a hosted control plane.
 
-[openocti.com](https://openocti.com) Â· Managed edition: [Octi CC](https://octicc.com)
+[openocti.com](https://openocti.com) &middot; Managed edition: [Octi CC](https://octicc.com)
 
 ## Install in three lines
 
@@ -58,9 +58,9 @@ OrcaRouter is an optional handoff router. Add `ORCAROUTER_API_KEY` to enable its
 | Where it runs | Your server | Your server or managed infrastructure |
 | CRM, projects, documents, campaigns, AI staff | Included | Included |
 | Starter agents and OpenClaw gateway | Included | Installed and operated for you |
-| Client portal and concierge | â€” | Included |
-| Integrated research desk | â€” | Included |
-| Payments and checkout | â€” | Included |
+| Client portal and concierge | Not included | Included |
+| Integrated research desk | Not included | Included |
+| Payments and checkout | Not included | Included |
 | Support | Community | Managed support |
 
 ## Guides
