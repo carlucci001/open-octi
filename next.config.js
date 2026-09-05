@@ -12,6 +12,7 @@ const closedModuleRequests = [
   '@/lib/deerflow-tools',
   '@/lib/deerflow-voice-turn',
   '@/lib/portal-automation-provisioning',
+  '@/lib/portal-auth',
   '@/lib/portal-provisioning',
   '@/lib/productCheckout',
   './productCheckout',

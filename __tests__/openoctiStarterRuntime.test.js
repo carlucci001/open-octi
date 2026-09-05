@@ -61,6 +61,8 @@ describe('OpenOcti OpenClaw starter runtime', () => {
 
     configureSeed(stateDir, {
       OPENAI_API_KEY: 'test-only',
+      OPENCLAW_GATEWAY_TOKEN: 'gateway-token-for-tests-only-000001',
+      OPENCLAW_API_KEY: 'api-key-for-tests-only-00000000001',
       OPENOCTI_BUSINESS_NAME: 'Example Workshop',
       OPENOCTI_OWNER_NAME: 'Example Owner',
     })
@@ -75,6 +77,43 @@ describe('OpenOcti OpenClaw starter runtime', () => {
     expect(workspaces).toContain('Example Workshop')
     expect(workspaces).toContain('Example Owner')
     expect(workspaces).not.toMatch(/\{\{(?:business_name|owner_name)\}\}/)
+  })
+
+  it('migrates existing managed configs to restrictive named-tool policies', () => {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'openocti-runtime-'))
+    temporaryDirs.push(stateDir)
+    fs.cpSync(path.join(root, 'deploy/openclaw/seed'), stateDir, { recursive: true })
+    const configPath = path.join(stateDir, 'openclaw.json')
+    const legacy = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    legacy.tools = { profile: 'full', alsoAllow: ['fcc_call', 'exec', 'fcc_list_tools'] }
+    legacy.agents.list[0].tools = { alsoAllow: ['fcc_call', 'exec', 'fcc_search'] }
+    fs.writeFileSync(configPath, `${JSON.stringify(legacy, null, 2)}\n`)
+
+    configureSeed(stateDir, {
+      OPENAI_API_KEY: 'test-only',
+      OPENCLAW_GATEWAY_TOKEN: 'gateway-token-for-tests-only-000001',
+      OPENCLAW_API_KEY: 'api-key-for-tests-only-00000000001',
+    })
+
+    const hardened = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    expect(hardened.tools).toMatchObject({ profile: 'minimal' })
+    expect(hardened.tools).not.toHaveProperty('alsoAllow')
+    expect(hardened.agents.list[0].tools).toEqual({
+      profile: 'full',
+      allow: ['fcc_search', 'fcc_list_tools'],
+    })
+  })
+
+  it.each([
+    [{ OPENCLAW_API_KEY: 'api-key-for-tests-only-00000000001' }, 'OPENCLAW_GATEWAY_TOKEN'],
+    [{ OPENCLAW_GATEWAY_TOKEN: 'gateway-token-for-tests-only-000001' }, 'OPENCLAW_API_KEY'],
+    [{ OPENCLAW_GATEWAY_TOKEN: 'short', OPENCLAW_API_KEY: 'api-key-for-tests-only-00000000001' }, 'OPENCLAW_GATEWAY_TOKEN'],
+  ])('fails closed when machine secrets are incomplete or weak: %s', (secrets, name) => {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'openocti-runtime-'))
+    temporaryDirs.push(stateDir)
+    fs.cpSync(path.join(root, 'deploy/openclaw/seed'), stateDir, { recursive: true })
+    // The app must publish a valid shared file before the sidecar can replace a weak/missing override.
+    expect(() => configureSeed(stateDir, { OPENAI_API_KEY: 'test-only', ...secrets })).toThrow(/ENOENT/)
   })
 
   it('contains no private markers and references only tools registered by the shipped plugin', () => {
@@ -99,7 +138,18 @@ describe('OpenOcti OpenClaw starter runtime', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(root, 'deploy/openclaw/openocti-plugin/openclaw.plugin.json'), 'utf8'))
     const registered = new Set([...plugin.matchAll(/^\s{2}(fcc_[a-z0-9_]+):/gm)].map(match => match[1]))
     const contracted = new Set(manifest.contracts?.tools || [])
-    const referenced = config.agents.list.flatMap(agent => agent.tools?.alsoAllow || [])
+    const referenced = config.agents.list.flatMap(agent => agent.tools?.allow || [])
+    expect(config.tools).toMatchObject({ profile: 'minimal' })
+    expect(config.tools).not.toHaveProperty('allow')
+    expect(config.tools).not.toHaveProperty('alsoAllow')
+    expect(registered).not.toContain('fcc_call')
+    expect(contracted).not.toContain('fcc_call')
+    for (const agent of config.agents.list) {
+      expect(agent.tools).toMatchObject({ profile: 'full' })
+      expect(agent.tools).not.toHaveProperty('alsoAllow')
+      expect(agent.tools.allow.length).toBeGreaterThan(0)
+      expect(agent.tools.allow.every(tool => tool.startsWith('fcc_'))).toBe(true)
+    }
     expect([...new Set(referenced)].filter(tool => !registered.has(tool))).toEqual([])
     expect([...registered].filter(tool => !contracted.has(tool))).toEqual([])
   })
@@ -109,7 +159,7 @@ describe('OpenOcti OpenClaw starter runtime', () => {
     const config = JSON.parse(fs.readFileSync(path.join(seedRoot, 'openclaw.json'), 'utf8'))
     const octi = config.agents.list.find(agent => agent.id === 'octi')
     expect(octi.name).toBe('Octi')
-    expect(octi.tools.alsoAllow).toEqual(expect.arrayContaining(['fcc_capability_status', 'fcc_list_agents', 'fcc_open_page', 'fcc_import_start', 'fcc_import_commit']))
+    expect(octi.tools.allow).toEqual(expect.arrayContaining(['fcc_capability_status', 'fcc_list_agents', 'fcc_open_page', 'fcc_import_start', 'fcc_import_commit']))
     expect(fs.readFileSync(path.join(seedRoot, 'workspace/octi/SOUL.md'), 'utf8')).toContain('Never guess')
     const generator = fs.readFileSync(path.join(root, 'scripts/generate-octi-knowledge.mjs'), 'utf8')
     expect(generator).toContain("'docs/INSTALL.md'")

@@ -1493,6 +1493,7 @@ This inventory was generated from `npm ls --prod --json --long --all`.
 | eventsource-parser | 1.1.2 | MIT |
 | eventsource-parser | unknown | UNKNOWN |
 | everything.js | unknown | UNKNOWN |
+| exceljs | unknown | UNKNOWN |
 | execa | 5.1.1 | MIT |
 | execa | unknown | UNKNOWN |
 | exif-reader | unknown | UNKNOWN |

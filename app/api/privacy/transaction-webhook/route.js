@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import { publicPrivacyWebhookUrl, upsertPrivacyTransaction } from '@/lib/privacyFinance'
+import { configuredMachineSecret, machineSecretMatches } from '@/lib/machine-secret'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 function authorized(request, url) {
-  const expected = process.env.PRIVACY_WEBHOOK_TOKEN || ''
-  if (!expected) return true
+  const expected = configuredMachineSecret(process.env.PRIVACY_WEBHOOK_TOKEN)
+  if (!expected) return null
   const supplied = request.headers.get('x-privacy-webhook-token') || url.searchParams.get('token') || ''
-  return supplied === expected
+  return machineSecretMatches(supplied, expected)
 }
 
 export async function GET(request) {
@@ -23,7 +24,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   const url = new URL(request.url)
-  if (!authorized(request, url)) {
+  const isAuthorized = authorized(request, url)
+  if (isAuthorized === null) {
+    return NextResponse.json({ ok: false, error: 'Privacy webhook authentication is not configured' }, { status: 503 })
+  }
+  if (!isAuthorized) {
     return NextResponse.json({ ok: false, error: 'Unauthorized Privacy webhook' }, { status: 401 })
   }
 

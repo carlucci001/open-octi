@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { verifyTwilioWebhook } from '@/lib/twilio-webhook-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,6 +18,8 @@ export async function GET(request) { return handle(request) }
 export async function POST(request) { return handle(request) }
 
 async function handle(request) {
+  const authError = await verifyTwilioWebhook(request)
+  if (authError) return authError
   const url = new URL(request.url)
   const baseUrl = getTunnelBaseUrl() || `${url.protocol}//${url.host}`
   let conf = url.searchParams.get('conf')

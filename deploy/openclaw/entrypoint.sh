@@ -16,7 +16,7 @@ fi
 # to .env later "lights up" the agents without a volume reset. Set OPENOCTI_MANAGED_CONFIG=false to
 # take over openclaw.json by hand.
 if [ "${OPENOCTI_MANAGED_CONFIG:-true}" != "false" ]; then
-  node /opt/openocti/configure-seed.mjs "$state_dir"
+  node /opt/openocti/deploy/openclaw/configure-seed.mjs "$state_dir"
 fi
 
 exec "$@"

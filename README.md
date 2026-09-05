@@ -18,7 +18,7 @@ docker compose up -d
 
 Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
 
-> The `latest` images for this release are published only after the `v1.1.1` tag exists. Before that tag, use the source-build command above. See the [1.1.1 release notes](docs/releases/1.1.1.md).
+> The `latest` images for this release are published only after the `v1.1.2` tag exists. Before that tag, use the source-build command above. See the [1.1.2 security release notes](docs/releases/1.1.2.md).
 
 ## One key lights it up
 
@@ -98,6 +98,8 @@ Agents remain disabled until their required model, voice, channel, and tool conn
 ## Support
 
 Use [GitHub Discussions](https://github.com/carlucci001/open-octi/discussions) for setup questions and [GitHub Issues](https://github.com/carlucci001/open-octi/issues) for reproducible bugs. Never include provider keys, cookies, customer records, or private logs in a report.
+
+For vulnerabilities, follow the [Security Policy](SECURITY.md) and use private reporting. Public Issues and Discussions are not for security reports.
 
 ## License and credit
 

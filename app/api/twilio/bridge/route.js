@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { verifyTwilioWebhook } from '@/lib/twilio-webhook-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -8,6 +9,8 @@ export const dynamic = 'force-dynamic'
 // Both legs are then bridged into a single call.
 
 export async function GET(request) {
+  const authError = await verifyTwilioWebhook(request)
+  if (authError) return authError
   const { searchParams } = new URL(request.url)
   const target = searchParams.get('target') || ''
   const callerId = process.env.TWILIO_PHONE_NUMBER || ''

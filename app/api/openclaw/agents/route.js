@@ -2,22 +2,16 @@ import { NextResponse } from 'next/server'
 import { listAgents, saveAgent, deleteAgent, cloneAgent, enablePreset, getBackups } from '@/lib/agents-store'
 import { restoreOpenclawBackup } from '@/lib/openclaw-config'
 import { requireCapability } from '@/lib/permissions'
-
-function configuredSecret(value) {
-  const v = String(value || '').trim()
-  if (!v) return null
-  if (['missing', 'changeme', 'change-me', 'undefined', 'null'].includes(v.toLowerCase())) return null
-  return v
-}
+import { configuredMachineSecret, machineSecretMatches } from '@/lib/machine-secret'
 
 function hasOpenClawKey(request) {
   const allowed = [
-    configuredSecret(process.env.OPENCLAW_API_KEY),
-    configuredSecret(process.env.AGENT_API_KEY),
+    configuredMachineSecret(process.env.OPENCLAW_API_KEY),
+    configuredMachineSecret(process.env.AGENT_API_KEY),
   ].filter(Boolean)
   if (!allowed.length) return false
   const header = request.headers.get('x-api-key') || request.headers.get('x-agent-key')
-  return allowed.includes(String(header || '').trim())
+  return allowed.some(secret => machineSecretMatches(header, secret))
 }
 
 async function requireOpenClawAccess(request, capability) {

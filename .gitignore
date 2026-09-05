@@ -24,6 +24,7 @@ data-demo/crm.sqlite
 data-demo/crm.sqlite-wal
 data-demo/crm.sqlite-shm
 data/restore-points/
+data/lead-source-cache/
 
 # Local agent/tool runtime
 data/builder-projects/
@@ -136,3 +137,5 @@ _to_delete/
 Claude outputs/
 data-demo/comms-local.json
 data-demo/conference.json
+
+debug.log

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getCred } from '@/lib/agent-creds'
 import { readData } from '@/lib/dataStore'
 import { resolvePublicWidgetAgent } from '@/lib/public-agent-widget'
+import { consumePublicEndpointQuota, PUBLIC_WIDGET_RATE_LIMITS } from '@/lib/public-endpoint-rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -39,6 +40,14 @@ export async function OPTIONS() {
 }
 
 export async function GET(request) {
+  const quota = consumePublicEndpointQuota(request, PUBLIC_WIDGET_RATE_LIMITS.voiceToken)
+  if (quota.limited) {
+    return json({ ok: false, error: 'Too many requests. Try again shortly.' }, {
+      status: 429,
+      headers: { 'Retry-After': String(quota.retryAfterSeconds) },
+    })
+  }
+
   const url = new URL(request.url)
   const agentId = String(url.searchParams.get('agent') || '').trim()
   const profile = await resolvePublicWidgetAgent(agentId, { baseUrl: url.origin })
@@ -62,8 +71,7 @@ export async function GET(request) {
       cache: 'no-store',
     })
     if (!res.ok) {
-      const text = await res.text()
-      return json({ ok: false, error: `ElevenLabs ${res.status}: ${text.slice(0, 200)}` }, { status: 502 })
+      return json({ ok: false, error: `Voice provider request failed (${res.status}).` }, { status: 502 })
     }
     const data = await res.json()
     return json({

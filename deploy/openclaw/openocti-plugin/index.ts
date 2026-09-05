@@ -1,7 +1,6 @@
 type PluginConfig = { baseUrl?: string; apiKey?: string; enabled?: boolean }
 
 const TOOL_DESCRIPTIONS: Record<string, string> = {
-  fcc_call: 'Run any OpenOcti agent tool by name.',
   fcc_list_tools: 'List the OpenOcti agent tools available to this runtime.',
   fcc_dashboard: 'Read the OpenOcti dashboard summary.',
   fcc_search: 'Search CRM records and notes.',

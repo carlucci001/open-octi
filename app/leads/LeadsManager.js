@@ -36,6 +36,9 @@ const SOURCES = [
   { id: 'fd-website',   label: 'Website Intake' },
   { id: 'command-center-consult', label: 'Command Center Consult' },
   { id: 'product-inquiry', label: 'Product Inquiry' },
+  { id: 'government_public_record', label: 'Government Public Record' },
+  { id: 'government_public_record_cslb', label: 'Government Public Record — CSLB' },
+  { id: 'government_public_record_fec', label: 'Government Public Record — FEC' },
   { id: 'other',        label: 'Other' },
 ]
 
@@ -143,6 +146,17 @@ const normalizeLeadViewMode = (mode = '') => {
 // the UI just never surfaced it. Fall back to the same aliases dedupe checks.
 const leadWebsite = (lead = {}) => String(lead.website || lead.web || lead.url || lead.domain || '').trim()
 const leadWebsiteHref = (url = '') => (/^https?:\/\//i.test(url) ? url : `https://${url}`)
+const contractorSignal = (lead = {}) => lead.signal?.sourceId === 'cslb-ca-contractors' ? lead.signal : null
+const contractorSignalSummary = (lead = {}) => {
+  const signal = contractorSignal(lead)
+  if (!signal) return ''
+  const attrs = signal.attrs || {}
+  return [
+    attrs.licenseNo ? `License ${attrs.licenseNo}` : '',
+    attrs.classifications?.length ? `Class ${attrs.classifications.join(', ')}` : '',
+    attrs.triggerDate ? `${signal.trigger}: ${String(attrs.triggerDate).slice(0, 10)}` : '',
+  ].filter(Boolean).join(' · ')
+}
 
 const leadReceivedAt = (lead = {}) => lead.receivedAt || lead.createdAt || lead.inboundReceivedAt || lead.submittedAt || lead.importedAt || lead.created_at || lead.legacy?.receivedAt || lead.legacy?.ts || lead.legacy?.createdAt || lead.legacy?.created_at || lead.updatedAt || null
 const leadUpdatedAt = (lead = {}) => lead.updatedAt || lead.modifiedAt || lead.modified_at || null
@@ -408,6 +422,17 @@ function LeadForm({ lead, leadLists, opportunities, onSave, onClose, onQualify, 
           <div className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{f.convertedAt ? formatLeadAge(f.convertedAt) : 'Not converted'}</div>
         </div>
       </div>
+      {contractorSignal(f) && (
+        <div className="rounded-lg px-3 py-3 mb-4 text-xs" style={{ background: 'var(--accent-soft)', color: 'var(--text)', border: '1px solid var(--accent)' }}>
+          <div className="font-bold mb-1" style={{ color: 'var(--accent)' }}>CSLB contractor signal</div>
+          <div>License: {f.signal.attrs?.licenseNo || '—'}</div>
+          <div>Classification: {f.signal.attrs?.classifications?.join(', ') || '—'}</div>
+          <div>Trigger: {f.signal.trigger} · {String(f.signal.attrs?.triggerDate || f.signal.triggeredAt || '').slice(0, 10) || '—'}</div>
+          <div>Status: {f.signal.attrs?.status || '—'} · License expires: {String(f.signal.attrs?.licenseExpires || '').slice(0, 10) || '—'}</div>
+          <div>Workers' comp: {f.signal.attrs?.wcExempt ? 'Exempt' : `${f.signal.attrs?.wcCarrier || 'Carrier not listed'} · expires ${String(f.signal.attrs?.wcExpires || '').slice(0, 10) || '—'}`}</div>
+          <div>County FIPS: {f.signal.attrs?.countyFips || '—'} · Bond: {f.signal.attrs?.bondAmount ? `$${Number(f.signal.attrs.bondAmount).toLocaleString('en-US')}` : '—'}</div>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Contact Name"><input style={inp} value={f.name} onChange={e => u('name', e.target.value)} placeholder="John Smith" autoFocus /></Field>
         <Field label="Business Name"><input style={inp} value={f.businessName} onChange={e => u('businessName', e.target.value)} placeholder="ACME Corp" /></Field>
@@ -835,6 +860,12 @@ export default function LeadsManager({ onNavigate }) {
         {l.source && <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>{sourceLabel(l.source)}</span>}
         {serviceLabelForLead(l) && <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'var(--amber-soft)', color: 'var(--amber)', border: '1px solid var(--amber)' }}>{categoryLabel(serviceLabelForLead(l), l.brandContext || inferBrand(l))}</span>}
       </div>
+      {contractorSignalSummary(l) && (
+        <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px] leading-snug" style={{ background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+          <div><span style={{ color: 'var(--accent)', fontWeight: 700 }}>CSLB:</span> {contractorSignalSummary(l)}</div>
+          {l.phone && <div><span style={{ color: 'var(--green)', fontWeight: 700 }}>Phone:</span> {l.phone}</div>}
+        </div>
+      )}
       {(leadListNameForLead(l) || opportunityPipelineNameForLead(l) || l.opportunityId) && (
         <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px] leading-snug" style={{ background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
           {leadListNameForLead(l) && <div><span style={{ color: 'var(--green)', fontWeight: 700 }}>Lead List:</span> {leadListNameForLead(l)}</div>}
@@ -985,7 +1016,7 @@ export default function LeadsManager({ onNavigate }) {
             {paginated.map((l, i) => {
               const stMeta = statusMeta(l.status)
               return (
-                <div key={l.id} data-lead-row={l.id} className="flex items-center gap-3 px-4 group cursor-pointer overflow-hidden" style={{ height: 76, minHeight: 76, borderBottom: i < paginated.length - 1 ? '1px solid var(--border)' : 'none' }}
+                <div key={l.id} data-lead-row={l.id} className="flex items-center gap-3 px-4 group cursor-pointer overflow-hidden" style={{ height: contractorSignal(l) ? 94 : 76, minHeight: contractorSignal(l) ? 94 : 76, borderBottom: i < paginated.length - 1 ? '1px solid var(--border)' : 'none' }}
                   onClick={() => setEditing(l)}
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = '' }}>
@@ -1006,6 +1037,8 @@ export default function LeadsManager({ onNavigate }) {
                       <LastTouchPill lead={l} />
                       {l.name && l.businessName && <span>{l.name}</span>}
                       {l.email && <span>✉ {l.email}</span>}
+                      {l.phone && <span>Phone {l.phone}</span>}
+                      {contractorSignalSummary(l) && <span>{contractorSignalSummary(l)}</span>}
                       {l.status === 'converted' && l.convertedToAccountName && <span style={{ color: 'var(--green)', fontWeight: 700 }}>&rarr; {l.convertedToAccountName}</span>}
                     </div>
                   </div>

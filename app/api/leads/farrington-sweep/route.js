@@ -6,6 +6,7 @@ import { buildLeadVendorRequest } from '@/lib/lead-paid-search-limit'
 import { resolveLeadListForDestination } from '@/lib/lead-list-routing'
 import { loadLeadLists } from '@/lib/leadLists'
 import { requireCrmWrite } from '@/lib/permissions'
+import { resolveLeadSources } from '@/lib/lead-signals/resolver'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -60,10 +61,26 @@ export async function POST(request) {
     ),
   }
   const destination = String(body.spec?.destination || body.form?.destination || 'farrington_dev').trim()
+  const provenOnly = body.provenOnly === true
+  let provenResolution = null
+  if (provenOnly) {
+    const requestedSourceIds = [...new Set((Array.isArray(body.provenSourceIds) ? body.provenSourceIds : []).map(String).filter(Boolean))]
+    if (!requestedSourceIds.length) {
+      return NextResponse.json({ ok: false, error: 'At least one proven source is required' }, { status: 400 })
+    }
+    provenResolution = resolveLeadSources({ leadType: category, location: body.location || 'United States' })
+    const allowed = new Map((provenResolution.sources || []).map(source => [source.id, source]))
+    const rejected = requestedSourceIds.filter(id => !allowed.has(id))
+    if (rejected.length) {
+      return NextResponse.json({ ok: false, error: `Source is not proven for this lead type and jurisdiction: ${rejected.join(', ')}` }, { status: 400 })
+    }
+    provenResolution.sources = requestedSourceIds.map(id => allowed.get(id))
+  }
   const selectedLeadList = resolveLeadListForDestination({
     destination,
     leadLists: loadLeadLists(),
     requestedId: body.leadListId || body.form?.selectedLeadListId,
+    allowAnyRequested: true,
   })
   const dataSource = {
     category,
@@ -76,10 +93,12 @@ export async function POST(request) {
     // no lead list and they landed under "No lead list" (found 2026-08-14).
     leadListId: selectedLeadList?.id || undefined,
     spec: body.spec,
+    signalOptions: body.signalOptions && typeof body.signalOptions === 'object' ? body.signalOptions : body.form?.signalOptions,
     // Per-run vendor choice: { provider: 'apollo' } sources named decision-makers
     // from Apollo instead of businesses from Google Places. Omitted, the
     // env default (apify/Places) applies exactly as before.
     vendor,
+    ...(provenOnly ? { enrichContacts: false, nameEnrich: { enabled: false } } : {}),
   }
 
   const startedBy = user?.email || user?.name || 'operator'
@@ -98,6 +117,7 @@ export async function POST(request) {
       // Replay metadata: the exact Leads Lab form state behind this run, so
       // "Run again" can restore it. Never read by the pipeline.
       form: body.form && typeof body.form === 'object' && !Array.isArray(body.form) ? body.form : null,
+      ...(provenOnly ? { provenOnly: true, provenSourceIds: provenResolution.sources.map(source => source.id) } : {}),
     },
   })
 
@@ -116,6 +136,11 @@ export async function POST(request) {
     delivery: { recipients: body.recipientEmail ? [body.recipientEmail] : [] },
   }, {
     recipientEmail: body.recipientEmail,
+    ...(provenOnly ? {
+      provenOnly: true,
+      resolvedSignalSources: provenResolution.sources,
+      signalJurisdiction: provenResolution.jurisdiction,
+    } : {}),
     onProgress: update => reportSweepProgress(run.id, update),
   })
     .then(result => {

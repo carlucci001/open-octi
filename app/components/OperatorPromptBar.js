@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { actionsForContext, operatorToolsForContext, utilityActionsForContext } from './operatorContextActions'
 
 const SECTION_LABELS = {
@@ -17,6 +17,25 @@ const SECTION_LABELS = {
 function displayLabel(tab) {
   if (!tab) return 'the command center'
   return SECTION_LABELS[tab] || String(tab).split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
+}
+
+function OperatorMarkdown({ text }) {
+  const lines = String(text || '').split(/\r?\n/)
+  return (
+    <div className="operator-markdown">
+      {lines.map((line, index) => {
+        const heading = line.match(/^(#{1,3})\s+(.+)$/)
+        if (heading) {
+          const Heading = heading[1].length === 1 ? 'h4' : 'h5'
+          return <Heading key={index}>{heading[2]}</Heading>
+        }
+        const bullet = line.match(/^[-*]\s+(.+)$/)
+        if (bullet) return <div className="operator-markdown-list-item" key={index}><span aria-hidden="true">&bull;</span><span>{bullet[1]}</span></div>
+        if (!line.trim()) return <div className="operator-markdown-spacer" key={index} aria-hidden="true" />
+        return <p key={index}>{line}</p>
+      })}
+    </div>
+  )
 }
 
 const DEFAULT_ACTIONS = [
@@ -244,15 +263,98 @@ function DownIcon() {
 
 export default function OperatorPromptBar({ activeTab, operatorContext, hidden = false, onHide, rightRailCollapsed = true }) {
   const [text, setText] = useState('')
+  const [mode, setMode] = useState('ask')
+  const [doMessages, setDoMessages] = useState([])
+  const [toolEvents, setToolEvents] = useState([])
+  const [proposal, setProposal] = useState(null)
+  const [doBusy, setDoBusy] = useState(false)
+  const [conversationId, setConversationId] = useState('')
+  const conversationRef = useRef(null)
   const context = operatorContext || { tab: activeTab }
   const workspaceLabel = context.label || displayLabel(context.tab || activeTab)
   const quickActions = useMemo(() => actionsForContext(context), [context])
   const actions = useMemo(() => operatorToolsForContext(context), [context])
   const utilityActions = useMemo(() => utilityActionsForContext(context), [context])
 
+  useEffect(() => {
+    let id = localStorage.getItem('fcc-operator-conversation-id') || ''
+    if (!id) {
+      id = `operator-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`
+      localStorage.setItem('fcc-operator-conversation-id', id)
+    }
+    setConversationId(id)
+  }, [])
+
+  useEffect(() => {
+    conversationRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+  }, [doMessages, toolEvents, proposal])
+
+  const runOperator = async (prompt, approvalToken = '') => {
+    const value = String(prompt || '').trim()
+    if (!value || doBusy || !conversationId) return
+    const next = [...doMessages, { role: 'user', content: value }]
+    setDoMessages(next)
+    setText('')
+    setDoBusy(true)
+    if (approvalToken || !/^edit\b/i.test(value)) setProposal(null)
+    try {
+      const response = await fetch('/api/agent/operator', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ conversationId, messages: next, operatorContext: context, approvalToken: approvalToken || undefined }),
+      })
+      if (!response.ok || !response.body) throw new Error(`Operator route returned HTTP ${response.status}`)
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      while (true) {
+        const { done, value: chunk } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(chunk, { stream: true })
+        const parts = buffer.split('\n\n')
+        buffer = parts.pop() || ''
+        for (const part of parts) {
+          const line = part.split('\n').find(item => item.startsWith('data: '))
+          if (!line) continue
+          const event = JSON.parse(line.slice(6))
+          if (event.type === 'message') setDoMessages(items => [...items, { role: 'assistant', content: event.text }])
+          else if (event.type === 'proposal') setProposal(event.proposal)
+          else if (event.type === 'tool_start' || event.type === 'tool_result' || event.type === 'tool_error') setToolEvents(items => [...items, event].slice(-24))
+          else if (event.type === 'error') setDoMessages(items => [...items, { role: 'assistant', content: `Operator error: ${event.error}` }])
+        }
+      }
+    } catch (error) {
+      setDoMessages(items => [...items, { role: 'assistant', content: `Operator error: ${error.message}` }])
+    } finally {
+      setDoBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!conversationId) return undefined
+    let cancelled = false
+    const poll = async () => {
+      if (cancelled || doBusy) return
+      try {
+        const response = await fetch('/api/agent/operator/pending', { cache: 'no-store' })
+        const data = await response.json().catch(() => ({}))
+        if (!cancelled && response.ok && data.pending?.transcript) {
+          setMode('do')
+          await runOperator(data.pending.transcript)
+        }
+      } catch {}
+    }
+    poll()
+    const timer = setInterval(poll, 4000)
+    return () => { cancelled = true; clearInterval(timer) }
+  }, [conversationId, doBusy])
+
   const sendPrompt = (prompt = text, tab, role = '', label = '') => {
     const value = String(prompt || '').trim()
     if (!value) return
+    if (mode === 'do') {
+      runOperator(value)
+      return
+    }
     if (tab) window.dispatchEvent(new CustomEvent('fcc:set-tab', { detail: tab }))
     window.dispatchEvent(new CustomEvent('fcc:ai-prompt', {
       detail: {
@@ -272,22 +374,61 @@ export default function OperatorPromptBar({ activeTab, operatorContext, hidden =
   return (
     <div className="operator-prompt-wrap" data-rail={rightRailCollapsed ? 'compact' : 'open'} aria-label="Operator command bar">
       <div className="operator-prompt-card">
-        <div className="operator-prompt-chiprow" aria-label="AI Wizard quick prompts">
+        <div className="operator-mode-row" aria-label="Maggie mode">
+          <div className="operator-mode-switch" role="group" aria-label="Ask or Do">
+            <button type="button" className={mode === 'ask' ? 'is-active' : ''} aria-pressed={mode === 'ask'} onClick={() => setMode('ask')}>Ask</button>
+            <button type="button" className={mode === 'do' ? 'is-active' : ''} aria-pressed={mode === 'do'} onClick={() => setMode('do')}>Do</button>
+          </div>
+          <span>{mode === 'ask' ? 'Advice and answers' : 'Operator agent - actions stop for approval'}</span>
+        </div>
+        {mode === 'do' && (doMessages.length > 0 || toolEvents.length > 0 || proposal) && (
+          <div className="operator-do-conversation" aria-live="polite">
+            {doMessages.slice(-10).map((message, index) => (
+              <div key={`message-${index}`} className={`operator-do-message is-${message.role}`}>
+                <strong>{message.role === 'user' ? 'You' : 'Maggie'}</strong>
+                <span>{message.content}</span>
+              </div>
+            ))}
+            {toolEvents.slice(-8).map((event, index) => (
+              <div key={`tool-${index}`} className={`operator-tool-row is-${event.type}`}>
+                <code>{event.tool}</code>
+                {event.type === 'tool_start' && event.tool === 'doc.write' && event.inputs?.body
+                  ? <OperatorMarkdown text={event.inputs.body} />
+                  : <span>{event.type === 'tool_start' ? JSON.stringify(event.inputs || {}) : event.summary || event.error || 'Completed'}</span>}
+              </div>
+            ))}
+            {proposal && (
+              <div className="operator-proposal-card" data-testid="operator-proposal-card">
+                <div><strong>I'm about to:</strong> {proposal.summary}</div>
+                <div className="operator-proposal-meta">{proposal.sideEffects} - est. cost ${Number(proposal.cost?.usd || 0).toFixed(2)} - {proposal.cost?.label}</div>
+                <pre>{JSON.stringify(proposal.inputs, null, 2)}</pre>
+                <div className="operator-proposal-actions">
+                  <button type="button" disabled={doBusy} onClick={() => runOperator('go', proposal.approvalToken)}>Go</button>
+                  <button type="button" disabled={doBusy} onClick={() => setText(`Edit ${proposal.tool}: ${JSON.stringify(proposal.inputs)}`)}>Edit</button>
+                  <button type="button" disabled={doBusy} onClick={() => runOperator('skip')}>Skip</button>
+                </div>
+              </div>
+            )}
+            {doBusy && <div className="operator-do-working">Maggie is working...</div>}
+            <div ref={conversationRef} />
+          </div>
+        )}
+        {mode === 'ask' && <div className="operator-prompt-chiprow" aria-label="AI Wizard quick prompts">
           <span className="operator-prompt-label"><SparkIcon /> Quick prompts</span>
           {quickActions.map(action => (
             <button key={action.label} type="button" title={action.prompt} onClick={() => sendPrompt(action.prompt, action.tab)}>
               {action.label}
             </button>
           ))}
-        </div>
-        <div className="operator-prompt-chiprow">
+        </div>}
+        {mode === 'ask' && <div className="operator-prompt-chiprow">
           <span className="operator-prompt-label"><ToolIcon /> Operator tools</span>
           {actions.map(action => (
             <button key={action.label} type="button" title={action.role || action.label} onClick={() => sendPrompt(action.prompt, action.tab, action.role, action.label)}>
               {action.label}
             </button>
           ))}
-        </div>
+        </div>}
         <div className="operator-prompt-input">
           <div className="operator-prompt-tools" aria-label="Composer tools">
             <button type="button" title={utilityActions.attach.label} onClick={() => sendPrompt(utilityActions.attach.prompt)}>
@@ -307,13 +448,13 @@ export default function OperatorPromptBar({ activeTab, operatorContext, hidden =
                 sendPrompt()
               }
             }}
-            placeholder={`Ask Maggie about ${workspaceLabel}...`}
+            placeholder={mode === 'ask' ? `Ask Maggie about ${workspaceLabel}...` : `Tell Maggie what you want done in ${workspaceLabel}...`}
           />
           <div className="operator-prompt-submit-stack">
             <button className="operator-prompt-hide" type="button" onClick={onHide} aria-label="Hide command bar" title="Hide command bar">
               <DownIcon />
             </button>
-            <button className="operator-send" type="button" onClick={() => sendPrompt()} disabled={!text.trim()} aria-label="Send prompt">
+            <button className="operator-send" type="button" onClick={() => sendPrompt()} disabled={!text.trim() || (mode === 'do' && doBusy)} aria-label={mode === 'do' ? 'Run operator request' : 'Send prompt'}>
               <SendIcon />
             </button>
           </div>

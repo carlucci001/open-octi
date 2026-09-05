@@ -5,11 +5,16 @@ import { NextResponse } from 'next/server'
 import PDFDocument from 'pdfkit'
 import path from 'path'
 import fs from 'fs'
-import Stripe from 'stripe'
 import { Resend } from 'resend'
 import { wrapEmailBody } from '@/lib/emailSignature'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
 import { recordCheckoutSessionPayment } from '@/lib/paymentLedger'
+import {
+  createInvoiceCheckoutSession,
+  getInvoiceBaseUrl,
+  getInvoiceStripeClient,
+} from '@/lib/invoice-checkout'
+import { getSessionFromRequest } from '@/lib/portal-auth'
 
 const DATA_FILE = 'invoices.json'
 
@@ -30,29 +35,6 @@ function hydrateProjectLinks(data) {
   }
   if (mutated) { data.lastUpdated = new Date().toISOString(); writeData(DATA_FILE, data) }
   return data
-}
-
-function getStripeKeyFromVault() {
-  const creds = readData('credentials.json') || { credentials: [] }
-  const entry = (creds.credentials || []).find(c => /stripe/i.test(c.name || ''))
-  if (!entry) return ''
-  const fields = entry.fields || []
-  const prod = fields.find(f => /secret.*\(p\)/i.test(f.label || ''))
-  const test = fields.find(f => /secret.*\(s\)/i.test(f.label || ''))
-  const fallback = fields.find(f => /secret/i.test(f.label || ''))
-  return (prod || test || fallback)?.value?.trim() || ''
-}
-
-function getStripe() {
-  const key = process.env.STRIPE_SECRET_KEY || getStripeKeyFromVault()
-  if (!key) return null
-  return new Stripe(key)
-}
-
-function getBaseUrl() {
-  const configured = process.env.INVOICE_BASE_URL
-  if (configured) return configured.trim().replace(/\/$/, '')
-  return 'https://crm.company.example.com'
 }
 
 function genId() { return 'inv_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) }
@@ -94,7 +76,7 @@ async function checkStripePayment(body, data, { requireSessionMatch = false } = 
   if (requireSessionMatch && body.sessionId !== invoice.stripeSessionId) {
     return NextResponse.json({ error: 'Payment session required' }, { status: 401 })
   }
-  const stripe = getStripe()
+  const stripe = getInvoiceStripeClient()
   if (!stripe) return NextResponse.json({ error: 'Stripe not configured' }, { status: 400 })
   try {
     const session = await stripe.checkout.sessions.retrieve(invoice.stripeSessionId, { expand: ['payment_intent'] })
@@ -233,10 +215,34 @@ function buildPdf(invoice, client) {
 }
 
 export async function GET(request) {
-  const { error } = await requireCrmRead(request)
-  if (error) return error
   const data = hydrateProjectLinks(loadInvoices())
   const { searchParams } = new URL(request.url)
+  const invoiceId = searchParams.get('id')
+  if (invoiceId && searchParams.get('pdf') === '1') {
+    const portalSession = getSessionFromRequest(request)
+    const invoice = (data.invoices || []).find(item => item.id === invoiceId)
+    if (portalSession) {
+      if (!invoice || invoice.clientId !== portalSession.accountId || invoice.status === 'draft') {
+        return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+      }
+    } else {
+      const { error } = await requireCrmRead(request)
+      if (error) return error
+      if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
+    const client = findClient(invoice.clientId)
+    const buf = await buildPdf(invoice, client)
+    return new NextResponse(buf, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="invoice-${invoice.number}.pdf"`,
+        'X-Content-Type-Options': 'nosniff',
+      },
+    })
+  }
+
+  const { error } = await requireCrmRead(request)
+  if (error) return error
   const projectId = searchParams.get('projectId')
   const clientId = searchParams.get('clientId') || searchParams.get('accountId')
   let invoices = data.invoices || []
@@ -350,41 +356,17 @@ export async function POST(request) {
     const email = body.to || client?.email
     if (!email || !email.includes('@')) return NextResponse.json({ error: 'Client has no email on file' }, { status: 400 })
 
-    const stripe = getStripe()
-    if (!stripe) return NextResponse.json({ error: 'Stripe not configured (STRIPE_SECRET_KEY missing)' }, { status: 400 })
     const resendKey = process.env.RESEND_API_KEY
     if (!resendKey) return NextResponse.json({ error: 'RESEND_API_KEY not set' }, { status: 400 })
 
     const amount = computeSubtotal(invoice.items)
     if (amount <= 0) return NextResponse.json({ error: 'Invoice amount must be greater than zero' }, { status: 400 })
 
-    const baseUrl = getBaseUrl()
+    const baseUrl = getInvoiceBaseUrl()
     try {
-      const lineItems = (invoice.items || []).filter(it => (Number(it.rate) || 0) > 0).map(it => ({
-        quantity: Math.max(1, Math.round(Number(it.qty) || 1)),
-        price_data: {
-          currency: 'usd',
-          unit_amount: Math.round((Number(it.rate) || 0) * 100),
-          product_data: { name: String(it.description || 'Service').slice(0, 250) },
-        },
-      }))
-      if (lineItems.length === 0) lineItems.push({
-        quantity: 1,
-        price_data: { currency: 'usd', unit_amount: Math.round(amount * 100), product_data: { name: `Invoice ${invoice.number}` } },
-      })
-
-      const session = await stripe.checkout.sessions.create({
-        mode: 'payment',
-        customer_email: email,
-        line_items: lineItems,
-        success_url: `${baseUrl}/invoice/${invoice.id}/paid?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/invoice/${invoice.id}`,
-        payment_intent_data: {
-          description: `Invoice ${invoice.number} — ${client?.name || invoice.clientName}`,
-          receipt_email: email,
-          metadata: { invoiceId: invoice.id, invoiceNumber: invoice.number, clientId: invoice.clientId || '' },
-        },
-        metadata: { invoiceId: invoice.id, invoiceNumber: invoice.number, clientId: invoice.clientId || '' },
+      const session = await createInvoiceCheckoutSession(invoice, { ...client, email }, {
+        successUrl: `${baseUrl}/invoice/${invoice.id}/paid?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${baseUrl}/invoice/${invoice.id}`,
       })
 
       const nextInvoice = {

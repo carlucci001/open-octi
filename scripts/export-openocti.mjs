@@ -233,13 +233,13 @@ export function resolveOpenOctiVersion(argv, env = process.env) {
   return version
 }
 
-function assertSafeOutput(output) {
+export function assertSafeOutput(output) {
   const parsed = path.parse(output)
   if (output === parsed.root || output === SOURCE_ROOT || SOURCE_ROOT.startsWith(`${output}${path.sep}`)) {
     throw new Error(`Refusing unsafe export target: ${output}`)
   }
-  if (path.basename(output).toLowerCase() !== 'openocti-export') {
-    throw new Error('Export target directory must be named openocti-export.')
+  if (!['openocti-export', 'openocti-export-merged'].includes(path.basename(output).toLowerCase())) {
+    throw new Error('Export target directory must be named openocti-export or openocti-export-merged.')
   }
 }
 
@@ -332,6 +332,8 @@ export function writeOpenOctiEnvExample(output, sourceFile = path.join(SOURCE_RO
     '# OpenOcti defaults - leave unchanged',
     ...OPENOCTI_DEFAULT_ENV_KEYS.map(key => `${key}=${entries.get(key)}`),
     '',
+    '# OPENCLAW_GATEWAY_TOKEN and OPENCLAW_API_KEY:',
+    '# auto-generated on first start; set your own to override',
     '# Optional integrations - uncomment only the keys you use',
     ...optionalKeys.map(key => `# ${key}=`),
     '',

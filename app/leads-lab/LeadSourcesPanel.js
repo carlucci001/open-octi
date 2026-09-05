@@ -70,9 +70,12 @@ export default function LeadSourcesPanel({ query, onRefresh, initialZip = '' }) 
   async function prove(source) {
     setResults(current => ({ ...current, [source.id]: null }))
     try {
+      const provingJurisdiction = source.level === 'state' && source.coverage?.[0]
+        ? { state: source.coverage[0] }
+        : { zip }
       const response = await fetch('/api/lead-signals/prove', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId: source.id, jurisdiction: { zip }, limit: 25, index: false }),
+        body: JSON.stringify({ sourceId: source.id, jurisdiction: provingJurisdiction, limit: source.platform === 'bulk-file' ? 50 : 25, index: false }),
       })
       const payload = await response.json()
       if (!response.ok || !payload.job?.id) throw new Error(payload.error || `Proving request failed (${response.status})`)

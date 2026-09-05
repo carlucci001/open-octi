@@ -4,14 +4,18 @@ OpenOcti holds CRM records, documents, and agent credentials, so security report
 
 ## Reporting a vulnerability
 
-Do not open a public issue for an exploitable vulnerability. Use GitHub private vulnerability reporting from the repository Security tab. Maintainers will acknowledge the report and coordinate a fix or mitigation before public disclosure.
+Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/carlucci001/open-octi/security/advisories/new). Include the affected version, impact, and a minimal reproduction using synthetic data. Do not include live credentials or customer records.
+
+Public Issues and Discussions are **not** for security reports. Keep reproduction details private while maintainers investigate and coordinate a fix or mitigation.
+
+We aim to acknowledge reports within three business days and provide an initial assessment within seven business days. Complex reports may take longer; we will share progress privately. These are response goals, not an SLA.
 
 Non-exploitable hardening suggestions may be filed as regular issues.
 
 ## Supported versions
 
-Security fixes target the latest published OpenOcti release. Community support does not include an SLA.
+Security fixes target the latest minor release line (currently 1.1.x). Install its newest patch release; older minor versions are unsupported. Versions 1.0.0 through 1.1.1 require the security fixes in 1.1.2.
 
 ## Self-hosting responsibility
 
-Operators are responsible for host security, network exposure, TLS, backups, access control, and protection of provider keys. Keep secrets only in `.env` or a secret manager; never commit them.
+Operators are responsible for host security, network exposure, TLS, backups, access control, and protection of provider keys. Use Models & Keys, a protected `.env`, or a secret manager; never commit credentials. Automatically generated machine secrets are stored in `CRM_DATA_DIR/openclaw/machine-secrets.json`, private to the app user. Back up this file securely with the data volume.

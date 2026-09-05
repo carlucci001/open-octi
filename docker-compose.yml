@@ -16,8 +16,8 @@ services:
       OPENCLAW_HOST: openclaw
       OPENCLAW_PORT: "18789"
       OPENCLAW_CONFIG_PATH: /data/openclaw/openclaw.json
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-openocti-local-only}
-      OPENCLAW_API_KEY: ${OPENCLAW_API_KEY:-openocti-local-only}
+      OPENCLAW_GATEWAY_TOKEN: "${OPENCLAW_GATEWAY_TOKEN:-}"
+      OPENCLAW_API_KEY: "${OPENCLAW_API_KEY:-}"
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
     ports:
       - "${OPENOCTI_PORT:-3000}:3000"
@@ -35,8 +35,8 @@ services:
       dockerfile: deploy/openclaw/Dockerfile
     environment:
       OPENCLAW_STATE_DIR: /data/openclaw
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-openocti-local-only}
-      OPENCLAW_API_KEY: ${OPENCLAW_API_KEY:-openocti-local-only}
+      OPENCLAW_GATEWAY_TOKEN: "${OPENCLAW_GATEWAY_TOKEN:-}"
+      OPENCLAW_API_KEY: "${OPENCLAW_API_KEY:-}"
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}

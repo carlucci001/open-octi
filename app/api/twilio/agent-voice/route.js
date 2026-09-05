@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import bridge from '@/lib/twilio-agent-bridge'
+import { verifyTwilioWebhook } from '@/lib/twilio-webhook-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -23,6 +24,8 @@ async function paramsFromRequest(request) {
 }
 
 async function handle(request) {
+  const authError = await verifyTwilioWebhook(request)
+  if (authError) return authError
   const params = await paramsFromRequest(request)
   const twiml = bridge.buildTwilioAgentTwiML({
     requestUrl: request.url,

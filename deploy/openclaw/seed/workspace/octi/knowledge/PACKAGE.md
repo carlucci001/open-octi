@@ -20,7 +20,7 @@ docker compose up -d
 
 Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
 
-> The `latest` images for this release are published only after the `v1.1.1` tag exists. Before that tag, use the source-build command above. See the [1.1.1 release notes](docs/releases/1.1.1.md).
+> The `latest` images for this release are published only after the `v1.1.2` tag exists. Before that tag, use the source-build command above. See the [1.1.2 security release notes](docs/releases/1.1.2.md).
 
 ## One key lights it up
 
@@ -100,6 +100,8 @@ Agents remain disabled until their required model, voice, channel, and tool conn
 ## Support
 
 Use [GitHub Discussions](https://github.com/carlucci001/open-octi/discussions) for setup questions and [GitHub Issues](https://github.com/carlucci001/open-octi/issues) for reproducible bugs. Never include provider keys, cookies, customer records, or private logs in a report.
+
+For vulnerabilities, follow the [Security Policy](SECURITY.md) and use private reporting. Public Issues and Discussions are not for security reports.
 
 ## License and credit
 
@@ -586,6 +588,10 @@ A saved project record is not a deployment, and an unavailable service is report
 # Running on a VPS
 
 Use a current Linux host with Docker Compose, enough memory for both the Next.js app and OpenClaw, persistent storage, HTTPS, and a firewall that exposes only the reverse proxy. Keep the OpenClaw gateway on the private Compose network; publish the app through the proxy.
+
+Never expose port 3000 directly to the Internet. Place OpenOcti behind a TLS reverse proxy with an authentication gate, or make it reachable only on a private network. Restrict the Docker host binding to loopback (for example, set `OPENOCTI_PORT=127.0.0.1:3000`), let the local proxy reach it, and allow inbound public traffic only to the proxy. Check the host firewall and Docker's published ports from outside the host; publishing a Docker port can bypass host firewall rules. Port 18789 must remain internal to Compose.
+
+OpenOcti 1.1.2 generates strong machine secrets automatically when valid overrides are absent. Both containers use the same private file in the data volume. To override them, set unique random `OPENCLAW_GATEWAY_TOKEN` and `OPENCLAW_API_KEY` values of at least 32 characters. Known placeholder values are rejected.
 
 Set `PUBLIC_APP_URL` and `SIGNING_PUBLIC_URL` to the public HTTPS origin. Store `.env` outside source control, use long unique values for the session secret and administrator password, and restrict file permissions.
 

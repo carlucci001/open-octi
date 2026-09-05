@@ -45,6 +45,8 @@ COPY --from=builder --chown=node:node /app/.next ./.next
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/package.json /app/package-lock.json ./
 COPY --chown=node:node data-demo ./data-demo
+COPY --chown=node:node deploy/start-app.mjs deploy/machine-secrets.mjs ./deploy/
+COPY --chown=node:node lib/machine-secret.js lib/edition.js ./lib/
 COPY --chown=node:node deploy/docker-entrypoint.sh /usr/local/bin/openocti-entrypoint
 
 RUN mkdir -p /data && chown node:node /data && chmod 0755 /usr/local/bin/openocti-entrypoint

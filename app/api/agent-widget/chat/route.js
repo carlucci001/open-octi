@@ -2,6 +2,7 @@ import OpenAI from 'openai'
 import { NextResponse } from 'next/server'
 import { getCred } from '@/lib/agent-creds'
 import { resolvePublicWidgetAgent } from '@/lib/public-agent-widget'
+import { consumePublicEndpointQuota, PUBLIC_WIDGET_RATE_LIMITS } from '@/lib/public-endpoint-rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -53,6 +54,14 @@ function fallbackReply(agent, text) {
 }
 
 export async function POST(request) {
+  const quota = consumePublicEndpointQuota(request, PUBLIC_WIDGET_RATE_LIMITS.chat)
+  if (quota.limited) {
+    return json({ ok: false, error: 'Too many requests. Try again shortly.' }, {
+      status: 429,
+      headers: { 'Retry-After': String(quota.retryAfterSeconds) },
+    })
+  }
+
   let body = {}
   try { body = await request.json() } catch {}
 

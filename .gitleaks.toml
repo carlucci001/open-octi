@@ -25,6 +25,8 @@ paths = [
 # Test-fixture placeholders and documentation examples that trip false positives.
 # Add lines here as you find them; keep tight regexes to avoid hiding real leaks.
 regexes = [
+  # Public, rejected legacy OpenOcti default used in security regression examples.
+  '''^openocti-local-only$''',
   '''EXAMPLE_[A-Z0-9_]+''',
   '''YOUR_API_KEY_HERE''',
   '''xxxxxxxxxxxxxxxxxxxx''',

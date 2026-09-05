@@ -4,12 +4,25 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
+  assertSafeOutput,
+  SOURCE_ROOT,
   matchOpenOctiDenylist,
   neutralizeOpenOctiReferences,
   scanOpenOctiDenylist,
 } from '../scripts/export-openocti.mjs'
 
 const joined = (...parts) => parts.join('')
+
+describe('OpenOcti export destination safety', () => {
+  it('allows separate release and merged exports without allowing arbitrary cleanup targets', () => {
+    for (const name of ['openocti-export', 'openocti-export-merged']) {
+      expect(() => assertSafeOutput(path.join(os.tmpdir(), name))).not.toThrow()
+    }
+    for (const target of [path.parse(SOURCE_ROOT).root, SOURCE_ROOT, path.dirname(SOURCE_ROOT), path.join(os.tmpdir(), 'unrelated-project')]) {
+      expect(() => assertSafeOutput(target)).toThrow()
+    }
+  })
+})
 
 describe('OpenOcti export product denylist', () => {
   it.each([

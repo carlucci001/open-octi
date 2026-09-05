@@ -282,6 +282,12 @@ export default function LeadsLab({ onNavigate }) {
   const [location, setLocation] = useState('United States')
   const [destination, setDestination] = useState(DESTINATIONS[0].id)
   const [selectedLeadListId, setSelectedLeadListId] = useState('')
+  const [contractorTrigger, setContractorTrigger] = useState('license-issued')
+  const [contractorDays, setContractorDays] = useState(30)
+  const [contractorState, setContractorState] = useState('CA')
+  const [contractorCounty, setContractorCounty] = useState('')
+  const [contractorZip, setContractorZip] = useState('')
+  const [contractorClassification, setContractorClassification] = useState('')
   const [sourceTool, setSourceTool] = useState('web-research')
   // Which kind of lead comes back. 'apify' walks Google Maps and returns
   // businesses (no person, no title, no work email). 'apollo' returns named
@@ -332,7 +338,20 @@ export default function LeadsLab({ onNavigate }) {
     }
     return builtInVertical || FARRINGTON_LEAD_VERTICALS[0]
   }, [isNewCategory, savedCategory, builtInVertical, trimmedDraftLabel, draftCategoryTerms])
-  const resolvedSourcesQ = useCachedData(`/api/lead-signals/resolve?type=${encodeURIComponent(vertical.id || vertical.label || '')}&location=${encodeURIComponent(location)}`, { extract: j => j || { sources: [] } })
+  const isContractorVertical = mode === 'vertical' && vertical.id === 'contractors-licensed'
+  const contractorLocation = contractorZip
+    || [contractorCounty ? `${contractorCounty.replace(/\s+County$/i, '').trim()} County` : '', contractorState].filter(Boolean).join(', ')
+    || location
+  const runLocation = isContractorVertical ? contractorLocation : location
+  const contractorSignalOptions = isContractorVertical ? {
+    preset: contractorTrigger,
+    days: Math.max(1, Number(contractorDays) || (contractorTrigger === 'license-issued' ? 30 : 60)),
+    state: contractorState,
+    county: contractorCounty.replace(/\s+County$/i, '').trim(),
+    zip: contractorZip.replace(/\D/g, '').slice(0, 5),
+    classification: contractorClassification.trim().toUpperCase(),
+  } : null
+  const resolvedSourcesQ = useCachedData(`/api/lead-signals/resolve?type=${encodeURIComponent(vertical.id || vertical.label || '')}&location=${encodeURIComponent(runLocation)}`, { extract: j => j || { sources: [] } })
   const organizationCampaign = ORGANIZATION_CAMPAIGNS.find(c => c.id === organizationPreset) || ORGANIZATION_CAMPAIGNS[0]
   const requestedLeadCount = Math.max(1, Number(count) || 10)
   const hasProvenPublicRecords = (sourcesQ.data || []).some(source => source.proving?.status === 'proven')
@@ -347,8 +366,8 @@ export default function LeadsLab({ onNavigate }) {
     : selectedLeadList?.assignedUserIds?.[0] || selectedLeadList?.ownerUserId || ''
   const query = useMemo(() => {
     if (mode === 'organization') return buildOrganizationQuery({ campaign: organizationCampaign, scope: organizationScope, location, mustHave, exclude })
-    return buildQualityQuery({ vertical, location, mustHave, exclude })
-  }, [mode, organizationCampaign, organizationScope, vertical, location, mustHave, exclude])
+    return buildQualityQuery({ vertical, location: runLocation, mustHave, exclude })
+  }, [mode, organizationCampaign, organizationScope, vertical, runLocation, mustHave, exclude])
 
   useEffect(() => {
     const pair = `${mode}|${organizationCampaign.id}`
@@ -396,8 +415,8 @@ export default function LeadsLab({ onNavigate }) {
     const selected = leadLists.find(list => list.id === selectedLeadListId) || null
     const destinationDefault = defaultLeadListForDestination(leadLists, destination)
     const campaignMatch = mode === 'organization' ? findMatchingLeadList(organizationCampaign, leadLists) : null
-    const selectedIsValid = selected && leadListBelongsToDestination(selected, destination)
-      && (mode !== 'organization' || !campaignMatch || selected.id === campaignMatch.id)
+    const selectedIsValid = selected && (mode === 'vertical' || (leadListBelongsToDestination(selected, destination)
+      && (!campaignMatch || selected.id === campaignMatch.id)))
     if (!selectedIsValid) setSelectedLeadListId((campaignMatch || destinationDefault)?.id || '')
   }, [mode, destination, organizationCampaign, leadLists, selectedLeadListId])
 
@@ -405,9 +424,10 @@ export default function LeadsLab({ onNavigate }) {
     mode, category, count: Number(count) || 10, location, destination,
     selectedLeadListId, sourceTool, leadSource, maxPaidBatches, organizationPreset, organizationScope,
     mustHave, exclude, notes, draftCategoryLabel, draftCategoryTerms,
+    contractorTrigger, contractorDays, contractorState, contractorCounty, contractorZip, contractorClassification,
   }), [mode, category, count, location, destination, selectedLeadListId, sourceTool, leadSource, maxPaidBatches,
     organizationPreset, organizationScope, mustHave, exclude, notes,
-    draftCategoryLabel, draftCategoryTerms])
+    draftCategoryLabel, draftCategoryTerms, contractorTrigger, contractorDays, contractorState, contractorCounty, contractorZip, contractorClassification])
 
   const applyConfig = useCallback(config => {
     if (!config) return
@@ -431,6 +451,12 @@ export default function LeadsLab({ onNavigate }) {
     if (config.notes !== undefined) setNotes(config.notes)
     if (config.draftCategoryLabel !== undefined) setDraftCategoryLabel(config.draftCategoryLabel)
     if (config.draftCategoryTerms !== undefined) setDraftCategoryTerms(config.draftCategoryTerms)
+    if (config.contractorTrigger) setContractorTrigger(config.contractorTrigger)
+    if (config.contractorDays !== undefined) setContractorDays(Number(config.contractorDays) || 30)
+    if (config.contractorState) setContractorState(config.contractorState)
+    if (config.contractorCounty !== undefined) setContractorCounty(config.contractorCounty)
+    if (config.contractorZip !== undefined) setContractorZip(config.contractorZip)
+    if (config.contractorClassification !== undefined) setContractorClassification(config.contractorClassification)
   }, [])
 
   // Best effort, never awaited: losing this must not affect the run.
@@ -785,10 +811,11 @@ export default function LeadsLab({ onNavigate }) {
         payload: {
           category: vertical.custom ? vertical.label : vertical.id,
           limit: Number(count) || 10,
-          location: location || 'United States',
+          location: runLocation || 'United States',
           query,
           campaign: !OPENOCTI && destination === 'farrington_dev' ? `fd-cold-${vertical.id}` : `${destination}-${vertical.id}`,
           leadListId: selectedLeadList?.id || undefined,
+          signalOptions: contractorSignalOptions || undefined,
           vendor: buildLeadVendorRequest(leadSource, maxPaidBatches),
           spec: {
             destination,
@@ -921,6 +948,15 @@ export default function LeadsLab({ onNavigate }) {
               </ThemedSelect>
             </label>
           )}
+          {mode === 'vertical' && (
+            <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Lead List
+              <ThemedSelect aria-label="Lead List" style={{ ...fieldStyle, marginTop: 6 }} value={selectedLeadListId} onChange={e => setSelectedLeadListId(e.target.value)} disabled={!leadLists.length}>
+                {!leadLists.length && <option value="">Loading lead lists...</option>}
+                {leadLists.map(list => <option key={list.id} value={list.id}>{list.name || list.id}</option>)}
+              </ThemedSelect>
+              <span className="block mt-1 font-normal">Defaults to the destination list; choose any list for this run.</span>
+            </label>
+          )}
           {mode === 'organization' && (
             <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Lead List
               <ThemedSelect style={{ ...fieldStyle, marginTop: 6 }} value={selectedLeadListId} onChange={e => setSelectedLeadListId(e.target.value)} disabled={!leadLists.length}>
@@ -942,6 +978,40 @@ export default function LeadsLab({ onNavigate }) {
             </label>
           )}
         </div>
+
+        {isContractorVertical && (
+          <div className="rounded-lg p-3 mt-3" style={{ background: 'var(--surface2)', border: '1px solid var(--accent)' }}>
+            <div className="text-xs font-bold mb-2" style={{ color: 'var(--accent)' }}>Contractor license signal</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2">
+              <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Trigger
+                <ThemedSelect aria-label="Contractor trigger" style={{ ...fieldStyle, marginTop: 6 }} value={contractorTrigger} onChange={e => { const preset = e.target.value; setContractorTrigger(preset); setContractorDays(preset === 'license-issued' ? 30 : 60) }}>
+                  <option value="license-issued">License issued</option>
+                  <option value="insurance-expiring">Insurance expiring</option>
+                  <option value="license-expiring">License expiring</option>
+                  <option value="newly-active">Newly active</option>
+                </ThemedSelect>
+              </label>
+              <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Within days
+                <input aria-label="Contractor trigger days" type="number" min="1" max="365" style={{ ...fieldStyle, marginTop: 6 }} value={contractorDays} onChange={e => setContractorDays(Math.max(1, Number(e.target.value) || 1))} />
+              </label>
+              <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>State
+                <ThemedSelect aria-label="Contractor state" style={{ ...fieldStyle, marginTop: 6 }} value={contractorState} onChange={e => setContractorState(e.target.value)}>
+                  <option value="CA">California</option>
+                </ThemedSelect>
+              </label>
+              <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>County
+                <input aria-label="Contractor county" style={{ ...fieldStyle, marginTop: 6 }} value={contractorCounty} onChange={e => setContractorCounty(e.target.value)} placeholder="Los Angeles" />
+              </label>
+              <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>ZIP
+                <input aria-label="Contractor ZIP" inputMode="numeric" maxLength={5} style={{ ...fieldStyle, marginTop: 6 }} value={contractorZip} onChange={e => setContractorZip(e.target.value.replace(/\D/g, '').slice(0, 5))} placeholder="Optional" />
+              </label>
+              <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Classification
+                <input aria-label="Contractor classification" style={{ ...fieldStyle, marginTop: 6 }} value={contractorClassification} onChange={e => setContractorClassification(e.target.value.toUpperCase())} placeholder="B, C-10, C-36" />
+              </label>
+            </div>
+            <div className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>Government Public Record — CSLB · manual business-line calls and mail only · no email in the state file.</div>
+          </div>
+        )}
 
         {mode === 'vertical' && (isNewCategory || savedCategory) && (
           <div className="rounded-lg p-3 mt-3" style={{ background: 'var(--surface2)', border: '1px dashed var(--accent)' }}>

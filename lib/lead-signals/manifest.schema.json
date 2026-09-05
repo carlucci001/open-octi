@@ -10,7 +10,7 @@
     "coverage": { "type": "array", "minItems": 1, "items": { "type": "string" } },
     "triggers": { "type": "array", "minItems": 1, "items": { "type": "string" } },
     "verticals": { "type": "array", "items": { "type": "string" } },
-    "platform": { "enum": ["rest-generic", "arcgis", "socrata", "fec", "structured-download"] },
+    "platform": { "enum": ["rest-generic", "arcgis", "socrata", "fec", "structured-download", "bulk-file"] },
     "tier": { "enum": ["A", "B", "C", "D"] },
     "endpoint": { "type": "string", "pattern": "^https?://" },
     "request": { "type": "object" },

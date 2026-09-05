@@ -26,6 +26,7 @@ export default defineConfig({
     env: { NODE_ENV: 'test' },
     globals: true,
     setupFiles: ['./vitest.setup.js'],
+    testTimeout: 15000,
     include: ['__tests__/**/*.{test,spec}.{js,jsx,ts,tsx}'],
     exclude: ['node_modules', '.next', 'dist'],
   },

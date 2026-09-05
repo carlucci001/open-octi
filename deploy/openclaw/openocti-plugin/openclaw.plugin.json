@@ -33,7 +33,6 @@
   },
   "contracts": {
     "tools": [
-      "fcc_call",
       "fcc_list_tools",
       "fcc_dashboard",
       "fcc_search",

@@ -3,13 +3,13 @@
 // AND a `callable` flag indicating whether OpenClaw can actually invoke it.
 //
 // Callability rules:
-//   - callable=true  → toggle in alsoAllow ACTUALLY gates this function on/off
+//   - callable=true  → the runtime policy can gate this function on/off
 //   - callable=false → vocabulary for fcc_call({ tool, args }), not a direct tool
 //
 // Sources (priority order, first match wins for `source`):
-//   - 'openclaw-base'   — top-level c.tools.alsoAllow on the Ubuntu box (every agent gets these)
+//   - 'openclaw-base'   — top-level c.tools allowlist on the OpenClaw host
 //   - 'fcc-plugin'      — fcc_* tools defined in scripts/fcc-unified-plugin-index.ts
-//   - 'openclaw-agent'  — names appearing in any agent's tools.alsoAllow in openclaw.json
+//   - 'openclaw-agent'  — names appearing in any agent's tools.allow/alsoAllow in openclaw.json
 //   - 'fcc-call-sub'    — dispatcher tools reachable via fcc_call({ tool: ... })
 //
 // We never invent tools. If openclaw.json can't be reached, we say so honestly.
@@ -20,6 +20,7 @@ import { readOpenclawConfig } from '@/lib/openclaw-config'
 import { requireAdmin } from '@/lib/auth'
 import { DEERFLOW_READONLY_TOOL_DEFS } from '@/lib/deerflow-tools'
 import { NEWSROOM_DIRECTOR_TOOLS } from '@/lib/newsroom-director'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -114,21 +115,23 @@ function extractFromOpenclawConfig(cfg) {
     })
   }
 
-  // Top-level allowlist — every agent gets these. Toggle in alsoAllow gates real function.
-  const baseAllow = cfg?.tools?.alsoAllow
+  // Top-level allowlist — every agent gets these when configured.
+  const baseAllow = Array.isArray(cfg?.tools?.allow) ? cfg.tools.allow : cfg?.tools?.alsoAllow
   if (Array.isArray(baseAllow)) {
     for (const name of baseAllow) {
       push(name, { source: 'openclaw-base', description: 'Granted to every agent (top-level allowlist).', callable: true })
     }
   }
 
-  // Per-agent tools — names referenced by some agent's alsoAllow. These are tracked
+  // Per-agent tools — names referenced by some agent's restrictive allowlist or
+  // legacy additive alsoAllow. These are tracked
   // but only callable if also registered as a real plugin tool.
   const agents = Array.isArray(cfg?.agents?.list) ? cfg.agents.list : []
   for (const a of agents) {
     const t = a?.tools
     let names = []
     if (Array.isArray(t)) names = t.filter(x => typeof x === 'string')
+    else if (Array.isArray(t?.allow)) names = t.allow
     else if (Array.isArray(t?.alsoAllow)) names = t.alsoAllow
     for (const name of names) {
       if (!seen.has(name)) {
@@ -184,11 +187,10 @@ export async function GET(request) {
     sources.fcc.reason = e.message
   }
 
-  // 3. fcc_call sub-tools — vocabulary the agent can pass as the `tool` arg.
-  //    Marked callable=false because they're NOT directly callable; gating happens
-  //    at fcc_call level. Surfaced so the UI can document them, not toggle them.
+  // 3. Command Center's generic dispatcher vocabulary. OpenOcti exposes only
+  //    named plugin tools so per-agent allowlists remain the enforcement boundary.
   try {
-    parseExecuteDispatcherTools().forEach(add)
+    if (!isOpenOcti()) parseExecuteDispatcherTools().forEach(add)
     Object.entries(NEWSROOM_DIRECTOR_TOOLS).forEach(([name, definition]) => add({
       name,
       description: definition.description,

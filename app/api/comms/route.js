@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { listOwnerInboxMessages, loadOwnerInboxMessageDetail, syncNylasOwnerInbox } from '@/lib/ownerInbox'
+import { sanitizeInboundEmailMessage } from '@/lib/sanitize-email-html'
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY
 const BASE = 'https://api.resend.com'
 const OWNER_INBOX_SYNC_MAX_AGE_MS = 60_000
 
@@ -41,11 +41,12 @@ async function ownerInboxSnapshot() {
 }
 
 async function resendFetch(path, options = {}) {
-  if (!RESEND_API_KEY) return { error: 'RESEND_API_KEY not configured' }
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return { error: 'RESEND_API_KEY not configured' }
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
-      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
@@ -87,10 +88,10 @@ export async function GET(request) {
       resendFetch(`/emails/receiving${qs ? '?' + qs.slice(1) : ''}`),
       ownerInboxSnapshot(),
     ])
-    const received = Array.isArray(resendData?.data) ? resendData.data.map(message => ({ ...message, _source: 'resend' })) : []
+    const received = Array.isArray(resendData?.data) ? resendData.data.map(message => sanitizeInboundEmailMessage({ ...message, _source: 'resend' })) : []
     const ownerMessages = owner.snapshot.messages
       .filter(message => message.kind === 'email')
-      .map(ownerMessageForComms)
+      .map(message => sanitizeInboundEmailMessage(ownerMessageForComms(message)))
     const messages = [...received, ...ownerMessages]
       .filter((message, index, all) => all.findIndex(item => messageIdentity(item) === messageIdentity(message)) === index)
       .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
@@ -112,11 +113,11 @@ export async function GET(request) {
     if (id.startsWith('nylas:')) {
       const result = await loadOwnerInboxMessageDetail(id)
       if (!result.ok) return NextResponse.json({ error: result.error || 'Unable to load mailbox message' }, { status: 502 })
-      return NextResponse.json(ownerMessageForComms(result.message))
+      return NextResponse.json(sanitizeInboundEmailMessage(ownerMessageForComms(result.message)))
     }
     const resendId = id.startsWith('resend:') ? id.slice('resend:'.length) : id
     const data = await resendFetch(`/emails/receiving/${encodeURIComponent(resendId)}`)
-    return NextResponse.json(data)
+    return NextResponse.json(sanitizeInboundEmailMessage(data))
   }
 
   // Attachments

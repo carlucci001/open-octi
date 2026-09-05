@@ -15,6 +15,8 @@ const CONFIG_FIELDS = [
   'mode', 'category', 'count', 'location', 'destination', 'selectedLeadListId',
   'sourceTool', 'organizationPreset', 'organizationScope', 'mustHave', 'exclude',
   'notes', 'draftCategoryLabel', 'draftCategoryTerms',
+  'contractorTrigger', 'contractorDays', 'contractorState', 'contractorCounty',
+  'contractorZip', 'contractorClassification',
   'sourceDiscoveryZip',
 ]
 

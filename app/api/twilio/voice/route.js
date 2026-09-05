@@ -6,6 +6,7 @@ import {
   trackPendingConferenceCall,
   twilioRequest,
 } from '@/lib/twilio-account-control'
+import { verifyTwilioWebhook } from '@/lib/twilio-webhook-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -65,6 +66,8 @@ async function dialDestinationIntoConference({ target, confName, baseUrl, reques
 }
 
 async function handle(request) {
+  const authError = await verifyTwilioWebhook(request)
+  if (authError) return authError
   const url = new URL(request.url)
   let to = url.searchParams.get('To') || url.searchParams.get('to')
   let conf = url.searchParams.get('Conf') || url.searchParams.get('conf')
