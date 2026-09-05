@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import PageHeader from '../components/PageHeader'
+import IntegrationGate from '../components/IntegrationGate'
 import { slugifyForRoom } from '@/lib/videoMeet'
 import { Video } from 'lucide-react'
 import { reportClientError } from '../components/reportClientError'
@@ -49,7 +50,7 @@ async function sendInviteEmail({ to, name, subject, note, when, url }) {
 }
 
 // ============================================================================
-export default function ConferenceCenter({ compact = false } = {}) {
+function ConferenceCenterContent({ compact = false } = {}) {
   const [meetings, setMeetings] = useState([])
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
@@ -154,6 +155,10 @@ export default function ConferenceCenter({ compact = false } = {}) {
   const joinUrl = async (urlOrRoom) => {
     const looksLikeUrl = /^https?:\/\//.test(urlOrRoom)
     const sub = process.env.NEXT_PUBLIC_DAILY_SUBDOMAIN || 'farringtondev'
+    if (!looksLikeUrl && !sub) {
+      flash('Daily is not configured. Add NEXT_PUBLIC_DAILY_SUBDOMAIN in Settings → Integrations.', 'err')
+      return
+    }
     const url = looksLikeUrl ? urlOrRoom : `https://${sub}.daily.co/${urlOrRoom.replace(/^.*\//, '')}`
     const r = await api('create_meeting', {
       meeting: { type: 'instant', title: `Joined ${urlOrRoom.replace(/^https?:\/\//, '').slice(0, 40)}`, room: null, url },
@@ -305,6 +310,14 @@ export default function ConferenceCenter({ compact = false } = {}) {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ConferenceCenter(props = {}) {
+  return (
+    <IntegrationGate capability="daily" title="Daily video">
+      <ConferenceCenterContent {...props} />
+    </IntegrationGate>
   )
 }
 
@@ -504,7 +517,7 @@ function JoinPanel({ onJoin, flash }) {
   return (
     <div className="flex flex-col gap-3">
       <Field label="Room name or full URL">
-        <input style={inp} value={val} onChange={e => setVal(e.target.value)} placeholder="https://farringtondev.daily.co/ff-acme-x4f" onKeyDown={e => e.key === 'Enter' && join()} />
+        <input style={inp} value={val} onChange={e => setVal(e.target.value)} placeholder="https://your-team.daily.co/meeting-name" onKeyDown={e => e.key === 'Enter' && join()} />
       </Field>
       <button style={btnPrimary} onClick={join} disabled={busy || !val.trim()}>{busy ? 'Joining…' : 'Join room'}</button>
     </div>

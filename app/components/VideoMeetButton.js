@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import IntegrationGate from './IntegrationGate'
 
 // Reusable video-meet button. Place anywhere you have a recipient email.
 // Props:
@@ -7,7 +8,11 @@ import { useState } from 'react'
 //   linkedTo ({ accountId?, contactId?, opportunityId?, leadId? }) — for activity logging,
 //   compact (bool) — smaller style,
 //   label (string) — override the button label
-export default function VideoMeetButton({ to, name, seed, linkedTo, compact = false, label, instant = false, stopPropagation = false, className = '', style = {} }) {
+export default function VideoMeetButton(props) {
+  return <IntegrationGate capability={['daily', 'resend']} title="video invitations"><VideoMeetButtonContent {...props} /></IntegrationGate>
+}
+
+function VideoMeetButtonContent({ to, name, seed, linkedTo, compact = false, label, instant = false, stopPropagation = false, className = '', style = {} }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
     to: to || '',

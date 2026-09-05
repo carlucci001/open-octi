@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "installation": {
+    "id": "my-openocti",
+    "name": "My OpenOcti",
+    "edition": "community",
+    "supportPlan": "community"
+  },
+  "monitors": [
+    {
+      "id": "public-app",
+      "name": "Public application",
+      "adapter": "http",
+      "required": true,
+      "configEnv": {
+        "url": "PUBLIC_APP_URL"
+      }
+    },
+    {
+      "id": "cloudflare-zone",
+      "name": "Cloudflare DNS zone",
+      "adapter": "cloudflare-zone",
+      "enabled": true,
+      "required": false,
+      "credentials": {
+        "apiToken": "CLOUDFLARE_API_TOKEN"
+      },
+      "configEnv": {
+        "zoneId": "CLOUDFLARE_ZONE_ID"
+      }
+    },
+    {
+      "id": "nylas-primary-grant",
+      "name": "Nylas primary grant",
+      "adapter": "nylas-grant",
+      "enabled": true,
+      "required": false,
+      "credentials": {
+        "apiKey": "NYLAS_API_KEY",
+        "grantId": "NYLAS_GRANT_ID"
+      }
+    }
+  ]
+}

@@ -1,15 +1,17 @@
 // Creates a Daily.co room without sending an email — used by in-app video triggers
 // (Conference Center, VideoMeetButton, etc.) that just need a URL to embed or share.
 import { NextResponse } from 'next/server'
+import { requireCapability } from '@/lib/feature-manifest'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request) {
+  const unavailable = requireCapability('daily')
+  if (unavailable) return NextResponse.json(unavailable.body, { status: unavailable.status })
   try {
     const { seed, persistent } = await request.json().catch(() => ({}))
     const apiKey = process.env.DAILY_API_KEY
-    if (!apiKey) return NextResponse.json({ error: 'DAILY_API_KEY not set' }, { status: 500 })
 
     const slug = String(seed || 'meeting').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'meeting'
     const name = persistent ? `ff-${slug}` : `ff-${slug}-${Math.random().toString(36).slice(2, 8)}`

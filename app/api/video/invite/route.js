@@ -6,11 +6,12 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { logActivity, findById } from '@/lib/entityStore'
 import { getMode } from '@/lib/mode'
+import { requireCapability } from '@/lib/feature-manifest'
 
 // In demo mode, redirect every video invite to Carl's real inbox so the demo
 // flow is end-to-end (clicked → email arrives → join from phone) without
 // blasting fake addresses.
-const DEMO_RECIPIENT = 'personal@example.invalid'
+const DEMO_RECIPIENT = process.env.DEMO_EMAIL_RECIPIENT || 'personal@example.invalid'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -51,6 +52,10 @@ async function createDailyRoom({ seed, persistent }) {
 }
 
 export async function POST(request) {
+  for (const capability of ['daily', 'resend']) {
+    const unavailable = requireCapability(capability)
+    if (unavailable) return NextResponse.json(unavailable.body, { status: unavailable.status })
+  }
   try {
     const body = await request.json()
     const { to, name, subject, note, when, persistent, seed, linkedTo, existingUrl, existingRoom } = body

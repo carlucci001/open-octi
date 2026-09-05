@@ -8,6 +8,7 @@ import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
 import { isOpenOcti } from '@/lib/edition'
 import { OpenOctiConfigurationLinks } from '../components/OpenOctiConfigurationNotice'
+import IntegrationGate from '../components/IntegrationGate'
 
 function api(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()) }
 function logPaymentTerminalStage(stage, extra = {}) {
@@ -329,6 +330,10 @@ function TerminalInner() {
 }
 
 export default function PaymentTerminal() {
+  return <IntegrationGate capability={['stripe', 'stripe-client']} title="Stripe payments"><PaymentTerminalContent /></IntegrationGate>
+}
+
+function PaymentTerminalContent() {
   const stripePromise = useMemo(() => {
     const pk = process.env.NEXT_PUBLIC_STRIPE_PK
     if (!pk) return null

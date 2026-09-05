@@ -10,7 +10,12 @@
       "modelPrimary": "openai/gpt-4.1-mini",
       "tags": [
         "demo"
-      ]
+      ],
+      "tools": [],
+      "schedule": {
+        "mode": "on-demand"
+      },
+      "disabled": false
     },
     "main": {
       "name": "Maggie",
@@ -95,16 +100,7 @@
         "starter",
         "voice"
       ],
-      "tools": [
-        "generate_image",
-        "fcc_generate_image",
-        "fcc_create_higgsfield_generation",
-        "fcc_create_higgsfield_brief",
-        "list_media",
-        "send_media_to_client",
-        "take_note_for_client",
-        "recall_my_recent_work"
-      ],
+      "tools": [],
       "schedule": {
         "mode": "on-demand"
       },

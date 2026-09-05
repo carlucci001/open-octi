@@ -22,3 +22,11 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: docker build --tag openocti-ci .
+      - name: Verify fresh keyless container runtime
+        timeout-minutes: 5
+        run: node scripts/smoke-openocti-container.mjs openocti-ci
+      - name: Remove disposable smoke containers and volumes
+        if: always()
+        run: |
+          docker ps -aq --filter label=openocti.ci-smoke=true | xargs -r docker rm -f
+          docker volume ls -q --filter label=openocti.ci-smoke=true | xargs -r docker volume rm

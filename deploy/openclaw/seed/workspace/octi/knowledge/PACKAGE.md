@@ -20,13 +20,15 @@ docker compose up -d
 
 Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
 
-> The `latest` images for this release are published only after the `v1.1.2` tag exists. Before that tag, use the source-build command above. See the [1.1.2 security release notes](docs/releases/1.1.2.md).
+> See the [1.2.0 release notes](docs/releases/1.2.0.md) for connection setup and monitoring. Versioned images are published from the matching release tag; use a source build when testing an untagged checkout.
 
 ## One key lights it up
 
 The CRM, projects, documents, and local knowledge tools work without an AI provider. Add any one supported model key in Models & Keys—OpenAI, Anthropic, Google Gemini, or OpenRouter—to activate Octi and the starter staff. Voice, email, calling, and research connectors need their own provider credentials only when you enable those features. Start with [Model providers](docs/guides/model-providers.md).
 
 ## Highlights
+
+- **Connection setup and monitoring** — Settings explains missing provider connections and offers administrator connection tests. Application, Cloudflare and Nylas checks include persistent history, optional failure/recovery alerts, and a recurring timer template. [Guide](docs/guides/MONITORING.md)
 
 - **A starter AI staff, one key to light it up** — Octi, Maggie, Craig, Sasha, Linda and Matilda ship as agent definitions; paste one OpenAI, Anthropic, Google Gemini or OpenRouter key in Models & Keys and they come alive on your own server. [Guide](docs/guides/agents.md) · [Screen](docs/screenshots/agents.jpg)
 - **Context-aware agents on every screen** — the Operator rail follows the section and the record you have open; on a lead, one click gives you Next Calls, an email draft or a clean-data pass built from that lead. [Guide](docs/guides/operator-rail.md) · [Screen](docs/screenshots/operator-rail-lead.jpg)
@@ -524,6 +526,22 @@ Open **Settings → Models & Keys** to save and test a provider. OpenOcti choose
 App-saved provider values are encrypted in `/data/openocti-keys.json`; the UI returns only source and last-four status. Environment variables remain an advanced alternative, and app-saved values take precedence.
 
 The initial OpenClaw configuration is first-boot-only. A successful in-app key save updates the managed provider and agent model blocks in the shared config; OpenClaw's file watcher applies that change without a container restart.
+
+# Source: docs/guides/MONITORING.md
+
+# Connection monitoring
+
+Settings → Monitoring shows the latest application, Cloudflare zone, and Nylas mailbox checks, plus recent history. Owners and administrators can run a check. Missing optional providers appear as **not configured**; a missing required connection fails the installation check. An installation with no completed checks is not reported healthy.
+
+Set `PUBLIC_APP_URL` for the application check. Optional Cloudflare checks use `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ZONE_ID`; Nylas checks use `NYLAS_API_KEY` and `NYLAS_GRANT_ID`. EU Nylas accounts can set the adapter's `config.apiBaseUrl` to `https://api.eu.nylas.com`.
+
+For other installations, copy `config/monitoring/community.example.json` to an untracked private configuration file and set `MONITORING_MANIFEST` to its absolute path. Credential fields contain environment variable names, never their values. Up to 32 checks are supported per manifest. Checks inspect connections; they do not restart services or change DNS records.
+
+Run `npm run monitor:run` from the application directory for one check. The templates `deploy/systemd/openocti-monitoring.service` and `.timer` run checks every five minutes on Linux. Set their working directory, environment file, Node path, and service user for your installation before enabling the timer. Docker installations should schedule the same command inside the application container so it shares the application's environment and data volume.
+
+History is stored in `CRM_DATA_DIR/monitoring.sqlite` and retained for 288 runs; back up that file with your data volume if you need monitoring history. An interrupted run's lock expires after 30 minutes. Concurrent runs are skipped.
+
+Alerts are off by default. To receive failure and recovery notifications, set `MONITORING_ALERTS_ENABLED=true` and your private `NTFY_TOPIC`; set `NTFY_TOKEN` when authentication is required. Repeated unchanged failures do not send another alert. Failed notification attempts are retried on the next check and appear in the operator view.
 
 # Source: docs/guides/operator-rail.md
 

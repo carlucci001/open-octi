@@ -626,7 +626,7 @@ const WORKSPACES = [
   { id: 'sell', label: 'Sell', ids: ['dashboard', 'leads', 'press-desk', 'pipelines', 'accounts', 'support', 'contacts', 'finance'] },
   { id: 'build', label: 'Build', ids: ['agents', 'platforms', 'automations', 'builder', 'campaign-studio', 'social', 'products', 'repository', 'ship-desk', 'build-board', 'switchboard', 'labs'] },
   { id: 'projects', label: 'Projects', ids: ['projects', 'tasks', 'documents', 'research', 'content-lab', 'media', 'notes', 'phone', 'conference', 'calendar', 'meeting-capture', 'feed'] },
-  { id: 'system', label: 'System', ids: ['incident-inbox', 'money-console', 'network', 'domains', 'credentials', 'migrate', 'control-services'] },
+  { id: 'system', label: 'System', ids: ['incident-inbox', 'money-console', 'network', 'domains', 'credentials', 'migrate', 'control-services', ...(OPENOCTI ? ['settings'] : [])] },
 ].map(workspace => ({
   ...workspace,
   ids: OPENOCTI ? workspace.ids.filter(id => !OPENOCTI_CLOSED_TABS.has(id)) : workspace.ids,

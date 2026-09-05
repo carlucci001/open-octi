@@ -256,18 +256,6 @@ function copyPublicTree(output) {
   })
 }
 
-function refreshStarterAgentPack() {
-  const script = path.join(SCRIPT_DIR, 'export-agent-pack.mjs')
-  if (!fs.existsSync(script)) return 'prebuilt'
-  const result = spawnSync(process.execPath, [script], {
-    cwd: SOURCE_ROOT,
-    encoding: 'utf8',
-    maxBuffer: 1024 * 1024,
-  })
-  if (result.status !== 0) throw new Error(`Starter agent pack refresh failed with exit code ${result.status ?? 'unknown'}.`)
-  return 'refreshed'
-}
-
 function resetOutput(output) {
   fs.mkdirSync(output, { recursive: true })
   for (const entry of fs.readdirSync(output)) {
@@ -276,6 +264,47 @@ function resetOutput(output) {
     if (!target.startsWith(`${output}${path.sep}`)) throw new Error(`Refusing unsafe cleanup target: ${target}`)
     fs.rmSync(target, { recursive: true, force: true })
   }
+}
+
+export function validatePublicStarterData(agents, roster, voice) {
+  const ids = ['octi-guide', 'main', 'coding', 'social-media', 'legal', 'matilda']
+  const sameKeys = (value, expected) => value && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).sort().join('|') === [...expected].sort().join('|')
+  if (!sameKeys(agents, ['__version', 'agents', 'presetsBootstrapped']) || agents.__version !== 1
+    || agents.presetsBootstrapped !== false || !sameKeys(agents.agents, ids)) {
+    throw new Error('Public starter agents must use the reviewed public schema and IDs.')
+  }
+  const fields = new Set(['name', 'emoji', 'category', 'title', 'role', 'description', 'instructions',
+    'voiceProfile', 'channels', 'voice', 'runtimeProvider', 'modelPrimary', 'tags', 'tools', 'schedule', 'disabled'])
+  function checkFields(value) {
+    if (!value || typeof value !== 'object') return
+    for (const [key, child] of Object.entries(value)) {
+      if (/(?:api.?key|token|password|secret|private.?key|agentId|voiceId)/i.test(key) && child !== '') {
+        throw new Error('Public starter data cannot contain installation credentials or provider IDs.')
+      }
+      checkFields(child)
+    }
+  }
+  for (const agent of Object.values(agents.agents)) {
+    if (!agent || Object.keys(agent).some(key => !fields.has(key))
+      || !Array.isArray(agent.tools) || agent.tools.length || agent.disabled !== false
+      || !sameKeys(agent.schedule, ['mode']) || agent.schedule.mode !== 'on-demand') {
+      throw new Error('Public starter agents must have approved fields, no tool grants, and on-demand schedules.')
+    }
+    checkFields(agent)
+  }
+  if (!sameKeys(roster, ids.filter(id => id !== 'octi-guide'))) throw new Error('Unexpected public voice roster IDs.')
+  for (const entry of Object.values(roster)) {
+    if (!sameKeys(entry, ['agentId', 'voiceId', 'voiceName', 'name', 'firstName'])
+      || ['agentId', 'voiceId', 'voiceName'].some(key => entry[key] !== '')) {
+      throw new Error('Public voice roster must have blank installation bindings.')
+    }
+  }
+  if (!sameKeys(voice, ['agentId', 'voiceId', 'voiceName', 'name', 'createdAt'])
+    || ['agentId', 'voiceId', 'voiceName', 'createdAt'].some(key => voice[key] !== '')) {
+    throw new Error('Public voice starter must have blank installation bindings.')
+  }
+  return true
 }
 
 function validateDataDemo() {
@@ -289,6 +318,8 @@ function validateDataDemo() {
     }
   }
   if (failures.length) throw new Error(`data-demo safety scan failed (${failures.join(', ')})`)
+  const read = name => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'))
+  validatePublicStarterData(read('agents.json'), read('voice-agent-roster.json'), read('voice-agent.json'))
   return listFiles(root).length
 }
 
@@ -367,7 +398,7 @@ export function stampExportVersion(output, version, exportedAt = new Date().toIS
   pkg.version = version
   pkg.private = false
   pkg.license = 'AGPL-3.0-only'
-  const allowedScripts = new Set(['dev', 'build', 'start', 'test', 'test:watch', 'test:ui', 'inventory', 'verify:data-backend', 'export:openocti', 'docs:check'])
+  const allowedScripts = new Set(['dev', 'build', 'start', 'test', 'test:watch', 'test:ui', 'inventory', 'verify:data-backend', 'export:openocti', 'docs:check', 'monitor:run'])
   pkg.scripts = Object.fromEntries(Object.entries(pkg.scripts || {}).filter(([name]) => allowedScripts.has(name)))
   pkg.scripts.build = 'node scripts/openocti-build.mjs'
   fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`)
@@ -500,10 +531,11 @@ function runGitleaks(output) {
   return 'PASS (0 findings)'
 }
 
-function listFiles(root) {
+export function listFiles(root) {
   const files = []
   if (!fs.existsSync(root)) return files
   for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (entry.name === '.git') continue
     const full = path.join(root, entry.name)
     if (entry.isDirectory()) files.push(...listFiles(full))
     else if (entry.isFile()) files.push(full)
@@ -553,7 +585,7 @@ export function exportOpenOcti(output = DEFAULT_OUTPUT, { version, exportedAt = 
   if (!version) {
     throw new Error('OpenOcti version is required. Pass --version X.Y.Z, set OPENOCTI_VERSION, or use --dev.')
   }
-  const starterAgentPack = refreshStarterAgentPack()
+  const starterAgentPack = 'reviewed-public-constants'
   const demoFileCount = validateDataDemo()
   const thirdParty = generateThirdPartyNotices(SOURCE_ROOT)
 

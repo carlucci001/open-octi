@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { KeyRound, Settings } from 'lucide-react'
+import { KeyRound, PlugZap, Settings } from 'lucide-react'
 import { isOpenOcti } from '@/lib/edition'
 import { EXTERNAL_CAPABILITIES } from '@/lib/feature-manifest'
 import { settingsAnchorIdForNeed } from '@/lib/openocti-settings-links'
@@ -21,6 +21,10 @@ export default function OpenOctiSettingsIndexPage() {
         <Link href="/settings/models" className="mt-6 rounded-xl p-4 flex items-center gap-3" style={{ color: 'var(--text)', background: 'rgba(48,192,240,.1)', border: '1px solid rgba(48,192,240,.35)' }}>
           <KeyRound size={22} color="#30c0f0" />
           <span><strong>Models &amp; Keys</strong><br /><small style={{ color: 'var(--text-muted)' }}>Anthropic, OpenAI, Gemini, OpenRouter, and ElevenLabs</small></span>
+        </Link>
+        <Link href="/settings/integrations" className="mt-3 rounded-xl p-4 flex items-center gap-3" style={{ color: 'var(--text)', background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.35)' }}>
+          <PlugZap size={22} color="#f59e0b" />
+          <span><strong>Integrations</strong><br /><small style={{ color: 'var(--text-muted)' }}>Configuration status, required values, vendor links, and connection tests</small></span>
         </Link>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <Link href="/settings/sample-data" className="rounded-xl p-4 font-semibold" style={{ color: 'var(--text)', border: '1px solid var(--border)' }}>Sample data <small className="block mt-1 font-normal" style={{ color: 'var(--text-muted)' }}>Install or remove synthetic starter records.</small></Link>

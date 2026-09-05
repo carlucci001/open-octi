@@ -10,14 +10,24 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   '.next/**',
   '.next*/**',
   '.env*',
+  '!.env.example',
   'data/**',
   'data-demo/**',
+  'vault/lead-sources/_proving/**',
+  'vault/lead-sources/county/*-arcgis-*.md',
+  'config/monitoring/**',
+  '!config/monitoring/community.example.json',
+  'deploy/openclaw/public-sales/**',
+  'deploy/systemd/farrington-monitoring.*',
   // The private Command Center suite asserts closed modules, private operating
   // data, and internal runbooks that are intentionally absent from OpenOcti.
   // Export only the cross-edition/runtime contract tests that exercise the
   // public tree; shipping the private-only tests makes a clean public checkout
   // fail before its own product code is evaluated.
   '__tests__/**',
+  '!__tests__/monitoringEngine.test.js',
+  '!__tests__/monitoringRuntime.test.js',
+  '!__tests__/monitoringRoutes.test.js',
   '!__tests__/featureInventory.test.js',
   '!__tests__/featureManifest.test.js',
   '!__tests__/leadSweepRuns.test.js',
@@ -93,6 +103,7 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   'docs/**',
   '!docs/INSTALL.md',
   '!docs/RELEASING.md',
+  '!docs/keyless-audit.md',
   '!docs/releases/1.1.0.md',
   '!docs/releases/1.1.1.md',
   '!docs/guides/**',
@@ -113,6 +124,8 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   '!scripts/export-openocti.mjs',
   '!scripts/openocti-excludes.mjs',
   '!scripts/openocti-build.mjs',
+  '!scripts/run-monitoring.mjs',
+  '!scripts/smoke-openocti-container.mjs',
   '!scripts/generate-third-party-notices.mjs',
   '!scripts/generate-openocti-brand-assets.mjs',
   '!scripts/generate-octi-knowledge.mjs',

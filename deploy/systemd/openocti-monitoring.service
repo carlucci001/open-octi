@@ -1,0 +1,12 @@
+[Unit]
+Description=OpenOcti installation connection checks
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/openocti
+EnvironmentFile=/opt/openocti/.env.local
+ExecStart=/usr/bin/node scripts/run-monitoring.mjs
+NoNewPrivileges=true
+PrivateTmp=true

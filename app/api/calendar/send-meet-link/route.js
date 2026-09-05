@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { wrapEmailBody } from '@/lib/emailSignature'
 import { requireCrmWrite } from '@/lib/permissions'
+import { requireCapability as requireIntegrationCapability } from '@/lib/feature-manifest'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -38,6 +39,10 @@ async function createDailyRoom({ seed, persistent }) {
 export async function POST(request) {
   const { error } = await requireCrmWrite(request)
   if (error) return error
+  for (const capability of ['daily', 'resend']) {
+    const unavailable = requireIntegrationCapability(capability)
+    if (unavailable) return NextResponse.json(unavailable.body, { status: unavailable.status })
+  }
   try {
     const { to, attendeeName, meetLink, eventTitle, eventStart, from, isDemo } = await request.json()
     if (!to || !to.includes('@')) return NextResponse.json({ error: 'Missing or invalid recipient email' }, { status: 400 })

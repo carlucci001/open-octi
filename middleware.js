@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { clearSessionCookie, verifySession, SESSION_COOKIE } from '@/lib/authEdge'
 import { isClosedSurface } from '@/lib/edition'
-import { capabilityForPath, notConfiguredPayload } from '@/lib/feature-manifest'
+import { capabilityForPath, requireCapability } from '@/lib/feature-manifest'
 
 // Paths that bypass auth.
 const PUBLIC_PREFIXES = [
@@ -21,7 +21,7 @@ const PUBLIC_PREFIXES = [
   // Invoice payment return flow. The route itself still enforces CRM auth for
   // staff actions; only Stripe session-verified payment checks are public.
   '/api/invoices',
-  // Public lease/pricing display on company.example.com — the marketing
+  // Public lease/pricing display on the configured marketing site — the marketing
   // site's lease.html fetches tiers from here to render the "Pick a tier" grid.
   // Read-only; ?withMargin=1 is gated inside the route, not here.
   '/api/pricing',
@@ -126,7 +126,8 @@ export function loginRedirectUrl(request, pathname, env = process.env) {
 
 function authGateUrl(request) {
   const configured = process.env.FCC_AUTH_GATE_ORIGIN || process.env.CRM_INTERNAL_ORIGIN
-  const productionLocal = request.nextUrl.hostname === 'crm.company.example.com'
+  const configuredHost = (() => { try { return new URL(process.env.PUBLIC_APP_URL || process.env.NEXT_PUBLIC_APP_URL || '').hostname } catch { return '' } })()
+  const productionLocal = request.nextUrl.hostname === (configuredHost || 'crm.company.example.com')
     ? 'http://127.0.0.1:3000'
     : ''
   return new URL('/api/auth/me', configured || productionLocal || request.url)
@@ -137,12 +138,14 @@ export async function middleware(request) {
   if (isClosedSurface(pathname)) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 })
   }
-  if (pathname.startsWith('/api/')) {
+
+  const publicPath = isPublic(pathname)
+  if (publicPath && pathname.startsWith('/api/')) {
     const capabilityId = capabilityForPath(pathname)
-    const unavailable = capabilityId ? notConfiguredPayload(capabilityId) : null
-    if (unavailable) return NextResponse.json(unavailable, { status: 503 })
+    const unavailable = capabilityId ? requireCapability(capabilityId) : null
+    if (unavailable) return NextResponse.json(unavailable.body, { status: unavailable.status })
   }
-  if (isPublic(pathname)) return NextResponse.next()
+  if (publicPath) return NextResponse.next()
 
   const token = request.cookies.get(SESSION_COOKIE)?.value
   const session = token ? await verifySession(token) : null
@@ -181,6 +184,12 @@ export async function middleware(request) {
     const res = NextResponse.redirect(loginRedirectUrl(request, pathname))
     res.headers.set('Set-Cookie', clearSessionCookie())
     return res
+  }
+
+  if (pathname.startsWith('/api/')) {
+    const capabilityId = capabilityForPath(pathname)
+    const unavailable = capabilityId ? requireCapability(capabilityId) : null
+    if (unavailable) return NextResponse.json(unavailable.body, { status: unavailable.status })
   }
 
   return NextResponse.next()

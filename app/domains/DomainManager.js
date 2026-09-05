@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader'
 import ViewModeToggle from '../components/ViewModeToggle'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import { useActiveRecord } from '@/lib/active-record'
+import IntegrationGate from '../components/IntegrationGate'
 
 const SC = { active: { bg: 'rgba(166,227,161,0.15)', c: 'var(--green)' }, parked: { bg: 'rgba(249,226,175,0.15)', c: 'var(--amber)' }, unknown: { bg: 'rgba(127,132,156,0.15)', c: 'var(--text-muted)' }, expired: { bg: 'rgba(243,139,168,0.15)', c: 'var(--red)' } }
 const HC = { Vercel: 'var(--accent)', Lovable: 'var(--purple)', GoDaddy: 'var(--peach)', InMotion: 'var(--amber)', Netlify: 'var(--teal)', unknown: 'var(--text-muted)' }
@@ -39,6 +40,10 @@ function DomainCard({ d, onEdit, isSelected, onToggleSelect, clientName }) {
 }
 
 export default function DomainManager() {
+  return <IntegrationGate capability={['godaddy', 'cloudflare']} mode="any" title="a domain provider"><DomainManagerContent /></IntegrationGate>
+}
+
+function DomainManagerContent() {
   const [domains, setDomains] = useState([]); const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(''); const [statusF, setStatusF] = useState('all'); const [hostF, setHostF] = useState('all'); const [clientF, setClientF] = useState('all')
   const [editDom, setEditDom] = useState(null); const [showImport, setShowImport] = useState(false); const [importRaw, setImportRaw] = useState('')

@@ -139,3 +139,10 @@ data-demo/comms-local.json
 data-demo/conference.json
 
 debug.log
+# Installation-generated lead-source evidence and discovered catalog definitions.
+# Keep runtime records in place and in backups, outside new release commits.
+vault/lead-sources/_proving/
+vault/lead-sources/county/*-arcgis-*.md
+data/monitoring.sqlite
+data/monitoring.sqlite-wal
+data/monitoring.sqlite-shm

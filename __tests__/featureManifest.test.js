@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildFeatureManifest, capabilityStatus, requiredCapabilityReport } from '../lib/feature-manifest'
+import { buildFeatureManifest, capabilityStatus, capabilityForPath, requireCapability, requiredCapabilityReport } from '../lib/feature-manifest'
 
 describe('external capability manifest', () => {
   it('boots with only the required CRM session secret and reports providers as not configured', () => {
@@ -63,6 +63,45 @@ describe('external capability manifest', () => {
       edition: 'openocti',
       required: [],
       unresolved: [],
+    })
+  })
+
+  it('does not treat a voice key as an AI model provider', () => {
+    const voiceOnly = buildFeatureManifest({ FCC_EDITION: 'openocti' }, {
+      providerStatuses: [{ id: 'elevenlabs', source: 'app', status: 'configured' }],
+    })
+    expect(voiceOnly.notConfigured).toContain('models')
+    const modelReady = buildFeatureManifest({ FCC_EDITION: 'openocti' }, {
+      providerStatuses: [{ id: 'openai', source: 'app', status: 'configured' }],
+    })
+    expect(modelReady.configured).toContain('models')
+  })
+
+  it('keeps stored communications, flow definitions, and non-AI agent tools available without unrelated provider keys', () => {
+    for (const path of ['/api/comms', '/api/communications', '/api/orchestrations', '/api/agent/execute']) {
+      expect(capabilityForPath(path)).toBeNull()
+    }
+    expect(capabilityForPath('/api/twilio/calls')).toBe('twilio')
+  })
+
+  it('returns the standard fail-closed 503 shape when a capability is missing', () => {
+    expect(requireCapability('daily', { FCC_EDITION: 'openocti' })).toMatchObject({
+      status: 503,
+      body: {
+        ok: false,
+        error: 'not_configured',
+        capability: 'daily',
+        keys: ['DAILY_API_KEY', 'DAILY_SUBDOMAIN'],
+      },
+    })
+    expect(requireCapability('daily', { DAILY_API_KEY: 'set', DAILY_SUBDOMAIN: 'team' })).toBeNull()
+  })
+
+  it('lets OpenOcti model routes perform their encrypted key-store check', () => {
+    expect(requireCapability('models', { FCC_EDITION: 'openocti' })).toBeNull()
+    expect(requireCapability('models', { FCC_EDITION: 'commandcenter' })).toMatchObject({
+      status: 503,
+      body: { capability: 'models', error: 'not_configured' },
     })
   })
 })

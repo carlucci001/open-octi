@@ -9,11 +9,47 @@ import {
   matchOpenOctiDenylist,
   neutralizeOpenOctiReferences,
   scanOpenOctiDenylist,
+  validatePublicStarterData,
+  listFiles,
 } from '../scripts/export-openocti.mjs'
 
 const joined = (...parts) => parts.join('')
 
+describe('Public starter data isolation', () => {
+  const read = name => JSON.parse(fs.readFileSync(path.join(SOURCE_ROOT, 'data-demo', name), 'utf8'))
+  const validate = agents => validatePublicStarterData(agents, read('voice-agent-roster.json'), read('voice-agent.json'))
+  it('accepts only the reviewed public agent shape', () => {
+    expect(validate(read('agents.json'))).toBe(true)
+  })
+  it('rejects extra agents, tool grants, and credential fields', () => {
+    for (const mutate of [
+      data => { data.agents.extra = data.agents.main },
+      data => { data.agents.main.tools = ['private_tool'] },
+      data => { data.agents.main.apiKey = 'installation-value' },
+      data => { data.agents.main.voice = { agentId: 'provider-binding' } },
+    ]) {
+      const agents = read('agents.json')
+      mutate(agents)
+      expect(() => validate(agents)).toThrow()
+    }
+  })
+  it('rejects provider bindings in the voice roster', () => {
+    const roster = read('voice-agent-roster.json')
+    roster.main.agentId = 'installation-agent'
+    expect(() => validatePublicStarterData(read('agents.json'), roster, read('voice-agent.json'))).toThrow()
+  })
+})
+
 describe('OpenOcti export destination safety', () => {
+  it('excludes retained Git metadata from release inventories and hashes', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openocti-inventory-'))
+    try {
+      fs.mkdirSync(path.join(root, '.git'))
+      fs.writeFileSync(path.join(root, '.git', 'config'), 'local repository metadata')
+      fs.writeFileSync(path.join(root, 'README.md'), 'Public source')
+      expect(listFiles(root).map(file => path.relative(root, file))).toEqual(['README.md'])
+    } finally { fs.rmSync(root, { recursive: true, force: true }) }
+  })
   it('allows separate release and merged exports without allowing arbitrary cleanup targets', () => {
     for (const name of ['openocti-export', 'openocti-export-merged']) {
       expect(() => assertSafeOutput(path.join(os.tmpdir(), name))).not.toThrow()

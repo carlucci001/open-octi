@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarDays } from 'lucide-react'
 import PageHeader, { ViewToggle } from '../components/PageHeader'
+import IntegrationGate from '../components/IntegrationGate'
 
 const VIEWS = [
   { id: 'planner', label: 'Planner' },
@@ -14,6 +15,10 @@ const VIEWS = [
 const CALENDAR_WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export default function SocialPublishing({ embedded = false, onNavigate, onOpenCampaigns }) {
+  return <IntegrationGate capability="postiz" title="Postiz publishing"><SocialPublishingContent embedded={embedded} onNavigate={onNavigate} onOpenCampaigns={onOpenCampaigns} /></IntegrationGate>
+}
+
+function SocialPublishingContent({ embedded = false, onNavigate, onOpenCampaigns }) {
   const [view, setView] = useState('planner')
   const [channels, setChannels] = useState([])
   const [campaigns, setCampaigns] = useState([])
