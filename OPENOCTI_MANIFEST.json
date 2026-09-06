@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-05T22:45:21.103Z",
+  "generatedAt": "2026-09-06T03:10:17.214Z",
   "source": "OpenOcti export",
   "excludes": [
     ".git/**",
@@ -23,6 +23,7 @@
     "!config/monitoring/community.example.json",
     "deploy/openclaw/public-sales/**",
     "deploy/systemd/farrington-monitoring.*",
+    "deploy/systemd/farrington-*",
     "__tests__/**",
     "!__tests__/monitoringEngine.test.js",
     "!__tests__/monitoringRuntime.test.js",
@@ -50,6 +51,7 @@
     "app/api/research-dossiers/**",
     "app/api/concierge/**",
     "!__tests__/openoctiExportDenylist.test.js",
+    "!__tests__/openoctiBoundary.test.js",
     "app/platforms/**",
     "app/api/platforms/**",
     "lib/platforms/**",
@@ -118,6 +120,10 @@
     "strip-ts.js",
     "scripts/**",
     "!scripts/export-openocti.mjs",
+    "!scripts/openocti-source-snapshot.mjs",
+    "!scripts/verify-openocti-boundary.mjs",
+    "!scripts/openocti-boundary-policy.json",
+    "!scripts/check-openocti-push.mjs",
     "!scripts/openocti-excludes.mjs",
     "!scripts/openocti-build.mjs",
     "!scripts/run-monitoring.mjs",
@@ -135,18 +141,20 @@
     "!scripts/kill-port.ps1",
     "public/avatars/cheryl*"
   ],
-  "fileCount": 1193,
-  "byteCount": 51874090,
-  "treeSha256": "f75aec3a4b5d91bf64acacad335a28be616af49821501cb17617894705e9867e",
+  "fileCount": 1197,
+  "byteCount": 51745434,
+  "treeSha256": "0e65586ca90491e16e2530fd99b466156d9b08028b9b07f912934ceb3b491218",
   "demoFileCount": 31,
-  "thirdPartyPackageCount": 772,
-  "scrubbedOccurrenceCount": 257,
-  "listedFileCount": 1192,
+  "thirdPartyPackageCount": 43,
+  "scrubbedOccurrenceCount": 256,
+  "listedFileCount": 1196,
   "productDenylist": "PASS (0 hits)",
   "gitleaks": "PASS (0 findings)",
   "starterAgentPack": "reviewed-public-constants",
   "octiKnowledge": {
     "knowledgeFiles": 5,
-    "docs": 22
-  }
+    "docs": 23
+  },
+  "sourceCommit": "62d87d864c142e139ac7840e8a1486575a35c362",
+  "approvedSourceFileCount": 1165
 }

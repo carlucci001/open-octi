@@ -19,6 +19,7 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   '!config/monitoring/community.example.json',
   'deploy/openclaw/public-sales/**',
   'deploy/systemd/farrington-monitoring.*',
+  'deploy/systemd/farrington-*',
   // The private Command Center suite asserts closed modules, private operating
   // data, and internal runbooks that are intentionally absent from OpenOcti.
   // Export only the cross-edition/runtime contract tests that exercise the
@@ -52,6 +53,7 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   'app/api/concierge/**',
   // WO-8: Farrington product modules are closed and never enter OpenOcti.
   '!__tests__/openoctiExportDenylist.test.js',
+  '!__tests__/openoctiBoundary.test.js',
   'app/platforms/**',
   'app/api/platforms/**',
   'lib/platforms/**',
@@ -122,6 +124,10 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   'strip-ts.js',
   'scripts/**',
   '!scripts/export-openocti.mjs',
+  '!scripts/openocti-source-snapshot.mjs',
+  '!scripts/verify-openocti-boundary.mjs',
+  '!scripts/openocti-boundary-policy.json',
+  '!scripts/check-openocti-push.mjs',
   '!scripts/openocti-excludes.mjs',
   '!scripts/openocti-build.mjs',
   '!scripts/run-monitoring.mjs',
