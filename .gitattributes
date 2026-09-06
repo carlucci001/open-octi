@@ -17,6 +17,8 @@
 # Shell scripts must be LF everywhere — including when edited on Windows and
 # piped to openocti-host, where a stray CR breaks the shebang.
 *.sh    text eol=lf
+.githooks/* text eol=lf
+openocti/.githooks/* text eol=lf
 
 # Never touched.
 *.png   binary

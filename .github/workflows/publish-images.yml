@@ -20,17 +20,46 @@ on:
 
 permissions:
   contents: read
-  packages: write
-  id-token: write
-  attestations: write
 
 env:
   REGISTRY: ghcr.io
   OWNER: ${{ github.repository_owner }}
 
 jobs:
+  boundary:
+    name: Image publication boundary and secret scan
+    if: github.repository == 'carlucci001/open-octi'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify public repository boundary
+        run: node scripts/verify-openocti-boundary.mjs .
+      - name: Scan public source for secrets
+        # Official Gitleaks v8.30.1 OCI index; pin the scanner, not a mutable tag.
+        # https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1
+        env:
+          GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+        run: |
+          printf '[extend]\nuseDefault = true\n' > "$RUNNER_TEMP/openocti-gitleaks.toml"
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --volume "$PWD:/repo:ro" \
+            --volume "$RUNNER_TEMP/openocti-gitleaks.toml:/scan-config.toml:ro" \
+            "$GITLEAKS_IMAGE" dir /repo \
+            --config /scan-config.toml --gitleaks-ignore-path /no-repository-ignores \
+            --ignore-gitleaks-allow --redact=100 --no-banner --exit-code 1
+
   build:
     name: build ${{ matrix.image.name }} (${{ matrix.platform.arch }})
+    needs: boundary
+    if: github.repository == 'carlucci001/open-octi' && needs.boundary.result == 'success'
+    permissions:
+      contents: read
+      packages: write
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
@@ -85,7 +114,11 @@ jobs:
 
   publish:
     name: publish ${{ matrix.image }}
-    needs: build
+    needs: [boundary, build]
+    if: github.repository == 'carlucci001/open-octi' && needs.boundary.result == 'success' && needs.build.result == 'success'
+    permissions:
+      contents: read
+      packages: write
     runs-on: ubuntu-latest
     strategy:
       matrix:

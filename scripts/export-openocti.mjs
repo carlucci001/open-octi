@@ -7,6 +7,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { generateThirdPartyNotices } from './generate-third-party-notices.mjs'
 import { generateOctiKnowledge } from './generate-octi-knowledge.mjs'
 import { isOpenOctiExcluded, OPENOCTI_EXCLUDES } from './openocti-excludes.mjs'
+import { createApprovedSourceSnapshot } from './openocti-source-snapshot.mjs'
+import { createBoundaryManifest, verifyOpenOctiBoundary } from './verify-openocti-boundary.mjs'
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 export const SOURCE_ROOT = path.resolve(SCRIPT_DIR, '..')
@@ -77,6 +79,8 @@ const OVERLAYS = new Map([
   ['docs/RELEASING.md', 'docs/RELEASING.md'],
   ['.github/workflows/ci.yml', '.github/workflows/ci.yml'],
   ['.github/workflows/publish-images.yml', '.github/workflows/publish-images.yml'],
+  ['.githooks/pre-push', '.githooks/pre-push'],
+  ['.dockerignore', '.dockerignore'],
 ])
 
 const DIRECTORY_OVERLAYS = ['docs/brand', 'docs/guides', 'docs/releases', 'docs/screenshots']
@@ -243,16 +247,16 @@ export function assertSafeOutput(output) {
   }
 }
 
-function shouldCopy(source) {
-  const relative = path.relative(SOURCE_ROOT, source).replaceAll('\\', '/')
+function shouldCopy(source, sourceRoot) {
+  const relative = path.relative(sourceRoot, source).replaceAll('\\', '/')
   return relative === '' || !isOpenOctiExcluded(relative)
 }
 
-function copyPublicTree(output) {
-  fs.cpSync(SOURCE_ROOT, output, {
+function copyPublicTree(output, sourceRoot) {
+  fs.cpSync(sourceRoot, output, {
     recursive: true,
     dereference: false,
-    filter: shouldCopy,
+    filter: source => shouldCopy(source, sourceRoot),
   })
 }
 
@@ -307,8 +311,8 @@ export function validatePublicStarterData(agents, roster, voice) {
   return true
 }
 
-function validateDataDemo() {
-  const root = path.join(SOURCE_ROOT, 'data-demo')
+function validateDataDemo(sourceRoot) {
+  const root = path.join(sourceRoot, 'data-demo')
   if (!fs.existsSync(root)) throw new Error('data-demo is missing; refusing to export real data.')
   const failures = []
   for (const file of listFiles(root)) {
@@ -323,11 +327,11 @@ function validateDataDemo() {
   return listFiles(root).length
 }
 
-function installDemoData(output) {
+function installDemoData(output, sourceRoot) {
   // `data/` lets `npm start` users run immediately; `data-demo/` is what the Docker image
   // copies in and the entrypoint seeds the /data volume from on first boot.
   for (const dir of ['data', 'data-demo']) {
-    fs.cpSync(path.join(SOURCE_ROOT, 'data-demo'), path.join(output, dir), { recursive: true })
+    fs.cpSync(path.join(sourceRoot, 'data-demo'), path.join(output, dir), { recursive: true })
   }
 }
 
@@ -372,20 +376,20 @@ export function writeOpenOctiEnvExample(output, sourceFile = path.join(SOURCE_RO
   fs.writeFileSync(path.join(output, '.env.example'), lines.join('\n'))
 }
 
-function installOverlays(output) {
+function installOverlays(output, sourceRoot) {
   for (const [source, target] of OVERLAYS) {
-    const sourceFile = path.join(SOURCE_ROOT, 'openocti', source)
+    const sourceFile = path.join(sourceRoot, 'openocti', source)
     if (!fs.existsSync(sourceFile)) throw new Error(`Missing OpenOcti overlay: ${source}`)
     const targetFile = path.join(output, target)
     fs.mkdirSync(path.dirname(targetFile), { recursive: true })
     fs.copyFileSync(sourceFile, targetFile)
   }
   for (const relative of DIRECTORY_OVERLAYS) {
-    const sourceDir = path.join(SOURCE_ROOT, 'openocti', relative)
+    const sourceDir = path.join(sourceRoot, 'openocti', relative)
     if (!fs.existsSync(sourceDir)) throw new Error(`Missing OpenOcti overlay directory: ${relative}`)
     fs.cpSync(sourceDir, path.join(output, relative), { recursive: true })
   }
-  writeOpenOctiEnvExample(output)
+  writeOpenOctiEnvExample(output, path.join(sourceRoot, '.env.example'))
 }
 
 export function stampExportVersion(output, version, exportedAt = new Date().toISOString()) {
@@ -519,13 +523,18 @@ export function scanOpenOctiDenylist(output) {
 function runGitleaks(output) {
   const report = path.join(os.tmpdir(), `openocti-gitleaks-${process.pid}.json`)
   const command = process.platform === 'win32' ? 'gitleaks.exe' : 'gitleaks'
-  const configPath = path.join(output, '.gitleaks.toml')
-  const configArgs = fs.existsSync(configPath) ? ['--config', configPath] : []
-  const result = spawnSync(command, ['dir', output, ...configArgs, '--no-banner', '--redact', '--exit-code', '1', '--report-format', 'json', '--report-path', report], {
+  const configPath = path.join(os.tmpdir(), `openocti-gitleaks-${process.pid}.toml`)
+  fs.writeFileSync(configPath, '[extend]\nuseDefault = true\n')
+  let result
+  try {
+  result = spawnSync(command, ['dir', output, '--config', configPath, '--gitleaks-ignore-path', `${configPath}.no-ignores`, '--ignore-gitleaks-allow', '--no-banner', '--redact=100', '--exit-code', '1', '--report-format', 'json', '--report-path', report], {
     encoding: 'utf8',
     maxBuffer: 8 * 1024 * 1024,
   })
+  } finally {
   fs.rmSync(report, { force: true })
+  fs.rmSync(configPath, { force: true })
+  }
   if (result.error?.code === 'ENOENT') throw new Error('gitleaks is required but was not found on PATH.')
   if (result.status !== 0) throw new Error(`gitleaks failed with exit code ${result.status}; findings were redacted.`)
   return 'PASS (0 findings)'
@@ -585,14 +594,16 @@ export function exportOpenOcti(output = DEFAULT_OUTPUT, { version, exportedAt = 
   if (!version) {
     throw new Error('OpenOcti version is required. Pass --version X.Y.Z, set OPENOCTI_VERSION, or use --dev.')
   }
+  const snapshot = createApprovedSourceSnapshot(SOURCE_ROOT)
+  try {
   const starterAgentPack = 'reviewed-public-constants'
-  const demoFileCount = validateDataDemo()
-  const thirdParty = generateThirdPartyNotices(SOURCE_ROOT)
+  const demoFileCount = validateDataDemo(snapshot.root)
+  const thirdParty = generateThirdPartyNotices(snapshot.root)
 
   resetOutput(output)
-  copyPublicTree(output)
-  installDemoData(output)
-  installOverlays(output)
+  copyPublicTree(output, snapshot.root)
+  installDemoData(output, snapshot.root)
+  installOverlays(output, snapshot.root)
   stampExportVersion(output, version, exportedAt)
   installOpenClawPlugin(output)
   const octiKnowledge = generateOctiKnowledge(output)
@@ -610,9 +621,17 @@ export function exportOpenOcti(output = DEFAULT_OUTPUT, { version, exportedAt = 
     gitleaks,
     starterAgentPack,
     octiKnowledge,
+    sourceCommit: snapshot.commit,
+    approvedSourceFileCount: snapshot.fileCount,
   })
   scanOpenOctiDenylist(output)
+  const boundary = createBoundaryManifest(output, { sourceCommit: snapshot.commit })
+  fs.writeFileSync(path.join(output, 'OPENOCTI_BOUNDARY.json'), `${JSON.stringify(boundary, null, 2)}\n`)
+  verifyOpenOctiBoundary(output, { useGitInventory: false })
   return { output, manifest }
+  } finally {
+    snapshot.cleanup()
+  }
 }
 
 export function main(argv = process.argv.slice(2)) {

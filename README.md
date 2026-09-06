@@ -18,7 +18,7 @@ docker compose up -d
 
 Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
 
-> See the [1.2.0 release notes](docs/releases/1.2.0.md) for connection setup and monitoring. Versioned images are published from the matching release tag; use a source build when testing an untagged checkout.
+> See the [1.2.1 release notes](docs/releases/1.2.1.md) for enforced release privacy checks, and the [1.2.0 release notes](docs/releases/1.2.0.md) for connection setup and monitoring. Versioned images are published from the matching release tag; use a source build when testing an untagged checkout.
 
 ## One key lights it up
 

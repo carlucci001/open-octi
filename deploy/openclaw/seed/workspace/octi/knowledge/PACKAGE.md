@@ -20,7 +20,7 @@ docker compose up -d
 
 Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
 
-> See the [1.2.0 release notes](docs/releases/1.2.0.md) for connection setup and monitoring. Versioned images are published from the matching release tag; use a source build when testing an untagged checkout.
+> See the [1.2.1 release notes](docs/releases/1.2.1.md) for enforced release privacy checks, and the [1.2.0 release notes](docs/releases/1.2.0.md) for connection setup and monitoring. Versioned images are published from the matching release tag; use a source build when testing an untagged checkout.
 
 ## One key lights it up
 
@@ -240,13 +240,15 @@ Run `docker compose ps` and confirm that the app is healthy. Review release note
 Only release a reviewed, clean source tree. The versioned exporter is the public boundary: never copy live credentials, local environment files, build output, or private business data into a release.
 
 1. Prepare `docs/releases/X.Y.Z.md` and run the public test suite.
-2. Run `node scripts/export-openocti.mjs --version X.Y.Z`.
+2. Review the explicit export-source allowlist and commit approved source changes. Run `node scripts/export-openocti.mjs --version X.Y.Z`; it reads only those committed Git objects.
 3. Confirm `package.json` and `VERSION.json` contain the requested version.
-4. Confirm the exporter reports a clean privacy scan and `gitleaks: PASS (0 findings)`.
+4. Confirm the exporter reports a clean privacy scan and `gitleaks: PASS (0 findings)`. Run `node scripts/verify-openocti-boundary.mjs /path/to/openocti-export --export`; do not regenerate its approval manifest during validation.
 5. Run `npm test` and `npm run build` in the exported tree.
 6. Build a fresh Docker Compose project and verify login, health, keyless behavior, samples, imports, and OpenClaw.
 
-Publish only the exact verified export. Commit and tag the same tree, then wait for public CI to pass. Never reuse or move a published tag. Back up the `/data` volume before upgrading an installed stack.
+Publish only the exact verified export. Configure the public release checkout with `git config core.hooksPath .githooks`; Node.js and Gitleaks must be available. Make one public release commit directly above the actual public `main`, so unrelated or intermediate private history cannot be uploaded. Push the release branch through the hook, wait for required public CI checks, and merge its pull request. Update the checkout to the approved public `main` before creating the version tag. Never reuse or move a published tag. Back up the `/data` volume before upgrading an installed stack.
+
+See [Public release boundary](guides/public-release-boundary.md) for the enforcement layers, synthetic regression checks, and administrative limits.
 
 # Source: docs/guides/agent-widget.md
 
@@ -600,6 +602,34 @@ Open Ops Lab, choose a lane, and add a record with its local path, commands, hea
 ## Limits and safety
 
 A saved project record is not a deployment, and an unavailable service is reported rather than simulated. Some provider entries are planning or experimental lanes until their runtime is installed. Voice samples do not change routing; a separate explicit live assignment is required.
+
+# Source: docs/guides/public-release-boundary.md
+
+# Public release boundary
+
+OpenOcti is an independent installation. Public releases must never inherit another installation's operating records, credential store, environment files, protected configuration, or backups.
+
+## Enforced release path
+
+1. The private-source exporter reads only the explicit approved source list from one committed Git ref. It materializes Git blobs into a temporary source snapshot. It does not read working-folder file contents, local environment files, or the live data directory. New source paths require an explicit reviewed allowlist change.
+2. Sample records and opaque assets must match the pinned public policy. Changing a sample instruction or business record fails verification, even if its schema still looks valid.
+3. The exporter writes an exact canonical-content inventory, `OPENOCTI_BOUNDARY.json`. Verification rejects unexpected, missing, or changed source files, symlinks, operational databases, private deployment configuration, and detected secrets. Verification never regenerates the manifest.
+4. An independent Gitleaks scan uses default rules and ignores repository suppression files and inline suppressions. Missing or failing verification tools stop the release. Diagnostics report rule and path information without secret values.
+5. The configured public Git pre-push hook checks the exact outgoing commit before upload. GitHub's boundary job runs before dependency installation or image publishing. Registry write permissions are restricted to jobs that depend on that successful check.
+
+## Operator checks
+
+Use `node scripts/verify-openocti-boundary.mjs .` in a committed public checkout. Use `--export` when validating an unstaged export folder. The latter rejects local runtime artifacts instead of treating them as installation data.
+
+Public release checkouts must configure `git config core.hooksPath .githooks`. Hooks are local Git configuration and do not automatically activate when someone clones a repository. The hook requires Node.js and Gitleaks on PATH; missing tools cause a failed push.
+
+Installed runtime data is not part of the approved public source inventory. Normal local `.env`/`.env.local` configuration and ignored runtime data remain installation-owned and are never release inputs. A tracked runtime artifact is rejected even if an ignore rule names its directory.
+
+## Proof and limits
+
+Regression tests exercise synthetic secrets, a private-business sentinel, disguised SQLite data, changed sample records, missing and extra inventory files, symlinks, and source-list violations. The tests do not require real operating records or credential values.
+
+These controls enforce the supported release path. An administrator can intentionally change code, approval policies, local hooks, or repository rules; application checks cannot remove that administrative authority. Pattern-based scanning also cannot recognize every possible secret or business record. The approved source list, pinned data policy, and isolated source snapshot provide independent controls instead of relying on pattern scanning alone.
 
 # Source: docs/guides/running-on-a-vps.md
 

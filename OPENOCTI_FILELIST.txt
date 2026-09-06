@@ -1,6 +1,7 @@
 .dockerignore
 .env.example
 .gitattributes
+.githooks/pre-push
 .github/workflows/ci.yml
 .github/workflows/publish-images.yml
 .gitignore
@@ -22,6 +23,7 @@ __tests__/leadVendorApollo.test.js
 __tests__/monitoringEngine.test.js
 __tests__/monitoringRoutes.test.js
 __tests__/monitoringRuntime.test.js
+__tests__/openoctiBoundary.test.js
 __tests__/openoctiDocuments.test.js
 __tests__/openoctiEdition.test.js
 __tests__/openoctiExportDenylist.test.js
@@ -602,10 +604,6 @@ deploy/openclaw/seed/workspace/social-media/IDENTITY.md
 deploy/openclaw/seed/workspace/social-media/SOUL.md
 deploy/openclaw/seed/workspace/social-media/TOOLS.md
 deploy/start-app.mjs
-deploy/systemd/farrington-crm-deepseek-experiment.conf
-deploy/systemd/farrington-crm-dist.conf
-deploy/systemd/farrington-deepseek-harness.service
-deploy/systemd/farrington-voice-bridge.service
 deploy/systemd/openocti-monitoring.service
 deploy/systemd/openocti-monitoring.timer
 design/app-icons/01-command-ring.svg
@@ -636,6 +634,7 @@ docs/guides/labs.md
 docs/guides/model-providers.md
 docs/guides/operator-rail.md
 docs/guides/ops-tools.md
+docs/guides/public-release-boundary.md
 docs/guides/running-on-a-vps.md
 docs/guides/truthdiff.md
 docs/guides/upgrading.md
@@ -648,6 +647,7 @@ docs/releases/1.1.0.md
 docs/releases/1.1.1.md
 docs/releases/1.1.2.md
 docs/releases/1.2.0.md
+docs/releases/1.2.1.md
 docs/screenshots/README.md
 docs/screenshots/agent-widget.jpg
 docs/screenshots/agents.jpg
@@ -1040,6 +1040,7 @@ public/sw.js
 scripts/build-doc-templates.js
 scripts/check-docs-links.mjs
 scripts/check-open-source-compliance.mjs
+scripts/check-openocti-push.mjs
 scripts/export-openocti.mjs
 scripts/feature-inventory.mjs
 scripts/generate-octi-knowledge.mjs
@@ -1047,12 +1048,15 @@ scripts/generate-openocti-brand-assets.mjs
 scripts/generate-third-party-notices.mjs
 scripts/kill-port.ps1
 scripts/migrate-json-to-sqlite.mjs
+scripts/openocti-boundary-policy.json
 scripts/openocti-build.mjs
 scripts/openocti-excludes.mjs
+scripts/openocti-source-snapshot.mjs
 scripts/preflight.js
 scripts/run-monitoring.mjs
 scripts/smoke-openocti-container.mjs
 scripts/verify-data-backend.js
+scripts/verify-openocti-boundary.mjs
 server/twilio-agent-stream.mjs
 tailwind.config.js
 templates/platform-admin-sdk/README.md

@@ -1,0 +1,568 @@
+{
+  "schemaVersion": 1,
+  "approvedPublicCommit": "d488f91548f57fd2f7c2198fc077a5828e47441e",
+  "seeds": {
+    "data-demo/README.md": {
+      "sha256": "7f20c52ebf5c24cbb427b9c3abe08d0dc029a08f0724cafaad5815ac44f0adfe",
+      "kind": "text"
+    },
+    "data-demo/accounts.json": {
+      "sha256": "90511022ba8274b9129df71596fb035e64e068f01929bb1f3b1c64cf4967efec",
+      "kind": "text"
+    },
+    "data-demo/activities.json": {
+      "sha256": "7e70d5c85026714ecfa01a55ace1c497f964297953ba6ace6e0deb0ab6a78266",
+      "kind": "text"
+    },
+    "data-demo/agents.json": {
+      "sha256": "dcfed22efc52aaf5090c7927a7ca8d119e4ed53c03d98bcba811fadfb2baf5b4",
+      "kind": "text"
+    },
+    "data-demo/calendar-config.json": {
+      "sha256": "ae9a75b903a5fdcc9586d2fdec686835c1135e9481314ba9bcd92211c24e3c8e",
+      "kind": "text"
+    },
+    "data-demo/contacts.json": {
+      "sha256": "d1c2510e5aef014227c35ea02147832efd9dae58c594b353a128dd9d8b0bca0c",
+      "kind": "text"
+    },
+    "data-demo/document-templates/_index.json": {
+      "sha256": "95b1561d28383cd9d479b50ed95cac0b5c5e17817963abe4c25618c4c50cdf2e",
+      "kind": "text"
+    },
+    "data-demo/document-templates/consulting-agreement.md": {
+      "sha256": "b248d25b8d1682282ff8cad66d0c9bd6f858ce451961091d78200b5506c9ab2f",
+      "kind": "text"
+    },
+    "data-demo/document-templates/independent-contractor-agreement.md": {
+      "sha256": "c8a201424f58225d8503bcca91075148dcc7c0cf68d9460c3f1eca209ea43ebb",
+      "kind": "text"
+    },
+    "data-demo/document-templates/master-services-agreement.md": {
+      "sha256": "3b2af8965a8e083da5ac29f2a308f1a63c8aa86beb52b8a7ea4fac36984b5434",
+      "kind": "text"
+    },
+    "data-demo/document-templates/mutual-nda.md": {
+      "sha256": "8fe0e93c882af2e5e88f0d13d1425ee62b8161de3448f0ae49e03f84db461f51",
+      "kind": "text"
+    },
+    "data-demo/document-templates/simple-invoice-terms.md": {
+      "sha256": "4c096f0da212af420ece8fcccc42a3ff2dda6e1c78e99831cac49c76efd38e63",
+      "kind": "text"
+    },
+    "data-demo/document-templates/statement-of-work.md": {
+      "sha256": "4e082e8a8b0babba2ce02cb184d8f39cddf73e711ab3718ef5d987d8fbb8f9fb",
+      "kind": "text"
+    },
+    "data-demo/document-templates/website-privacy-policy.md": {
+      "sha256": "abe78d184106e0a3687dd4e845c4f12d4f32a35cd611bc324128ead1621ff33d",
+      "kind": "text"
+    },
+    "data-demo/document-templates/website-terms-of-service.md": {
+      "sha256": "aa328ba3e788671322206365fe00ea561ed522be1fd34a90790e610d8fff5861",
+      "kind": "text"
+    },
+    "data-demo/documents.json": {
+      "sha256": "5cb4165c498a578b60bec6ad0a55bf31b0efdba8bee24d9530c65b036dd90c37",
+      "kind": "text"
+    },
+    "data-demo/domains.json": {
+      "sha256": "4b834aab05f9ba66d25dddcdb2238b2f08370ef142350f63f326bdc5406fe995",
+      "kind": "text"
+    },
+    "data-demo/invoices.json": {
+      "sha256": "c3971c16d3a329c134c6bafbcbb90ea7a2391a65c2ef11ed5e9103b4ae73db71",
+      "kind": "text"
+    },
+    "data-demo/leads.json": {
+      "sha256": "1abe83570baeef5bb9bf3ba00c9dabec0f17c73d9bd1991fe382f307c0f77965",
+      "kind": "text"
+    },
+    "data-demo/openocti-calendar-samples.json": {
+      "sha256": "3cbdede5846ab83da71f7a221c7dd2d1a27e5df4f0e14d3c1f914dc2eda70066",
+      "kind": "text"
+    },
+    "data-demo/opportunities.json": {
+      "sha256": "9c2683c672641f7e83e4e72f0ca00696ff7467444bfe1fcfa0474d73d61f7d8c",
+      "kind": "text"
+    },
+    "data-demo/orchestrations.json": {
+      "sha256": "19234e251bdd6e8c2fcac27ecbe53fa0731c98e1266e1883332c7b2fa0aac11f",
+      "kind": "text"
+    },
+    "data-demo/payments.json": {
+      "sha256": "56dfc1f0446c23f01c1b13ffefb1848122036775899c3f4bd0ad9b060389b88b",
+      "kind": "text"
+    },
+    "data-demo/pipelines.json": {
+      "sha256": "c297fb1fc6b6912998d8bcc87d03bdc7fe193972653ac85dfbc07c156403634a",
+      "kind": "text"
+    },
+    "data-demo/projects.json": {
+      "sha256": "6b5e7189b11b92dfcd386a7d0c0fcd08bdd23b2eb67d3ba61b286e936d716c02",
+      "kind": "text"
+    },
+    "data-demo/releases.json": {
+      "sha256": "f9fee1b5758e537107e7b45b7ae861a3f4e11a5fbd283322c8fd4337708e68c9",
+      "kind": "text"
+    },
+    "data-demo/sponsor-leads.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "kind": "text"
+    },
+    "data-demo/subscriptions.json": {
+      "sha256": "f4b6bb28ad360424db7c37e4b676eef0e7e075675818b6a77c4e7fcb67d33ce5",
+      "kind": "text"
+    },
+    "data-demo/tasks.json": {
+      "sha256": "1b778f7a5af3aa62203a807cd5bbdefb699b0d32fbfc91405081e21ee7991b9f",
+      "kind": "text"
+    },
+    "data-demo/voice-agent-roster.json": {
+      "sha256": "e93360aea1f844ea54e07a0fdef4af8a6559b76401d26f34f54f55428b79bb37",
+      "kind": "text"
+    },
+    "data-demo/voice-agent.json": {
+      "sha256": "ce7a9f56680ab8a84d44910f9712a68a00860553d59ac1fad424d95ad268919b",
+      "kind": "text"
+    }
+  },
+  "dataResources": {
+    "data/README.md": {
+      "sha256": "7f20c52ebf5c24cbb427b9c3abe08d0dc029a08f0724cafaad5815ac44f0adfe",
+      "kind": "text"
+    },
+    "data/document-templates/consulting-agreement.md": {
+      "sha256": "b248d25b8d1682282ff8cad66d0c9bd6f858ce451961091d78200b5506c9ab2f",
+      "kind": "text"
+    },
+    "data/document-templates/independent-contractor-agreement.md": {
+      "sha256": "c8a201424f58225d8503bcca91075148dcc7c0cf68d9460c3f1eca209ea43ebb",
+      "kind": "text"
+    },
+    "data/document-templates/master-services-agreement.md": {
+      "sha256": "3b2af8965a8e083da5ac29f2a308f1a63c8aa86beb52b8a7ea4fac36984b5434",
+      "kind": "text"
+    },
+    "data/document-templates/mutual-nda.md": {
+      "sha256": "8fe0e93c882af2e5e88f0d13d1425ee62b8161de3448f0ae49e03f84db461f51",
+      "kind": "text"
+    },
+    "data/document-templates/simple-invoice-terms.md": {
+      "sha256": "4c096f0da212af420ece8fcccc42a3ff2dda6e1c78e99831cac49c76efd38e63",
+      "kind": "text"
+    },
+    "data/document-templates/statement-of-work.md": {
+      "sha256": "4e082e8a8b0babba2ce02cb184d8f39cddf73e711ab3718ef5d987d8fbb8f9fb",
+      "kind": "text"
+    },
+    "data/document-templates/website-privacy-policy.md": {
+      "sha256": "abe78d184106e0a3687dd4e845c4f12d4f32a35cd611bc324128ead1621ff33d",
+      "kind": "text"
+    },
+    "data/document-templates/website-terms-of-service.md": {
+      "sha256": "aa328ba3e788671322206365fe00ea561ed522be1fd34a90790e610d8fff5861",
+      "kind": "text"
+    }
+  },
+  "examples": {
+    ".env.example": {
+      "sha256": "06e76748248a4bafe69170d42c7dc96d0c8aee10ce9f4d1c2785f5a72a2b4c42",
+      "kind": "text"
+    },
+    "config/monitoring/community.example.json": {
+      "sha256": "3d1830654f2fcfcfcf9a251ab76e5314d1d3f91d2c8151b8d1b8d1bac2b4c25d",
+      "kind": "text"
+    }
+  },
+  "opaqueAssets": {
+    "docs/brand/banner.png": {
+      "sha256": "a27e3e879457c8b1795555827390ec677bb8af763bbb5fdf606f6670a8df8578",
+      "kind": "binary"
+    },
+    "docs/brand/octopus-mark.png": {
+      "sha256": "cbbcbf4c4eb35904745efa15f23bbd5f7f83c6f43b917c5182f4d2f62753dd01",
+      "kind": "binary"
+    },
+    "docs/brand/openocti-banner.png": {
+      "sha256": "e77bad0cb1f575164ab302f780234dd4959e47826ffa3f40c89f297d467d6fdf",
+      "kind": "binary"
+    },
+    "docs/screenshots/agent-widget.jpg": {
+      "sha256": "67db8bbff9bad9138298415ec745199a4bbb7a7b9c13a1240d7b15574b8f8915",
+      "kind": "binary"
+    },
+    "docs/screenshots/agents.jpg": {
+      "sha256": "93bea6fdc1a8f62b61a7068e51d19a118187dcdcdd276f6473d5e8034ca8fb87",
+      "kind": "binary"
+    },
+    "docs/screenshots/automations.jpg": {
+      "sha256": "42ba4bcb51fee902eedfbb7567a3d59013717bbe09b5728bcef8fb6af9ee6798",
+      "kind": "binary"
+    },
+    "docs/screenshots/command-vault-graph.jpg": {
+      "sha256": "1e964c6333a85c26d5b3e9a2d590fcef7f8bbb6af5d53e0ca08f7186fe6bb0ff",
+      "kind": "binary"
+    },
+    "docs/screenshots/communications.jpg": {
+      "sha256": "2ee55e645a601e481119cafa48ff6f4cbb5a0474c0afc11557c474658ef76b88",
+      "kind": "binary"
+    },
+    "docs/screenshots/dashboard.jpg": {
+      "sha256": "603eb186cdc09d7bba44bc94d41bc4d093303f1d43451138bc91ec879d3b3f4e",
+      "kind": "binary"
+    },
+    "docs/screenshots/documents-esign.jpg": {
+      "sha256": "3cfc82b9f8a91d41679aa034c22f51398ccd3627f7650dd831cd97244f34ce9c",
+      "kind": "binary"
+    },
+    "docs/screenshots/labs.jpg": {
+      "sha256": "e8d898f1bf169410d37ea61b79f2327285aafbfb0e538a0c57ae15d1384135f4",
+      "kind": "binary"
+    },
+    "docs/screenshots/operator-rail-lead.jpg": {
+      "sha256": "9b189cfe36a5d930779d6103d9395787cb51e26cd169769885421166d347f221",
+      "kind": "binary"
+    },
+    "docs/screenshots/pipelines.jpg": {
+      "sha256": "24ae064059215ba9f221cb6be3f7939685d8c8eacf7b90a7be979e526aff8fdf",
+      "kind": "binary"
+    },
+    "docs/screenshots/shot-1-dashboard.jpg": {
+      "sha256": "4cd3c5299182f8c46effbdff9dcaf31e6fd5e5e4422fa50d1ab9990ac2b82f5b",
+      "kind": "binary"
+    },
+    "docs/screenshots/shot-2-pipelines.jpg": {
+      "sha256": "d1773cf75ae9cc5397c2af15b9c8e1d0d837e6af348633013d5baf71d822ca19",
+      "kind": "binary"
+    },
+    "docs/screenshots/shot-3-agents.jpg": {
+      "sha256": "cdcd5942d75b95518192c32952cd84b701fa24a4370731556fb8af108a02f922",
+      "kind": "binary"
+    },
+    "docs/screenshots/shot-5-leads.jpg": {
+      "sha256": "382a9632faddb2803adbb6f31af9845f4a2b2e104895a8ccd32fc5afca583c28",
+      "kind": "binary"
+    },
+    "docs/screenshots/shot-6-projects.jpg": {
+      "sha256": "9caa2d4fa28b97bb4d0219f1a1a1dcc5d7606a86f74a7c46171fa8f7271ab93d",
+      "kind": "binary"
+    },
+    "docs/screenshots/shot-7-documents.jpg": {
+      "sha256": "0d114ec9e4c95b0f17661ce3f07e7a30593d19a8cbf287985fe726a0f5d34fdb",
+      "kind": "binary"
+    },
+    "public/apple-touch-icon.png": {
+      "sha256": "7ddda9b75511eae8f1cd86b9f6297fce478887b4e03f7dfe404c78259abb099c",
+      "kind": "binary"
+    },
+    "public/audio/openocti-welcome/welcome-afternoon.mp3": {
+      "sha256": "ff2507b85f3429fee093fe1b841d3f62703a0d0e9ed0261cdc41a0af068ea8c9",
+      "kind": "binary"
+    },
+    "public/audio/openocti-welcome/welcome-evening.mp3": {
+      "sha256": "ce71aabe9b8d16f52c5c8c9d007dd124a9bd6094d047cc4f157b41c60a1ea4dd",
+      "kind": "binary"
+    },
+    "public/audio/openocti-welcome/welcome-first-run.mp3": {
+      "sha256": "3f0610f11eb08a62f67307d5bb0c379ed5ba1a900025129c69f346a529398e50",
+      "kind": "binary"
+    },
+    "public/audio/openocti-welcome/welcome-hello.mp3": {
+      "sha256": "92ccd931d630a45987b3a3828c119dac23a67541d0f7091475f474383fa5611c",
+      "kind": "binary"
+    },
+    "public/audio/openocti-welcome/welcome-morning.mp3": {
+      "sha256": "7353d4764e3c2df468b20c9b4520f45640247eb8bec9c89f703aa00e517233b5",
+      "kind": "binary"
+    },
+    "public/brand/command-center-loader/cclogo.png": {
+      "sha256": "24dfe5f09919995cfb1d56ef2e7bd5e22e8fb984ae4a6e4fb610192bcb044a8e",
+      "kind": "binary"
+    },
+    "public/brand/command-center-loader/loader-loop.gif": {
+      "sha256": "a68615cbd54de63c2ffbdc64b70e98b9dda57fbe96dc553069f77e225ddc5633",
+      "kind": "binary"
+    },
+    "public/brand/command-center-logo.png": {
+      "sha256": "24dfe5f09919995cfb1d56ef2e7bd5e22e8fb984ae4a6e4fb610192bcb044a8e",
+      "kind": "binary"
+    },
+    "public/brand/fd-avatar-512.png": {
+      "sha256": "98b5b5c3d3fd31c2be3fea9bbb5e2b55fe151808b29b1ed17d1f012204bb4b54",
+      "kind": "binary"
+    },
+    "public/brand/fd-avatar.png": {
+      "sha256": "59f1a8589bf793c1c2c7bc284e315800c41d05fde3854aeb4d5c82d525b4a490",
+      "kind": "binary"
+    },
+    "public/brand/fd-brand-dark-transparent.png": {
+      "sha256": "0f288ebcf67fc5e1dd9b0cf1b3b0d01940dfe29316ff90e3f57f86c3db3c1ec2",
+      "kind": "binary"
+    },
+    "public/brand/fd-brand-dark.png": {
+      "sha256": "1e85f264f402db6ac6ef8653135f121cfb82fc9e30b57846848788a2ccbeba70",
+      "kind": "binary"
+    },
+    "public/brand/fd-brand-light.png": {
+      "sha256": "6a156b5f9eb0063a3624bd07f8ce0e44c1e32c6db60ecd6d1fdae19d8538a8bc",
+      "kind": "binary"
+    },
+    "public/brand/fd-brand-warm-transparent.png": {
+      "sha256": "60655bcb55fb8f99c61cabe8b4445bfb6323789f2308efc078f0f388e4a7ff4b",
+      "kind": "binary"
+    },
+    "public/brand/fd-card-logo.png": {
+      "sha256": "1ea1633e2f76a701788c7e8c18faeda7ca4b82ccb2e9a22bd4a7befb49be831b",
+      "kind": "binary"
+    },
+    "public/brand/fd-mark-dark.png": {
+      "sha256": "6704574bdf5b96f0ea7ccad68b267f1ecccb1c277040881d4f7278417719429b",
+      "kind": "binary"
+    },
+    "public/brand/fd-mark-light.png": {
+      "sha256": "98b5b5c3d3fd31c2be3fea9bbb5e2b55fe151808b29b1ed17d1f012204bb4b54",
+      "kind": "binary"
+    },
+    "public/connectors/bluesky.png": {
+      "sha256": "0cb89bd3a19c4fabaa84ea64f45a75e7380bf9ba25295bcd335a271f0bdae0e8",
+      "kind": "binary"
+    },
+    "public/connectors/devto.png": {
+      "sha256": "12ef53244f0c38fe139914d474c0a592ef13297a7e0581aba7d2285b9864c28c",
+      "kind": "binary"
+    },
+    "public/connectors/discord.png": {
+      "sha256": "30fdfb5b5f56b23437c1d5cc5116f556c05a93801c54b1f48d65b4d7e3c40622",
+      "kind": "binary"
+    },
+    "public/connectors/dribbble.png": {
+      "sha256": "6e70ef7cf9711ae765792e30f7ea21d2d73e262186bafcf35a6561dee180a08b",
+      "kind": "binary"
+    },
+    "public/connectors/facebook.png": {
+      "sha256": "275c92eeac74d361322f84cef500dc00dd1db679a10106d628f15d279b428aa0",
+      "kind": "binary"
+    },
+    "public/connectors/gmb.png": {
+      "sha256": "c5fc74677ebdd319b9cfd11f674def0467a9a6e224f421790bce9de6a232a81e",
+      "kind": "binary"
+    },
+    "public/connectors/hashnode.png": {
+      "sha256": "dd15ec3cea863878673d339a7b878a4e95343f1d9520c6f37db4de6c08f19180",
+      "kind": "binary"
+    },
+    "public/connectors/instagram-standalone.png": {
+      "sha256": "6824a6f0ba782bce5ae97f241a5577322768e3ad4ef365723c7ae13c9ae2d17e",
+      "kind": "binary"
+    },
+    "public/connectors/instagram.png": {
+      "sha256": "6824a6f0ba782bce5ae97f241a5577322768e3ad4ef365723c7ae13c9ae2d17e",
+      "kind": "binary"
+    },
+    "public/connectors/kick.png": {
+      "sha256": "0b8d94e723643d4635723cf57b5731be3bbc66cee73e3bb186861661735f92a7",
+      "kind": "binary"
+    },
+    "public/connectors/lemmy.png": {
+      "sha256": "c920b9b5be95348aa07bb99348cb2ab49c06ae3934ce090a050415022b0b4e1f",
+      "kind": "binary"
+    },
+    "public/connectors/linkedin-page.png": {
+      "sha256": "40c4bc8a802caf3ac01a0ef3c40501e8eae37b38e0bfb00c7a00eb2ddf3b21c0",
+      "kind": "binary"
+    },
+    "public/connectors/linkedin.png": {
+      "sha256": "40c4bc8a802caf3ac01a0ef3c40501e8eae37b38e0bfb00c7a00eb2ddf3b21c0",
+      "kind": "binary"
+    },
+    "public/connectors/listmonk.png": {
+      "sha256": "78a1de91130f352e8b17523daa8278b913d33c951299c417f9606580352f6eac",
+      "kind": "binary"
+    },
+    "public/connectors/mastodon-custom.png": {
+      "sha256": "6791962fb4d5565b53617522ef5e1882d97ee8b2cfed92878d59d9fd2d574e65",
+      "kind": "binary"
+    },
+    "public/connectors/mastodon.png": {
+      "sha256": "6791962fb4d5565b53617522ef5e1882d97ee8b2cfed92878d59d9fd2d574e65",
+      "kind": "binary"
+    },
+    "public/connectors/medium.png": {
+      "sha256": "f9dd6fab5e59ccc4715ff4ee703b415b87b28cd43f97313417cc91c25f5e319f",
+      "kind": "binary"
+    },
+    "public/connectors/mewe.png": {
+      "sha256": "96c0f53b75c50f4876fb353d31c14829808de62d84788385708b569e3ee42dd1",
+      "kind": "binary"
+    },
+    "public/connectors/moltbook.png": {
+      "sha256": "5e17ee2b30c4fcb3ec3b26bd183cbc290cbdd62f174a16b0c637fe08f6ced715",
+      "kind": "binary"
+    },
+    "public/connectors/nostr.png": {
+      "sha256": "52f7cb22e77309b4aa39af5c6f04572fafdf1b456b78f9fdcd4e31bd8238a75a",
+      "kind": "binary"
+    },
+    "public/connectors/pinterest.png": {
+      "sha256": "a8b78811b4d835a6207bde2a8000976f312411533e6a925710d44b06d62d788e",
+      "kind": "binary"
+    },
+    "public/connectors/reddit.png": {
+      "sha256": "e0bec8deac00a6615dfa71e66803b2de0c12706222b874e034154b8749de370d",
+      "kind": "binary"
+    },
+    "public/connectors/skool.png": {
+      "sha256": "a2f32fada29cbc2e5e887eec75661ce9f3375349ba990a5eee2efc921201874b",
+      "kind": "binary"
+    },
+    "public/connectors/slack.png": {
+      "sha256": "91a4c86f241fd5dba50e63a9cc9a6471e0e6d7c7f24f8d542ed03671c47ee128",
+      "kind": "binary"
+    },
+    "public/connectors/telegram.png": {
+      "sha256": "9e43caef97488643b273afc3e138fbbdf5ef49f037cf0bb8601193b2d3334594",
+      "kind": "binary"
+    },
+    "public/connectors/threads.png": {
+      "sha256": "f696468dad1b335d6a65a1e54f195bf2d5c1e1a9bf28ccf0fe39ce75b0ceaadc",
+      "kind": "binary"
+    },
+    "public/connectors/tiktok.png": {
+      "sha256": "5e1c0a557c53d109839984c3b5e77b6d58055c2f9041df2b82a8f3f963b4a312",
+      "kind": "binary"
+    },
+    "public/connectors/twitch.png": {
+      "sha256": "ca86ce47a3552f35cd69c71786982a28bd9ff4d62a60a321898cc34a2f0e2882",
+      "kind": "binary"
+    },
+    "public/connectors/vk.png": {
+      "sha256": "e0d393a5a1bafdce589b38739172c965363b863efe25814e9ecaca0104c12ba3",
+      "kind": "binary"
+    },
+    "public/connectors/whop.png": {
+      "sha256": "1b465cc7947ec9cd649343e09da1ca0d33d09c9c5dd4f9d81abdcbdd8db40c22",
+      "kind": "binary"
+    },
+    "public/connectors/wordpress.png": {
+      "sha256": "3edc10d8f9e52a8a569d9d29d639fa99a05d55e40957f6fa3e637f2025fb4ad2",
+      "kind": "binary"
+    },
+    "public/connectors/wrapcast.png": {
+      "sha256": "72b0aebfac86d5680f21590cd77c220882a0b13828183f453e5c9ac368098819",
+      "kind": "binary"
+    },
+    "public/connectors/x.png": {
+      "sha256": "156afb4ee59594c4fa3ac1b7d6da8bd5662c758d3fe3ff3589c6553a37d99284",
+      "kind": "binary"
+    },
+    "public/connectors/youtube.png": {
+      "sha256": "514baa2a99ddf85059571ae3ebe84817a1442f6e120e8b18260b7c7177b2efbe",
+      "kind": "binary"
+    },
+    "public/icon-192.png": {
+      "sha256": "f8d61568daa54ca516cc97ddad61130da0622e7aee6b5e130f30b420023dc2a8",
+      "kind": "binary"
+    },
+    "public/icon-512.png": {
+      "sha256": "660072b0246fa30b1bfd63a5fe280449c2a883e2538ba5c385bef4428a2b9a23",
+      "kind": "binary"
+    },
+    "public/icon-maskable-512.png": {
+      "sha256": "1bce6fa75f3dd88189ebed4d712ee9c9b865fbbf18acef443eb5496aa080f3a9",
+      "kind": "binary"
+    },
+    "public/logo-light.png": {
+      "sha256": "2221941a4f839d62dfee043849fa04485d06fba4414f16ec7b79fcb44b18bd60",
+      "kind": "binary"
+    },
+    "public/logo.png": {
+      "sha256": "1ea1633e2f76a701788c7e8c18faeda7ca4b82ccb2e9a22bd4a7befb49be831b",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-ai-workforce-concept-03.png": {
+      "sha256": "be81ece33b6e9302a1f3b14e903d8501bbeda35d5e9a09e7ff1fe9a80e22edbd",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-automation-with-oversight-concept-08.png": {
+      "sha256": "a9496040d0e751028bd2326f2b90d8afa4e6019a9572ed221ca1888c794ce87f",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-business-memory-concept-09.png": {
+      "sha256": "974bebf09076293f11bcdbcd8fbe4b833af355880e3cb0e0fab324177e83301f",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-business-pulse-concept-07.png": {
+      "sha256": "f95be1ccbab097c50e2653d1c516f4152d864d64707269b1c919c467e41793c7",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-content-to-campaign-concept-04.png": {
+      "sha256": "4a8e42564b07823862a1301b0578e6bdc64b425b46d053f7b8fe345b97a28977",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-every-conversation-connected-concept-06.png": {
+      "sha256": "e7f82533c7dd51e3bad66e88edab1715be1ef67cac28f9a7a709d9926844e577",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-infographic-tiktok-v1.png": {
+      "sha256": "f67f2b4671bfc8363cd3744c04e7e836e9ed4a5d32d3f8ea8d6dcff45f4713a7",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-infographic-tiktok-v2-logo.png": {
+      "sha256": "395799129a22cfc94dc26b23c07e822d75e30f2d239f1a1cd94c6ceb0c8b4015",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-lead-to-delivery-concept-02.png": {
+      "sha256": "3d6c04414ef74e2d5d7bd7fb4df4e1937119c3648905b3d55983b11e7446a1ee",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-menu-map-concept-01-rev02-labs.png": {
+      "sha256": "7dacf7f63396671e9a00f5409db0feef207b94ac4b0424b5a3623b2c8f2a7480",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-menu-map-concept-01.png": {
+      "sha256": "cf17e3c1b1f56fee7615ec7120db6f207a5466e158a286d719953feef639a6e5",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-operations-under-control-concept-05.png": {
+      "sha256": "04156757eb05fbc65630726d51ac76cd9a77f2e404614dee7237753c8950710f",
+      "kind": "binary"
+    },
+    "public/marketing/command-center-product-to-platform-concept-10.png": {
+      "sha256": "cbdf74fc7b154ae013f4c4e7ed8598a141c3af9b3ff1610bbcc6069609da082a",
+      "kind": "binary"
+    },
+    "public/openocti/favicon.ico": {
+      "sha256": "df064923f77ef359bccde28c4926afda561b575f137dca889a0f8d2c3a15a8f2",
+      "kind": "binary"
+    },
+    "public/openocti/favicon.png": {
+      "sha256": "91632602b6b353a78b3c0e10e9c3dbc10c07e65499bf05c73d4c901eca9f3052",
+      "kind": "binary"
+    },
+    "public/openocti/logo-horizontal.png": {
+      "sha256": "d0b16280ae1d8186f88e82fa42ff5e8ce17e4e1f3457aa9263ea9369b5c06497",
+      "kind": "binary"
+    },
+    "public/openocti/logo.png": {
+      "sha256": "b80c857e16cc6aac9874aff90369bdcfdaba644edb20a968f6379d80fb4f0ccf",
+      "kind": "binary"
+    },
+    "public/product-covers/command-center-cover.png": {
+      "sha256": "a635ab8ed789459aca0ae77625c3bb88ff0af287cc2d1dfa149e170f6acf5ec4",
+      "kind": "binary"
+    },
+    "public/product-covers/command-center-dashboard.png": {
+      "sha256": "145eb8b696056e7f5bee903e24034db126c20ff0c2e1c4387bb2c0cadeb148bf",
+      "kind": "binary"
+    },
+    "public/profile/carl-farrington-512.jpg": {
+      "sha256": "3518f28917b0d980e441156aea6c11186600c0d21fd07ccd244e9e852687ddaf",
+      "kind": "binary"
+    },
+    "vendor/truthdiff-0.1.0.tgz": {
+      "sha256": "baa08f1a6fc72dc5554d36e899263823a3621dd54c9a4d5493bc3f9991df37bc",
+      "kind": "binary"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Protects this configured checkout; administrators can explicitly change hooks.
+# GitHub CI separately gates public pull requests and container publication.
+exec node scripts/check-openocti-push.mjs "$@"

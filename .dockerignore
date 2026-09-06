@@ -1,5 +1,4 @@
 .git
-.github
 .gitea
 .claude
 .codex-logs
@@ -12,6 +11,9 @@ remotion
 data
 .env
 .env.*
+!.env.example
+**/.env
+**/.env.local
 *.log
 backups
 _restore-points
