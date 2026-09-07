@@ -66,7 +66,7 @@ import { canUseTab } from '@/lib/roles'
 import { Activity, Bot, Boxes, BrainCircuit, Cable, CircleDollarSign, Database, FlaskConical, Hammer, KeyRound, LifeBuoy, Megaphone, Mic2, Newspaper, Package, PhoneCall, Radio, Server, Settings2, ShieldAlert, Wrench } from 'lucide-react'
 
 const APP_BUILD_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 10) || '2026.06.11-api-lab-mobile'
-const PRODUCT_VERSION = isOpenOcti() ? '1.2.3' : '2.1'
+const PRODUCT_VERSION = isOpenOcti() ? '1.2.4' : '2.1'
 // Build stamp baked in by next.config.js at build time. Shown in the sidebar
 // footer so the running build is confirmable at a glance — no deploy logs.
 const BUILD_NUMBER = process.env.NEXT_PUBLIC_FCC_BUILD_NUMBER || ''

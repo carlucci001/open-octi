@@ -49,9 +49,7 @@ function SocialPublishingContent({ embedded = false, onNavigate, onOpenCampaigns
     Promise.allSettled([
       fetch('/api/postiz/channels', { cache: 'no-store' }).then(async r => {
         const j = await r.json().catch(() => ({}))
-        if (!r.ok || j.error) {
-          return []
-        }
+        if (!r.ok || j.error || j.warning) throw new Error(j.error || j.warning || `Channel check failed (${r.status})`)
         return j.channels || []
       }),
       fetch('/api/campaign-studio', { cache: 'no-store' }).then(async r => {
@@ -63,7 +61,7 @@ function SocialPublishingContent({ embedded = false, onNavigate, onOpenCampaigns
       .then(([channelResult, campaignResult]) => {
         if (!alive) return
         if (channelResult.status === 'fulfilled') setChannels(channelResult.value)
-        else setChannels([])
+        else { setChannels([]); setError(channelResult.reason?.message || 'Postiz channel check failed.') }
         if (campaignResult.status === 'fulfilled') setCampaigns(campaignResult.value)
       })
       .finally(() => alive && setLoading(false))
@@ -150,7 +148,7 @@ function SocialPublishingContent({ embedded = false, onNavigate, onOpenCampaigns
                 {!upcomingPosts.length && <div style={emptyStyle}>No scheduled posts yet.</div>}
               </div>
               <div style={actionGridStyle}>
-                <Action title="Draft campaign posts" body="Build posts, choose channels, and send them through the included Postiz engine." onClick={() => navigate('campaign-studio')} />
+                <Action title="Draft campaign posts" body="Build posts, choose channels, and send them through your connected Postiz server." onClick={() => navigate('campaign-studio')} />
                 <Action title="Create content" body="Start with a blog, story, social post, meme, image brief, or reel brief." onClick={() => navigate('content-lab')} />
                 <Action title="Use media" body="Pick saved client or campaign assets before scheduling." onClick={() => navigate('media')} />
               </div>
@@ -187,7 +185,7 @@ function SocialPublishingContent({ embedded = false, onNavigate, onOpenCampaigns
                 <span style={avatarStyle}>P</span>
                 <span style={{ minWidth: 0 }}>
                   <strong style={rowTitleStyle}>Postiz engine</strong>
-                  <small style={rowMetaStyle}>Local sidecar through Command Center API</small>
+                  <small style={rowMetaStyle}>Requires a separately installed or hosted Postiz server and connected social accounts.</small>
                 </span>
               </div>
               <button type="button" onClick={() => navigate('credentials')} style={secondaryButtonStyle}>Credentials</button>
@@ -198,7 +196,7 @@ function SocialPublishingContent({ embedded = false, onNavigate, onOpenCampaigns
         <aside style={sideStyle}>
           <div style={eyebrowStyle}>Queue</div>
           <h2 style={sectionTitleStyle}>Next publishing step</h2>
-          <p style={subtitleStyle}>Use Campaign Studio for scheduling. Postiz stays behind the scenes as the open-source publishing engine.</p>
+          <p style={subtitleStyle}>Connect your Postiz server and social accounts first, then use Campaign Studio for scheduling.</p>
           <button type="button" onClick={() => navigate('campaign-studio')} style={primaryButtonStyle}>Open campaigns</button>
         </aside>
       </section>

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
+import { OPENCLAW_DASHBOARD_PATH, resolveOpenClawDashboardBase } from '@/lib/openclaw-dashboard'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -29,7 +30,7 @@ function privateHarnessBase(raw, label) {
 
 function runtimeBase(id) {
   if (id === 'openclaw-hetzner') {
-    return privateHarnessBase(process.env.OPENCLAW_DASHBOARD_INTERNAL_URL || process.env.OPENCLAW_DASHBOARD_URL || 'http://127.0.0.1:18789', 'OpenClaw')
+    return resolveOpenClawDashboardBase()
   }
   if (id === 'hermes-hetzner') {
     return privateHarnessBase(process.env.HERMES_DASHBOARD_INTERNAL_URL || process.env.HERMES_HETZNER_DASHBOARD_URL || process.env.HERMES_DASHBOARD_URL || 'http://127.0.0.1:9119', 'Hermes')
@@ -59,6 +60,7 @@ async function proxy(request, { params }) {
   const { error } = await requireAdmin(request)
   if (error) return error
 
+  params = await params
   const id = String(params.runtime || '')
   const base = runtimeBase(id)
   if (!base) return NextResponse.json({ ok: false, error: 'Unknown or unconfigured harness dashboard.' }, { status: 404 })
@@ -73,6 +75,8 @@ async function proxy(request, { params }) {
     method: request.method,
     headers: {
       'User-Agent': 'OpenOcti-Command-Center/HarnessDashboardProxy',
+      ...(id === 'openclaw-hetzner' && request.headers.get('authorization')
+        ? { Authorization: request.headers.get('authorization') } : {}),
       ...extraHeaders,
     },
     cache: 'no-store',
@@ -87,6 +91,12 @@ async function proxy(request, { params }) {
   const contentType = response.headers?.get?.('content-type') || 'text/html; charset=utf-8'
   headers.set('content-type', contentType)
   headers.set('x-fcc-harness-dashboard-proxy', id)
+  headers.set('cache-control', 'no-store')
+  if (id === 'openclaw-hetzner' && contentType.includes('text/html')) {
+    const html = await response.text()
+    const baseScript = `<base href="${OPENCLAW_DASHBOARD_PATH}/"><script>window.__OPENCLAW_CONTROL_UI_BASE_PATH__=${JSON.stringify(OPENCLAW_DASHBOARD_PATH)};</script>`
+    return new NextResponse(html.replace(/<head(?:\s[^>]*)?>/i, match => match + baseScript), { status: response.status || 200, headers })
+  }
   return new NextResponse(response.body, { status: response.status || 200, headers })
 }
 

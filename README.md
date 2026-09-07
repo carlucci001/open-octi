@@ -75,6 +75,8 @@ The six starter staff agents and eight prepared specialist templates include rep
 
 Harness Lab includes OpenClaw and shows which other runtimes need configuration. Hermes is planned for a future release. [Star OpenOcti on GitHub](https://github.com/carlucci001/open-octi) to support the next harness integrations. See the [1.2.3 release notes](docs/releases/1.2.3.md) for Gitea, Daily conferencing, agent improvements, and current limits.
 
+The [1.2.4 update](docs/releases/1.2.4.md) repairs the OpenClaw dashboard connection and Postiz connection checks. Postiz requires a separate installation or hosted account; it is not included in the standard Docker stack. Follow the [Postiz setup guide](docs/guides/postiz-setup.md) before publishing.
+
 | Agent | Verified role |
 | --- | --- |
 | **Octi** | Guides the demo workspace and helps you find the next screen. |

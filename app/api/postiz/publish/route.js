@@ -12,6 +12,7 @@
 
 import { NextResponse } from 'next/server'
 import { requireCapability } from '@/lib/permissions'
+import { POSTIZ_DEFAULT_TENANT } from '@/lib/postiz-config'
 import {
   SocialOperatorError,
   prepareSocialOperatorHandoff,
@@ -98,7 +99,7 @@ export async function POST(request) {
   let mediaUrl = normalizePostizMediaUrl(payload?.mediaUrl, request.url)
   const channels = Array.isArray(payload?.channels) ? payload.channels.filter(Boolean) : []
   const publishAtRaw = payload?.publishAt ? String(payload.publishAt) : ''
-  let tenantId = String(payload?.tenantId || 'farrington-development').trim()
+  let tenantId = String(payload?.tenantId || POSTIZ_DEFAULT_TENANT).trim()
   let brandId = String(payload?.brandId || '').trim()
   const campaignId = String(payload?.campaignId || '').trim()
   const postId = String(payload?.postId || '').trim()
@@ -203,7 +204,7 @@ export async function POST(request) {
       // Plain Campaign Studio handoffs default to the house brand so they can
       // never fan out to another brand's channels; operator handoffs enforce
       // only when the campaign carries a brand.
-      brandId: operatorReference ? brandId : (brandId || 'farrington-development'),
+      brandId: operatorReference ? brandId : (brandId || POSTIZ_DEFAULT_TENANT),
       requestUrl: request.url,
       config: cfg,
     })
