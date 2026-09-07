@@ -1,3 +1,4 @@
+import { effectiveProviderEnv } from '@/lib/openocti-keys'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
@@ -9,7 +10,7 @@ const COST_PER_MINUTE = 0.004
 
 export async function GET() {
   const fetchedAt = new Date().toISOString()
-  const key = process.env.DAILY_API_KEY
+  const key = effectiveProviderEnv().DAILY_API_KEY
 
   if (!key) {
     return NextResponse.json({

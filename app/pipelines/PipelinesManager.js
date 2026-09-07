@@ -337,7 +337,7 @@ function PipelineManagerModal({ pipelines, accounts = [], onSaved, onClose }) {
             </Field>
             <Field label="Owner">
               <ThemedSelect style={inp} value={editing.ownerAccountId || INHOUSE_OWNER} onChange={e => setEditing({ ...editing, ownerAccountId: e.target.value })}>
-                <option value={INHOUSE_OWNER}>🏢 In-house (Farrington Development)</option>
+                <option value={INHOUSE_OWNER}>🏢 In-house (Your organization)</option>
                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </ThemedSelect>
             </Field>

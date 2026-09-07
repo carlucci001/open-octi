@@ -5,7 +5,7 @@ import { Check, ChevronDown, ChevronUp, Circle, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { isOpenOcti } from '@/lib/edition'
 
-const MODEL_CAPABILITIES = new Set(['anthropic', 'openai', 'gemini', 'openrouter'])
+const MODEL_CAPABILITIES = new Set(['anthropic', 'openai', 'gemini', 'openrouter', 'orcarouter'])
 
 export default function OpenOctiFirstRun() {
   const [profile, setProfile] = useState(null)
@@ -103,7 +103,7 @@ export default function OpenOctiFirstRun() {
             <div className="flex items-center gap-3">
               {step.done ? <Check size={20} color="#30c0f0" /> : <Circle size={20} color="#8ba0c4" />}
               <span className="flex-1 font-medium">{index + 1}. {step.label}</span>
-              {step.href && !step.done && <Link href={step.href} onClick={() => step.action && patchProgress(step.action)} className="rounded-lg px-3 py-2 font-semibold" style={{ color: '#001040', background: '#30c0f0' }}>Open</Link>}
+              {step.href && (!step.done || step.id === 'agents') && <Link href={step.href} aria-label={`Open ${step.label.toLowerCase()}`} onClick={event => { if (step.id === 'agents') { event.preventDefault(); window.dispatchEvent(new CustomEvent('openocti:ask', { detail: {} })) } if (step.action) patchProgress(step.action) }} className="rounded-lg px-3 py-2 font-semibold" style={{ color: '#001040', background: '#30c0f0' }}>Open</Link>}
             </div>
             {step.id === 'workspace' && !step.done && (
               <form onSubmit={saveWorkspace} className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">

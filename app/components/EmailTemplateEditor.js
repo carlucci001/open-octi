@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react'
 import ThemedSelect from './ThemedSelect'
 
 const BRANDS = [
-  { id: 'farrington_dev', label: 'Farrington Development' },
+  { id: 'farrington_dev', label: 'Your organization' },
   { id: 'ContentStudio', label: 'ContentStudio' },
   { id: 'sample_business', label: 'WNC Times' },
 ]

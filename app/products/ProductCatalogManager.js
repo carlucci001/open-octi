@@ -133,14 +133,14 @@ const USAGE_TYPE_HELP = {
   site: 'One organization or location/site with broader internal use.',
   enterprise: 'Broad internal enterprise use with negotiated limits and support terms.',
   developer: 'Developer/evaluation use, usually not production.',
-  internal: 'Internal-only use for Farrington, demos, or private testing.',
+  internal: 'Internal-only use for OpenOcti, demos, or private testing.',
 }
 
 const DEPLOYMENT_HELP = {
   'on-premise': 'Installed in the customer environment.',
   'off-premise': 'Operated outside the customer environment by a provider or third party.',
   'private-cloud': 'Customer-controlled cloud/VPC deployment.',
-  'managed-cloud': 'Farrington or a provider hosts and operates the system.',
+  'managed-cloud': 'OpenOcti or a provider hosts and operates the system.',
   hybrid: 'Parts run locally/private; parts run managed or hosted.',
   'local-only': 'Runs only on a local machine or local network.',
 }

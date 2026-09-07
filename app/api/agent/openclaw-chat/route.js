@@ -14,6 +14,7 @@ import { getSectionAgent, resolveWizardAgentSection, sectionPersonaLine } from '
 import { runDeepResearchDossier } from '@/lib/deep-research'
 import { DEERFLOW_READONLY_TOOL_DEFS } from '@/lib/deerflow-tools'
 import { isOpenOcti, openclawRuntimeLogLabel } from '@/lib/edition'
+import { findChatAgent, mergeChatOperator, chatAgentPersona, chatGatewayAgentId, chatGatewaySessionKey, chatContextPrompt } from '@/lib/agent-chat-selection'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -176,9 +177,7 @@ function getStoredAgent(id) {
   if (!agentId) return null
   const store = readData('agents.json')
   const agents = store?.agents || store
-  if (Array.isArray(agents)) return agents.find(a => a?.id === agentId) || null
-  if (agents && typeof agents === 'object') return agents[agentId] || null
-  return null
+  return findChatAgent(agents, agentId, isOpenOcti())
 }
 
 function resolveOperatorAgent({ operatorTool, operatorContext, sessionKey }) {
@@ -195,15 +194,7 @@ function resolveOperatorAgent({ operatorTool, operatorContext, sessionKey }) {
 }
 
 function mergeOperatorTool(operatorTool, storedAgent) {
-  if (!storedAgent) return operatorTool || {}
-  return {
-    ...operatorTool,
-    label: storedAgent.name || operatorTool?.label || storedAgent.id,
-    role: storedAgent.role || storedAgent.title || operatorTool?.role || 'Agent',
-    runtimeProvider: storedAgent.runtimeProvider || operatorTool?.runtimeProvider || 'openclaw-hetzner',
-    tools: Array.isArray(storedAgent.tools) ? storedAgent.tools : (operatorTool?.tools || []),
-    agentId: storedAgent.id || operatorTool?.agentId,
-  }
+  return mergeChatOperator(operatorTool, storedAgent, isOpenOcti())
 }
 
 function isDeerFlowOperator(operatorTool) {
@@ -602,7 +593,7 @@ export async function POST(request) {
   const screenControl = isScreenControlRequest(last.content)
   const effectiveSection = resolveWizardAgentSection(section, last.content)
   const selectedAgentId = String(activeOperatorTool?.agentId || '').trim()
-  const agentId = selectedAgentId || agentForSection(section, last.content)
+  const agentId = chatGatewayAgentId(selectedAgentId || agentForSection(section, last.content), isOpenOcti())
   const contextLines = []
   contextLines.push(
     OFFICE_AGENT_CONDUCT,
@@ -618,10 +609,11 @@ export async function POST(request) {
     )
   }
   if (section && SECTION_LABELS[section]) {
-    contextLines.push(`Carl is currently viewing the ${SECTION_LABELS[section]} section of his Farrington Command Center CRM. Tailor your answer to this section.`)
+    contextLines.push(`Carl is currently viewing the ${SECTION_LABELS[section]} section of his OpenOcti CRM. Tailor your answer to this section.`)
   }
-  const personaLine = sectionPersonaLine(effectiveSection)
+  const personaLine = chatAgentPersona(activeOperatorTool, sectionPersonaLine(effectiveSection))
   if (personaLine) contextLines.push(personaLine)
+  if (isOpenOcti()) contextLines.push('Begin and respond in English by default. Change languages only when the user explicitly asks for another language.')
   if (operatorContext && typeof operatorContext === 'object') {
     const safeContext = {
       tab: operatorContext.tab || section || '',
@@ -640,7 +632,7 @@ export async function POST(request) {
     contextLines.push(`Currently selected CRM context: ${JSON.stringify(leadContext)}`)
   }
   if (contextLines.length > 0) {
-    prompt = `[CRM Context]\n${contextLines.join('\n')}\n\n[Carl's message]\n${prompt}`
+    prompt = chatContextPrompt(contextLines, prompt, isOpenOcti())
   }
 
   const encoder = new TextEncoder()
@@ -653,7 +645,7 @@ export async function POST(request) {
         console.log(`[ai-wizard] start requestId=${requestId} section=${String(section || 'unknown').replace(/[^a-z0-9_-]/gi, '') || 'unknown'} screenControl=${screenControl} chars=${String(last.content || '').length}`)
         const r = await openclawChat({
           message: prompt,
-          sessionKey: screenControl ? `agent:main:screen-control-live-${Date.now()}` : (sessionKey || `agent:${agentId}:ai-wizard-${Date.now()}`),
+          sessionKey: screenControl && !isOpenOcti() ? `agent:main:screen-control-live-${Date.now()}` : (chatGatewaySessionKey(sessionKey, isOpenOcti(), agentId) || `agent:${agentId}:ai-wizard-${Date.now()}`),
           token,
           firstChunkMs: isOpenOcti() ? 120000 : undefined,
           onChunk: (text) => write({ text }),

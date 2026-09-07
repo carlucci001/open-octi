@@ -43,7 +43,7 @@ const SOURCES = [
 ]
 
 const COMMAND_CENTER_BRAND_CONTEXTS = [
-  { id: 'farrington_dev', label: 'Farrington Development', from: 'Farrington Development', campaignType: 'farrington_dev' },
+  { id: 'farrington_dev', label: 'Your organization', from: 'Your organization', campaignType: 'farrington_dev' },
   { id: 'VideoHub', label: 'VideoHub', from: 'VideoHub', campaignType: 'VideoHub' },
   { id: 'ContentStudio', label: 'ContentStudio', from: 'ContentStudio', campaignType: 'ContentStudio_demo' },
   { id: 'sample_business', label: 'WNC Times', from: 'WNC Times', campaignType: 'sample_business' },
@@ -267,7 +267,7 @@ const fillTemplate = (text = '', lead = {}, brand = {}) => String(text)
   .replaceAll('{brand}', brand.from || brand.label || '')
 
 function LeadEmailModal({ lead, onClose, onSent }) {
-  // Brand follows the lead's pipeline: a Farrington lead sends as Farrington
+  // Brand follows the lead's pipeline: a OpenOcti lead sends as OpenOcti
   // Development, a ContentStudio lead as ContentStudio. The /api/sponsor-email
   // route maps the brand to the actual From address (BRAND_FROM).
   const [brandId, setBrandId] = useState(() => normalizeBrandId(lead.brandContext || inferBrand(lead)))

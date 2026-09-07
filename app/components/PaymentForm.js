@@ -167,7 +167,7 @@ function InnerForm({ prefillClient, onSuccess, onClose }) {
         )}
 
         <h2 className="text-lg font-semibold mb-1" style={{ color: "var(--text)" }}>💳 Process Payment</h2>
-        <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>Farrington Development — Secure via Stripe Elements</p>
+        <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>Your organization — Secure via Stripe Elements</p>
 
         {!prefillClient && clients.length > 0 && (
           <div className="mb-3">

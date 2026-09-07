@@ -21,7 +21,6 @@ const closedModuleRequests = [
   '@/lib/stripe-billing-catalog.mjs',
   '@/lib/stripe-billing-catalog-source',
   '@/lib/stripe-subscription-lifecycle',
-  '../billing/InvoicesManager',
   // WO-8: imports that can remain in shared Command Center modules resolve to
   // the unavailable capability stub in OpenOcti builds.
   './platforms/PlatformsModule',

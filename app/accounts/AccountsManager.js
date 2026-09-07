@@ -10,7 +10,7 @@ import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
 import { gvCallUrl } from '@/lib/google-voice'
 import CallButton from '../components/CallButton'
-import InvoicesManager from '../billing/InvoicesManager'
+import InvoicesManager from '../finance/InvoicesManager'
 import DocumentsManager from '../documents/DocumentsManager'
 import PaymentForm from '../components/PaymentForm'
 import SupportManager from '../support/SupportManager'
@@ -56,9 +56,9 @@ const fmtDuration = secs => {
 const CLIENT_EMAIL_IDENTITIES = [
   {
     id: 'farrington',
-    label: 'Farrington Development',
+    label: 'Your organization',
     brand: 'farrington',
-    from: 'Farrington Development <redacted@example.invalid>',
+    from: 'Your organization <redacted@example.invalid>',
     detail: 'Development, billing, project follow-up, and CRM relationship notes.',
   },
   {
@@ -1026,7 +1026,7 @@ function AccountDetail({ account, onBack, onEdit, onRefresh }) {
 
       {tab === 'invoices' && hasBillingSurface && (
         <div style={{ marginTop: 12 }}>
-          <InvoicesManager clientId={account.id} lockClient />
+          <InvoicesManager clientId={account.id} clientName={account.name} lockClient />
         </div>
       )}
 
@@ -1357,7 +1357,7 @@ function VideoCallButton({ account }) {
         body: JSON.stringify({
           to: hasEmail ? email : '',
           name: account.name,
-          subject: `Video call with Farrington Development`,
+          subject: `Video call with Your organization`,
           persistent: false,
           seed: `${account.name}-${unique}`,
           linkedTo: { accountId: account.id },
@@ -1376,7 +1376,7 @@ function VideoCallButton({ account }) {
             body: JSON.stringify({
               to: email,
               name: account.name,
-              subject: 'Video call with Farrington Development',
+              subject: 'Video call with Your organization',
               persistent: false,
               seed: account.name + '-' + unique,
               linkedTo: { accountId: account.id },

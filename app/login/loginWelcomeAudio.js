@@ -7,7 +7,7 @@ const LOGIN_WELCOME_FETCH_TIMEOUT_MS = 7000
 const LOGIN_WELCOME_PLAY_TIMEOUT_MS = 6500
 const LOGIN_WELCOME_PENDING_KEY = 'fcc-login-welcome-pending'
 const OPENOCTI_FIRST_LOGIN_KEY = 'openocti-first-login-complete'
-const OPENOCTI_MODEL_CAPABILITIES = ['anthropic', 'openai', 'gemini', 'openrouter']
+const OPENOCTI_MODEL_CAPABILITIES = ['anthropic', 'openai', 'gemini', 'openrouter', 'orcarouter']
 const OPENOCTI_WELCOME_ROOT = '/audio/openocti-welcome'
 let queuedLoginWelcome = null
 

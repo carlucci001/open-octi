@@ -23,7 +23,7 @@ function parseOrcaEmail(result, fallbackSubject) {
 }
 
 function handoffPayload(candidate, template) {
-  const replace = value => String(value || '').replaceAll('{company}', candidate.clientName || 'your team').replaceAll('{contact}', candidate.clientName || 'there').replaceAll('{brand}', candidate.productName || 'Farrington Development')
+  const replace = value => String(value || '').replaceAll('{company}', candidate.clientName || 'your team').replaceAll('{contact}', candidate.clientName || 'there').replaceAll('{brand}', candidate.productName || 'Your organization')
   const subject = replace(template?.subject || 'Payment method update for {company}')
   const body = replace(template?.body || 'Hi {contact},\n\nPlease update the payment method for {company}.')
   return {

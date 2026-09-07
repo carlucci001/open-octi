@@ -20,7 +20,7 @@ const LIMIT_DURATIONS = [
 
 const EMPTY_CARD = {
   memo: '',
-  cardholderName: 'Carl Farrington',
+  cardholderName: 'Workspace owner',
   categoryId: '',
   type: 'MERCHANT_LOCKED',
   spendLimit: '25',
@@ -33,7 +33,7 @@ const SAMPLE_CARDS = [
   {
     token: 'preview-primary',
     memo: 'Primary in-house card',
-    cardholderName: 'Carl Farrington',
+    cardholderName: 'Workspace owner',
     lastFour: '4826',
     expMonth: '06',
     expYear: '2029',
@@ -45,7 +45,7 @@ const SAMPLE_CARDS = [
   {
     token: 'preview-vendor',
     memo: 'Vendor card sample',
-    cardholderName: 'Carl Farrington',
+    cardholderName: 'Workspace owner',
     lastFour: '1042',
     expMonth: '11',
     expYear: '2029',
@@ -317,7 +317,7 @@ export default function PrivacyFinancePanel() {
               </label>
               <label>
                 <FieldLabel>Cardholder name</FieldLabel>
-                <input style={inputStyle} value={cardForm.cardholderName} onChange={e => setCardForm(p => ({ ...p, cardholderName: e.target.value }))} placeholder="Carl Farrington" />
+                <input style={inputStyle} value={cardForm.cardholderName} onChange={e => setCardForm(p => ({ ...p, cardholderName: e.target.value }))} placeholder="Workspace owner" />
               </label>
               <label>
                 <FieldLabel>Category</FieldLabel>
@@ -507,7 +507,7 @@ function CardFace({ card, badge, showStatus = true }) {
       }}
     >
       <div className="flex items-start justify-between gap-3">
-        <img src="/brand/fd-card-logo.png" alt="Farrington Development" style={{ width: 'min(72%, 230px)', height: 'auto', objectFit: 'contain' }} />
+        <img src="/brand/fd-card-logo.png" alt="Your organization" style={{ width: 'min(72%, 230px)', height: 'auto', objectFit: 'contain' }} />
         {label ? (
           <span className="rounded-full px-2 py-0.5" style={{ background: state === 'OPEN' || badge ? 'rgba(25, 195, 125, 0.16)' : 'rgba(255,255,255,0.08)', color: state === 'OPEN' || badge ? '#62d89d' : '#b8c0cc', fontSize: 10, fontWeight: 800, letterSpacing: 0 }}>
             {label}
@@ -522,10 +522,10 @@ function CardFace({ card, badge, showStatus = true }) {
           <div className="min-w-0">
             <div style={{ color: 'rgba(255,255,255,0.48)', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0 }}>Cardholder</div>
             <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 800, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', letterSpacing: 0, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {card.cardholderName || 'Carl Farrington'}
+              {card.cardholderName || 'Workspace owner'}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.54)', fontSize: 10, fontWeight: 700, letterSpacing: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              Farrington Development LLC
+              Your organization
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>

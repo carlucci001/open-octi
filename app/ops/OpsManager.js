@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, ArchiveRestore, Copy, DatabaseZap, DollarSign, Gauge, GitBranch, Headphones, Info, PhoneCall, Plus, RefreshCw, Rocket, Search, Star, Square, Trash2, Volume2, Wand2, Wrench, X } from 'lucide-react'
 import { isOpenOcti } from '@/lib/edition'
+import VoiceProviderNotice, { VoiceProviderSelect, useVoiceProviderReady } from '../components/VoiceProviderNotice'
 
 const TABS = [
   { id: 'cicdItems', label: 'CI/CD', icon: GitBranch, summary: 'Repos, checks, deployments, and Gitea links.' },
@@ -507,7 +508,7 @@ const VIBEVOICE_MODEL_URL = 'https://huggingface.co/microsoft/VibeVoice-Realtime
 const VIBEVOICE_REPO_URL = 'https://github.com/microsoft/VibeVoice'
 const VOICE_PROVIDER_OPTIONS = [
   { id: 'gemini', label: 'Gemini TTS', tone: 'purple', models: GEMINI_TTS_MODELS, defaultModel: GEMINI_TTS_MODELS[0], defaultVoice: 'Kore' },
-  { id: 'chirp3', label: 'Chirp 3 HD', tone: 'accent', models: CHIRP3_TTS_MODELS, defaultModel: CHIRP3_TTS_MODELS[0], defaultVoice: 'en-US-Chirp3-HD-Charon' },
+  { id: 'chirp3', label: 'Chirp aliases (Gemini TTS)', tone: 'accent', models: CHIRP3_TTS_MODELS, defaultModel: CHIRP3_TTS_MODELS[0], defaultVoice: 'en-US-Chirp3-HD-Charon' },
   { id: 'elevenlabs', label: 'ElevenLabs', tone: 'green', models: ELEVEN_TTS_MODELS, defaultModel: ELEVEN_TTS_MODELS[0], defaultVoice: '' },
   { id: 'vibevoice', label: 'VibeVoice', tone: 'teal', models: VIBEVOICE_TTS_MODELS, defaultModel: VIBEVOICE_TTS_MODELS[0], defaultVoice: 'default' },
   { id: 'chatterbox', label: 'Chatterbox', tone: 'teal', models: ['ResembleAI/chatterbox'], defaultModel: 'ResembleAI/chatterbox', defaultVoice: '' },
@@ -579,7 +580,7 @@ function voiceDisplayLabel(provider, voice, aliases = {}) {
 }
 
 function modelDisplayLabel(provider, model) {
-  if (provider === 'chirp3' && model === 'chirp3-hd') return 'Chirp 3 HD'
+  if (provider === 'chirp3' && model === 'chirp3-hd') return 'Gemini TTS (Chirp aliases)'
   return model
 }
 
@@ -667,7 +668,7 @@ function VoiceBridgePanel() {
   }
 
   const webhook = status?.webhookUrl || 'https://crm.company.example.com/api/twilio/agent-voice'
-  const sampleWebhook = `${webhook}?agentId=matilda&provider=openai&voiceName=marin&greeting=${encodeURIComponent('This is the Farrington phone bridge test. How can I help?')}`
+  const sampleWebhook = `${webhook}?agentId=matilda&provider=openai&voiceName=marin&greeting=${encodeURIComponent('This is the OpenOcti phone bridge test. How can I help?')}`
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4">
@@ -675,7 +676,7 @@ function VoiceBridgePanel() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
             <h3 className="font-semibold text-base flex items-center gap-2" style={{ color: 'var(--text)' }}><PhoneCall size={18} /> Twilio Agent Bridge</h3>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Routes Twilio Media Streams to Farrington-owned realtime agents on Hetzner.</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Routes Twilio Media Streams to OpenOcti-owned realtime agents on Hetzner.</p>
           </div>
           <button type="button" onClick={load} className="rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-2" style={{ minHeight: 40, background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}>
             <RefreshCw size={15} /> {busy ? 'Checking...' : 'Refresh'}
@@ -1119,6 +1120,7 @@ function VoiceComparePanel() {
   const [agents, setAgents] = useState([])
   const [voiceAliases, setVoiceAliases] = useState({})
   const [provider, setProvider] = useState('gemini')
+  const providerReady = useVoiceProviderReady(provider)
   const [voiceGenderFilter, setVoiceGenderFilter] = useState('all')
   const [agentId, setAgentId] = useState('finance-manager')
   const [model, setModel] = useState(GEMINI_TTS_MODELS[0])
@@ -1170,7 +1172,7 @@ function VoiceComparePanel() {
     } else if (next === 'chirp3') {
       setModel(CHIRP3_TTS_MODELS[0])
       setVoiceName(CHIRP3_TTS_VOICES[0])
-      setStatus('Chirp 3 HD sample mode. This auditions Google Cloud Text-to-Speech without changing ElevenLabs phone bindings.')
+      setStatus('Chirp voice alias sample mode. This lab uses Gemini TTS and requires a Google Gemini API key.')
     } else if (next === 'elevenlabs') {
       setModel('eleven_multilingual_v2')
       setVoiceName('')
@@ -1372,13 +1374,14 @@ function VoiceComparePanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(140px,180px)_minmax(150px,200px)_minmax(118px,150px)_minmax(120px,150px)_minmax(220px,1fr)] gap-3 items-end">
         <label className="block">
           <span className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Provider</span>
-          <ThemedSelect value={provider} onChange={e => changeProvider(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm" style={{ minHeight: 44, background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+          <VoiceProviderSelect value={provider} onChange={e => changeProvider(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm" style={{ minHeight: 44, background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}>
             <option value="gemini">Gemini TTS</option>
-            <option value="chirp3">Chirp 3 HD</option>
+            <option value="chirp3">Chirp aliases (Gemini TTS)</option>
             <option value="elevenlabs">ElevenLabs Real Audio</option>
             <option value="vibevoice">VibeVoice Internal</option>
             <option value="chatterbox">Chatterbox</option>
-          </ThemedSelect>
+          </VoiceProviderSelect>
+          <VoiceProviderNotice provider={provider} />
         </label>
         <label className="block">
           <span className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Agent style</span>
@@ -1420,7 +1423,7 @@ function VoiceComparePanel() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          <button type="button" onClick={generate} disabled={busy || !sampleText.trim()} className="rounded-lg px-3 py-2 text-xs font-semibold flex items-center justify-center gap-2" style={{ minHeight: 38, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', opacity: busy ? 0.6 : 1 }}>
+          <button type="button" onClick={generate} disabled={busy || !providerReady || !sampleText.trim()} className="rounded-lg px-3 py-2 text-xs font-semibold flex items-center justify-center gap-2" style={{ minHeight: 38, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', opacity: busy || !providerReady ? 0.6 : 1 }}>
             <Volume2 size={15} /> {busy ? 'Generating...' : 'Generate Sample'}
           </button>
           <button type="button" onClick={() => assignCurrentSelection({ startLive: false })} disabled={assigningSampleId === 'current'} className="rounded-lg px-3 py-2 text-xs font-semibold" style={{ minHeight: 38, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', opacity: assigningSampleId === 'current' ? 0.65 : 1 }}>
@@ -1494,6 +1497,7 @@ function VoiceComparePanel() {
 function VoiceConversationSandbox() {
   const [agents, setAgents] = useState([])
   const [provider, setProvider] = useState('gemini')
+  const providerReady = useVoiceProviderReady(provider)
   const [voiceGenderFilter, setVoiceGenderFilter] = useState('all')
   const [agentId, setAgentId] = useState('finance-manager')
   const [model, setModel] = useState(GEMINI_TTS_MODELS[0])
@@ -1643,13 +1647,14 @@ function VoiceConversationSandbox() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(140px,180px)_minmax(150px,200px)_minmax(118px,150px)_minmax(120px,150px)_minmax(220px,1fr)_auto] gap-3 items-end">
         <label className="block">
           <span className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Provider</span>
-          <ThemedSelect value={provider} onChange={e => changeProvider(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm" style={{ minHeight: 44, background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+          <VoiceProviderSelect value={provider} onChange={e => changeProvider(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm" style={{ minHeight: 44, background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}>
             <option value="gemini">Gemini TTS</option>
-            <option value="chirp3">Chirp 3 HD</option>
+            <option value="chirp3">Chirp aliases (Gemini TTS)</option>
             <option value="elevenlabs">ElevenLabs</option>
             <option value="vibevoice">VibeVoice Internal</option>
             <option value="chatterbox">Chatterbox</option>
-          </ThemedSelect>
+          </VoiceProviderSelect>
+          <VoiceProviderNotice provider={provider} />
         </label>
         <label className="block">
           <span className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Agent</span>
@@ -1721,7 +1726,7 @@ function VoiceConversationSandbox() {
           <span className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Your test turn</span>
           <textarea value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTurn() } }} className="w-full rounded-lg px-3 py-2 text-sm" style={{ minHeight: 72, background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }} />
         </label>
-        <button type="button" onClick={sendTurn} disabled={busy || !message.trim()} className="rounded-lg px-4 py-2 font-semibold flex items-center justify-center gap-2" style={{ minHeight: 48, background: 'var(--accent)', color: 'var(--accent-text)', opacity: busy ? 0.6 : 1 }}>
+        <button type="button" onClick={sendTurn} disabled={busy || !providerReady || !message.trim()} className="rounded-lg px-4 py-2 font-semibold flex items-center justify-center gap-2" style={{ minHeight: 48, background: 'var(--accent)', color: 'var(--accent-text)', opacity: busy || !providerReady ? 0.6 : 1 }}>
           <Volume2 size={16} /> {busy ? 'Generating...' : 'Send & Speak'}
         </button>
       </div>
@@ -1772,6 +1777,7 @@ function VoiceLibraryPanel() {
           <ThemedSelect value="gemini" disabled className="w-full rounded-lg px-3 py-2 text-sm" style={{ minHeight: 44, background: 'var(--surface2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
             <option value="gemini">Gemini voice aliases</option>
           </ThemedSelect>
+          <VoiceProviderNotice provider="gemini" />
         </label>
         <label className="block">
           <span className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Model</span>

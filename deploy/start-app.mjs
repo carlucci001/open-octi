@@ -3,11 +3,15 @@ import { createRequire } from 'node:module'
 import nextEnv from '@next/env'
 import { isOpenOcti } from '../lib/edition.js'
 import { ensureMachineSecrets, machineSecretsPath } from './machine-secrets.mjs'
+import { ensureSessionSecret } from './session-secret.mjs'
+import { ensureStarterVault } from './starter-vault.mjs'
 
 // Load the same .env files as Next before preparing the child process environment.
 nextEnv.loadEnvConfig(process.cwd(), false)
 if (isOpenOcti()) {
   try {
+    process.env.CRM_SESSION_SECRET = ensureSessionSecret()
+    ensureStarterVault()
     const result = ensureMachineSecrets(machineSecretsPath())
     Object.assign(process.env, result.secrets)
     if (result.persisted) console.log(`OpenOcti machine secrets: ${result.file}`)

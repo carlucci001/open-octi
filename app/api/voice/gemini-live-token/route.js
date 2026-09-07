@@ -9,6 +9,9 @@ import { COMMAND_CENTER_MENU_GUIDE } from '@/lib/commandCenterNavigation'
 import { COMMAND_CENTER_LIVE_VOICE_RULES, OFFICE_AGENT_CONDUCT } from '@/lib/agentOfficeConduct'
 import { isOpenOcti } from '@/lib/edition'
 import { resolveProviderKey } from '@/lib/openocti-keys'
+import { OPENOCTI_GUIDE_INSTRUCTIONS } from '@/lib/openocti-assistant'
+import { openOctiVoiceAgent } from '@/lib/openocti-voice-routing'
+import { readOpenOctiAgentKnowledge } from '@/lib/openocti-knowledge'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -36,6 +39,10 @@ function resolveAgent(agentId) {
   const agentsFile = readData('agents.json') || { agents: {} }
   const local = agentsFile.agents?.[personaId] || null
   const preset = PRESET_BY_ID[personaId] || null
+  if (isOpenOcti()) {
+    const starter = openOctiVoiceAgent(personaId, local || {}, preset || {})
+    if (starter) return starter
+  }
   if (local || preset) {
     const aliasDefaults = personaId !== agentId ? { name: 'Matilda', firstName: 'Matilda' } : {}
     return { id: agentId, ...aliasDefaults, ...(preset || {}), ...(local || {}) }
@@ -44,8 +51,20 @@ function resolveAgent(agentId) {
 }
 
 function agentInstructions(agent, { context, toolsEnabled } = {}) {
+  if (isOpenOcti() && agent.id === 'octi-guide') return OPENOCTI_GUIDE_INSTRUCTIONS
+  if (isOpenOcti()) return [
+    `You are ${agent.firstName || agent.name}, the user's ${agent.role || 'assistant'} in OpenOcti. Keep this identity.`,
+    'Always begin and respond in English. Change languages only when the user explicitly asks.',
+    'Be brief, direct, and helpful. Use available tools for workspace actions. Never claim an action succeeded without a confirming tool result.',
+    'Ask before sending messages, making purchases, or deleting data. Never ask for passwords or API keys in conversation.',
+    'You are an AI assistant with an AI-generated voice.',
+    readOpenOctiAgentKnowledge(agent.id),
+    `Authoritative identity: You are ${agent.firstName || agent.name}. Navigating to a page never changes your identity. Transfer to a teammate through transfer_to_agent; do not impersonate another agent.`,
+    context?.sectionId ? `Current page: ${cleanText(context.sectionId, 80)}. Page context is not agent identity.` : '',
+    toolsEnabled ? `Use only the tools actually declared for this session. Navigation map:\n${COMMAND_CENTER_MENU_GUIDE}` : '',
+  ].filter(Boolean).join('\n\n')
   const lines = [
-    `You are ${agent.name || agent.firstName || agent.id}, a Farrington Command Center voice agent.`,
+    `You are ${agent.name || agent.firstName || agent.id}, a OpenOcti voice agent.`,
     COMMAND_CENTER_LIVE_VOICE_RULES,
     agent.title ? `Title: ${agent.title}.` : '',
     agent.voiceProfile ? `Voice profile: ${agent.voiceProfile}.` : '',
@@ -88,7 +107,7 @@ export async function POST(request) {
   // Tools are opt-in per request: only the updated VoiceSession client sends
   // enableTools, so older cached clients keep the exact previous behavior and
   // never receive tool calls they cannot answer.
-  const toolsEnabled = body.enableTools === true
+  const toolsEnabled = body.enableTools === true && !(isOpenOcti() && agentId === 'octi-guide')
   const context = body.context && typeof body.context === 'object' ? body.context : null
 
   const setup = {

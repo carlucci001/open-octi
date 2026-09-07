@@ -15,23 +15,23 @@ import { CheckCircle2, ExternalLink, Mail, MapPin, Pencil, Phone, Search, Trash2
 
 /* ── Data ── */
 const M = [
-  { id: "avl", n: "City, ST", p: "City, ST News", o: "Carl Farrington" },
+  { id: "avl", n: "City, ST", p: "City, ST News", o: "Workspace owner" },
   { id: "atl", n: "Atlanta, GA", p: "Atlanta News", o: "Chad LaMothe" },
-  { id: "chi", n: "Chicago, IL", p: "Chicago News", o: "Carl Farrington" },
-  { id: "cos", n: "Colorado Springs, CO", p: "Colorado Springs News", o: "Carl Farrington" },
+  { id: "chi", n: "Chicago, IL", p: "Chicago News", o: "Workspace owner" },
+  { id: "cos", n: "Colorado Springs, CO", p: "Colorado Springs News", o: "Workspace owner" },
   { id: "hhs", n: "Jonesboro, AR", p: "HardHat Sports", o: "Dagen" },
   { id: "kng", n: "Kingston, NY", p: "Kingston Times", o: "Marty Bstone" },
-  { id: "mia", n: "Miami, FL", p: "Miami News", o: "Carl Farrington" },
-  { id: "mpl", n: "Minneapolis, MN", p: "Minneapolis", o: "Carl Farrington" },
+  { id: "mia", n: "Miami, FL", p: "Miami News", o: "Workspace owner" },
+  { id: "mpl", n: "Minneapolis, MN", p: "Minneapolis", o: "Workspace owner" },
   { id: "ocn", n: "Oceanside, CA", p: "Oceanside News", o: "Josh Gorran" },
   { id: "oma", n: "Omaha, NE", p: "Omaha News", o: "Clint Jones" },
-  { id: "phx", n: "Phoenix, AZ", p: "Phoenix Times", o: "Carl Farrington" },
-  { id: "pdx", n: "Portland, OR", p: "Portland News", o: "Carl Farrington" },
-  { id: "stp", n: "St. Petersburg, FL", p: "Saint Petersburg News", o: "Carl Farrington" },
-  { id: "sdn", n: "San Diego, CA", p: "San Diego News", o: "Carl Farrington" },
-  { id: "sea", n: "Seattle, WA", p: "Seattle News", o: "Carl Farrington" },
-  { id: "xen", n: "Xenia, OH", p: "The 42", o: "Carl Farrington" },
-  { id: "wnc", n: "City, ST", p: "WNC Times", o: "Carl Farrington" },
+  { id: "phx", n: "Phoenix, AZ", p: "Phoenix Times", o: "Workspace owner" },
+  { id: "pdx", n: "Portland, OR", p: "Portland News", o: "Workspace owner" },
+  { id: "stp", n: "St. Petersburg, FL", p: "Saint Petersburg News", o: "Workspace owner" },
+  { id: "sdn", n: "San Diego, CA", p: "San Diego News", o: "Workspace owner" },
+  { id: "sea", n: "Seattle, WA", p: "Seattle News", o: "Workspace owner" },
+  { id: "xen", n: "Xenia, OH", p: "The 42", o: "Workspace owner" },
+  { id: "wnc", n: "City, ST", p: "WNC Times", o: "Workspace owner" },
 ];
 
 const CATS = [
@@ -151,7 +151,7 @@ const CAMPAIGNS = [
   },
   {
     id: "farrington_dev",
-    name: "Farrington Development",
+    name: "Your organization",
     icon: "🚀",
     description: "Web development, apps & consulting leads",
     listFilter: "farrington",
@@ -457,7 +457,7 @@ function mergeSeeds(existing) {
 function emailBody(lead) {
   const m = M.find(x => x.id === lead.mk);
   const c = CATS.find(x => x.name === lead.cat);
-  return `Subject: Founding Sponsor Opportunity — ${m?.p}\n\nHi ${lead.cn || "there"},\n\nThank you for taking my call. We're launching ${m?.p}, a news and community engagement platform for ${m?.n}.\n\nAs a Founding Sponsor, you OWN the entire ${lead.cat} section:\n- Header, sidebar, and footer ads on every page\n- Unlimited advertorials and sponsored content\n- Zero competitors in your category\n- 12 months of exclusive category domination\n\nInvestment: $${c?.price.toLocaleString()}/year ($${Math.round((c?.price || 2500) / 12)}/month)\n\nOnly 6 sponsor slots exist. Once your category is taken, it's gone.\n\nReply or call PHONE_REDACTED.\n\nCarl Farrington\nFarrington Development\ncompany.example.com | content.example.com | wnctimes.com`;
+  return `Subject: Founding Sponsor Opportunity — ${m?.p}\n\nHi ${lead.cn || "there"},\n\nThank you for taking my call. We're launching ${m?.p}, a news and community engagement platform for ${m?.n}.\n\nAs a Founding Sponsor, you OWN the entire ${lead.cat} section:\n- Header, sidebar, and footer ads on every page\n- Unlimited advertorials and sponsored content\n- Zero competitors in your category\n- 12 months of exclusive category domination\n\nInvestment: $${c?.price.toLocaleString()}/year ($${Math.round((c?.price || 2500) / 12)}/month)\n\nOnly 6 sponsor slots exist. Once your category is taken, it's gone.\n\nReply or call PHONE_REDACTED.\n\nWorkspace owner\nYour organization\ncompany.example.com | content.example.com | wnctimes.com`;
 }
 
 const gm = (id) => M.find(m => m.id === id);
@@ -478,7 +478,7 @@ function isFarringtonDevelopmentLead(lead) {
 }
 
 const pipelineForLead = (lead) => {
-  if (isFarringtonDevelopmentLead(lead)) return { pipelineId: 'farrington_dev', pipelineName: 'Farrington Development', stageId: 'discovery' }
+  if (isFarringtonDevelopmentLead(lead)) return { pipelineId: 'farrington_dev', pipelineName: 'Your organization', stageId: 'discovery' }
   if (lead?.lt === 'tda')       return { pipelineId: 'tda',       pipelineName: 'State TDA Outreach',  stageId: 'cold_list' }
   if (lead?.lt === 'newspaper') return { pipelineId: 'newspaper', pipelineName: 'Newspaper Outreach',  stageId: 'cold_list' }
   return { pipelineId: 'sponsors', pipelineName: 'Sponsors', stageId: 'prospect' }
@@ -2067,14 +2067,14 @@ export default function SponsorCRM({ onNavigate, activeLifecycleTab = 'leads' })
           : isNewspaper
           ? `Upgrade ${lead.bn} with AI-Powered Technology — ContentStudio`
           : isFarrington
-          ? `Farrington Development next step for ${lead.bn || "your project"}`
+          ? `Your organization next step for ${lead.bn || "your project"}`
           : (body.match(/^Subject: (.+)\n/)?.[1] || "Founding Sponsor Opportunity");
         const emailBodyText = isTda
-          ? `Hi ${lead.cn || "there"},\n\nThank you for taking the time to speak with me. My name is Carl Farrington, and I'm the founder of ContentStudio.\n\nI wanted to follow up because what we've built is unlike anything currently available to tourism development authorities — and I believe it could be a powerful new tool for ${lead.bn}.\n\nHere's the idea in plain terms:\n\nWe build a dedicated news and community engagement platform for ${lead.bn} — a professional, AI-powered publication designed entirely around promoting tourism in your region. Hotels, restaurants, outfitters, attractions, event venues, B&Bs — every member of your tourism network gets featured. No cost to them. No advertising fees. No contracts for individual businesses.\n\nThe entire platform is yours for $25,000/year. That's it. One flat annual fee covers everything:\n\n• We design and launch your platform — you'll have it up and running within 24 hours\n• Every member in your tourism network gets free advertising — directory listings, premium placements, and editorial features at no cost to them\n• We write and publish advertorials, business profiles, destination features, event coverage, and local tourism news — all handled by our team\n• Your platform is indexed on Google News, so every article ranks in organic search results — travelers find your member businesses on a trusted news source\n• An AI-powered voice assistant built into the platform gives visitors a conversational way to discover your destinations and member businesses\n• Your office gets a dedicated point of contact, plus a support ticket system for anything you need\n• There are no ongoing costs for your members and no ongoing costs beyond the annual fee for your office\n\nThis is not an advertising product. There is nothing for your members to buy. This is a news and community engagement platform — we handle the content, the technology, and all member interactions. Every tourism business in your network benefits from being part of a professional, Google News-indexed publication that engages travelers and promotes your region year-round.\n\nThink of it this way: for less than the cost of a single billboard campaign, every tourism business in your region gets a full year of free promotion through a professional news and engagement platform — plus AI-powered tools that connect travelers directly to your member businesses.\n\nLearn more: https://content.example.com\n\nI'd love to walk you through a quick demo — 15 minutes is all it takes. You can book a time here:\nhttps://calendar.app.google/Lii7ixesgekmiKNn6\n\nOr just reply to this email and we'll set something up.\n\nLooking forward to it,\n\nCarl Farrington\nFounder, ContentStudio\nPHONE_REDACTED\ncontent.example.com`
+          ? `Hi ${lead.cn || "there"},\n\nThank you for taking the time to speak with me. My name is Workspace owner, and I'm the founder of ContentStudio.\n\nI wanted to follow up because what we've built is unlike anything currently available to tourism development authorities — and I believe it could be a powerful new tool for ${lead.bn}.\n\nHere's the idea in plain terms:\n\nWe build a dedicated news and community engagement platform for ${lead.bn} — a professional, AI-powered publication designed entirely around promoting tourism in your region. Hotels, restaurants, outfitters, attractions, event venues, B&Bs — every member of your tourism network gets featured. No cost to them. No advertising fees. No contracts for individual businesses.\n\nThe entire platform is yours for $25,000/year. That's it. One flat annual fee covers everything:\n\n• We design and launch your platform — you'll have it up and running within 24 hours\n• Every member in your tourism network gets free advertising — directory listings, premium placements, and editorial features at no cost to them\n• We write and publish advertorials, business profiles, destination features, event coverage, and local tourism news — all handled by our team\n• Your platform is indexed on Google News, so every article ranks in organic search results — travelers find your member businesses on a trusted news source\n• An AI-powered voice assistant built into the platform gives visitors a conversational way to discover your destinations and member businesses\n• Your office gets a dedicated point of contact, plus a support ticket system for anything you need\n• There are no ongoing costs for your members and no ongoing costs beyond the annual fee for your office\n\nThis is not an advertising product. There is nothing for your members to buy. This is a news and community engagement platform — we handle the content, the technology, and all member interactions. Every tourism business in your network benefits from being part of a professional, Google News-indexed publication that engages travelers and promotes your region year-round.\n\nThink of it this way: for less than the cost of a single billboard campaign, every tourism business in your region gets a full year of free promotion through a professional news and engagement platform — plus AI-powered tools that connect travelers directly to your member businesses.\n\nLearn more: https://content.example.com\n\nI'd love to walk you through a quick demo — 15 minutes is all it takes. You can book a time here:\nhttps://calendar.app.google/Lii7ixesgekmiKNn6\n\nOr just reply to this email and we'll set something up.\n\nLooking forward to it,\n\nWorkspace owner\nFounder, ContentStudio\nPHONE_REDACTED\ncontent.example.com`
           : isNewspaper
-          ? `Hi ${lead.cn || "there"},\n\nIt was great talking with you about ${lead.bn}. As I mentioned, ContentStudio is a news and community engagement platform built for community newspapers like yours.\n\nHere's what you get — day one:\n• AI-powered article generation for local news, sports, business & events\n• Modern, mobile-first website indexed on Google News\n• Built-in sponsor system — 6 category slots at $2,500–$5,000/yr (revenue you keep)\n• Your brand, your market, your editorial voice\n\nIt's free to start, no credit card required. You'll have a live paper in 24 hours.\n\nSee it in action: https://wnctimes.com\nGet started: https://content.example.com/get-started\n\nWant a live walkthrough? Book a 15-minute demo with me on Google Meet:\nhttps://calendar.app.google/Lii7ixesgekmiKNn6\n\nLooking forward to getting you set up,\n\nCarl Farrington\nFounder, ContentStudio\nPHONE_REDACTED`
+          ? `Hi ${lead.cn || "there"},\n\nIt was great talking with you about ${lead.bn}. As I mentioned, ContentStudio is a news and community engagement platform built for community newspapers like yours.\n\nHere's what you get — day one:\n• AI-powered article generation for local news, sports, business & events\n• Modern, mobile-first website indexed on Google News\n• Built-in sponsor system — 6 category slots at $2,500–$5,000/yr (revenue you keep)\n• Your brand, your market, your editorial voice\n\nIt's free to start, no credit card required. You'll have a live paper in 24 hours.\n\nSee it in action: https://wnctimes.com\nGet started: https://content.example.com/get-started\n\nWant a live walkthrough? Book a 15-minute demo with me on Google Meet:\nhttps://calendar.app.google/Lii7ixesgekmiKNn6\n\nLooking forward to getting you set up,\n\nWorkspace owner\nFounder, ContentStudio\nPHONE_REDACTED`
           : isFarrington
-          ? `Hi ${lead.cn || "there"},\n\nI wanted to follow up from Farrington Development and make sure we have the right next step for ${lead.bn || "your project"}.\n\nBased on what I have so far, this looks like it may fit a consulting, automation, web, CRM, or AI workflow conversation. I can help define the scope, budget, and timeline before anyone invests time in the wrong direction.\n\nIf you are open to it, the best next step is a short conversation so I can confirm money, authority, and need, then give you a practical recommendation.\n\nCarl Farrington\nFarrington Development`
+          ? `Hi ${lead.cn || "there"},\n\nI wanted to follow up from Your organization and make sure we have the right next step for ${lead.bn || "your project"}.\n\nBased on what I have so far, this looks like it may fit a consulting, automation, web, CRM, or AI workflow conversation. I can help define the scope, budget, and timeline before anyone invests time in the wrong direction.\n\nIf you are open to it, the best next step is a short conversation so I can confirm money, authority, and need, then give you a practical recommendation.\n\nWorkspace owner\nYour organization`
           : body.replace(/^Subject: .+\n\n/, "");
 
         const m = gm(lead.mk);
@@ -2091,7 +2091,7 @@ export default function SponsorCRM({ onNavigate, activeLifecycleTab = 'leads' })
             fd.append("body", emailBodyText);
             fd.append("campaignType", isTda ? "tda_outreach" : isNewspaper ? "newspaper_outreach" : isFarrington ? "farrington_dev" : "sponsors");
             fd.append("brand", isFarrington ? "farrington_dev" : "ContentStudio");
-            fd.append("fromName", isFarrington ? "Farrington Development" : "ContentStudio");
+            fd.append("fromName", isFarrington ? "Your organization" : "ContentStudio");
             fd.append("contactName", lead.cn || "there");
             if (isTda) {
               fd.append("paperName", lead.bn || "State Tourism Office");
@@ -2483,7 +2483,7 @@ export default function SponsorCRM({ onNavigate, activeLifecycleTab = 'leads' })
                 { id: 'sponsors',           icon: '🤝', label: 'Sponsors',             desc: 'Business sponsorship outreach' },
                 { id: 'newspaper',          icon: '📰', label: 'Newspaper Outreach',   desc: 'Cold newspaper list' },
                 { id: 'tda',                icon: '🏞️', label: 'State TDA',            desc: 'Tourism Development Authority' },
-                { id: 'farrington_dev',     icon: '💻', label: 'Farrington Dev',       desc: 'Web dev inquiry' },
+                { id: 'farrington_dev',     icon: '💻', label: 'Business Development',       desc: 'Web dev inquiry' },
                 { id: 'ContentStudio_demos', icon: '🎥', label: 'ContentStudio Demo',    desc: 'Product demo request' },
               ].map(c => (
                 <button key={c.id}

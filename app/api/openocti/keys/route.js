@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { isOpenOcti } from '@/lib/edition'
 import { requireCapability } from '@/lib/permissions'
+import { resolveOpenOctiAssistant } from '@/lib/openocti-assistant'
 import {
   listOpenOctiKeyStatus,
   removeOpenOctiProviderKey,
@@ -45,11 +46,12 @@ export async function POST(request) {
     const key = String(body.key || '').trim()
     await validateOpenOctiProviderKey(provider, key)
     const status = storeOpenOctiProviderKey(provider, key)
-    const openClaw = syncOpenOctiKeysToOpenClaw()
+    const openClaw = provider === 'daily' ? { updated: false, agents: [] } : syncOpenOctiKeysToOpenClaw()
     return NextResponse.json({
       ok: true,
       provider: status,
-      activatedAgents: provider === 'elevenlabs' ? [] : ACTIVATED_AGENTS,
+      activatedAgents: provider === 'elevenlabs' || !openClaw.updated ? [] : ACTIVATED_AGENTS.filter(agent => openClaw.agents.includes(agent.id)),
+      assistant: resolveOpenOctiAssistant(listOpenOctiKeyStatus()),
       openClaw,
     })
   } catch (error) {
@@ -63,7 +65,7 @@ export async function DELETE(request) {
   try {
     const body = await request.json()
     const status = removeOpenOctiProviderKey(body.provider)
-    const openClaw = syncOpenOctiKeysToOpenClaw()
+    const openClaw = body.provider === 'daily' ? { updated: false, agents: [] } : syncOpenOctiKeysToOpenClaw()
     return NextResponse.json({ ok: true, provider: status, openClaw })
   } catch (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 400 })

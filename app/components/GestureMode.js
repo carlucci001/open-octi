@@ -70,7 +70,7 @@ function scrollableUnder(x, y) {
   return document.scrollingElement || document.documentElement
 }
 
-export default function GestureMode() {
+export default function GestureMode({ placement = 'floating' }) {
   const [on, setOn] = useState(false)
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
@@ -205,14 +205,15 @@ export default function GestureMode() {
           }}
         />
       )}
-      <div style={{ position: 'fixed', left: 16, bottom: 16, zIndex: 9998, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ ...(placement === 'header' ? { position: 'relative' } : { position: 'fixed', left: 16, bottom: 16 }), zIndex: 9998, display: 'flex', alignItems: 'center', gap: 10 }}>
         <button
           type="button"
           aria-label={on ? 'Turn off Gesture Mode' : 'Turn on Gesture Mode'}
           title={on ? 'Gesture Mode: on' : 'Gesture Mode: off'}
+          aria-pressed={on}
           onClick={() => !busy && setOn(v => !v)}
           style={{
-            width: 46, height: 46, borderRadius: 999, display: 'grid', placeItems: 'center', cursor: 'pointer',
+            width: placement === 'header' ? 34 : 46, height: placement === 'header' ? 34 : 46, borderRadius: placement === 'header' ? 8 : 999, display: 'grid', placeItems: 'center', cursor: 'pointer',
             background: on ? 'var(--accent-soft, rgba(64,200,230,.15))' : 'var(--surface, #10151c)',
             color: on ? 'var(--accent, #40c8e6)' : 'var(--text-muted, #6b7b88)',
             border: `1px solid ${on ? 'var(--accent, #40c8e6)' : 'var(--border, #26303c)'}`,
@@ -222,11 +223,11 @@ export default function GestureMode() {
           <Hand size={20} strokeWidth={2.2} />
         </button>
         {on && (
-          <>
+          <div style={placement === 'header' ? { position: 'absolute', top: 'calc(100% + 12px)', right: 0, width: 280, padding: 12, display: 'flex', alignItems: 'center', gap: 10, borderRadius: 10, background: 'var(--surface)', border: '1px solid var(--border)' } : { display: 'contents' }}>
             <video ref={el => { ref.current.video = el }} autoPlay playsInline muted
               style={{ width: 96, height: 72, objectFit: 'cover', transform: 'scaleX(-1)', borderRadius: 8, border: '1px solid var(--accent, #40c8e6)', opacity: 0.85 }} />
             {status && <div style={{ fontSize: 11, color: 'var(--text-muted, #7fd8e8)', maxWidth: 300, lineHeight: 1.5 }}>{status}</div>}
-          </>
+          </div>
         )}
       </div>
     </>

@@ -58,7 +58,7 @@ const IMAGE_PRESETS = [
     size: '1024x1024',
     folder: 'social-posts',
     title: 'Social campaign visual',
-    prompt: 'Create a polished social media image for Farrington Command Center. Show a modern CRM/media command workspace with clear visual hierarchy, premium software feel, confident operator energy, bright readable interface, marketing-ready composition, no fake logos.',
+    prompt: 'Create a polished social media image for OpenOcti. Show a modern CRM/media command workspace with clear visual hierarchy, premium software feel, confident operator energy, bright readable interface, marketing-ready composition, no fake logos.',
   },
   {
     id: 'client-hero',

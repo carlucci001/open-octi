@@ -37,7 +37,7 @@ export async function POST(request) {
   const now = new Date().toISOString()
   const title = cleanText(body.title, 160) || `Maggie transcription ${new Date().toLocaleString()}`
   const durationSeconds = Math.max(0, Math.round(Number(body.durationSeconds) || 0))
-  const operator = { id: 'carl-farrington', name: 'Carl Farrington', role: 'owner-operator' }
+  const operator = { id: 'carl-farrington', name: 'Workspace owner', role: 'owner-operator' }
   const captureAgent = cleanText(body.captureAgent, 80) || 'Maggie'
   const clientId = cleanText(body.clientId, 120)
   const clientName = cleanText(body.clientName, 180)

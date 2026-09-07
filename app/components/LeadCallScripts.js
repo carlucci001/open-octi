@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback } from 'react'
 import ThemedSelect from './ThemedSelect'
 
 const CAMPAIGNS = [
-  { id: 'farrington_dev', label: 'Farrington Dev' },
+  { id: 'farrington_dev', label: 'Business Development' },
   { id: 'sponsors', label: 'Sponsors' },
   { id: 'newspapers', label: 'Newspapers' },
   { id: 'tda_outreach', label: 'TDA Outreach' },

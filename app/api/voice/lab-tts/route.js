@@ -51,7 +51,7 @@ function getAgentStyle(agentId) {
   const agent = agentsFile.agents?.[agentId] || PRESET_BY_ID[agentId]
   if (!agent) return ''
   return [
-    `Read as ${agent.name || agent.firstName || agentId}, ${agent.title || agent.role || 'a Farrington Command Center agent'}.`,
+    `Read as ${agent.name || agent.firstName || agentId}, ${agent.title || agent.role || 'a OpenOcti agent'}.`,
     agent.voiceProfile ? `Voice profile: ${agent.voiceProfile}.` : '',
     agent.description ? `Role context: ${agent.description}` : '',
     'Keep the delivery natural, clear, professional, and demo-ready.',
@@ -226,19 +226,21 @@ export async function GET(request) {
   return NextResponse.json({
     ok: true,
     providers: [
-      { id: 'gemini', label: 'Gemini TTS', models: GEMINI_MODELS, voices: GEMINI_VOICES, defaultModel: GEMINI_MODELS[0], defaultVoice: 'Kore', enabled: true },
+      { id: 'gemini', label: 'Gemini TTS', models: GEMINI_MODELS, voices: GEMINI_VOICES, defaultModel: GEMINI_MODELS[0], defaultVoice: 'Kore', enabled: Boolean(getGeminiKey()), credential: 'Google Gemini API key', setupHref: '/settings/models#gemini', note: 'Uses Google Gemini speech generation. Provider access and quota are checked when you run a test.' },
       {
         id: 'chirp3',
-        label: 'Google Chirp 3 HD',
+        label: 'Chirp aliases (Gemini TTS)',
         models: [CHIRP3_MODEL],
         voices: CHIRP3_VOICES,
         defaultModel: CHIRP3_MODEL,
         defaultVoice: CHIRP3_VOICES[0],
         enabled: Boolean(getGeminiKey()),
-        note: 'Gemini TTS-backed Chirp voice path for DeerFlow agents.',
+        credential: 'Google Gemini API key',
+        setupHref: '/settings/models#gemini',
+        note: 'This lab maps Chirp voice names to Gemini TTS. It uses the Gemini API, not the Google Cloud Chirp 3 HD service.',
         orchestration: { callableRoute: '/api/voice/lab-tts', provider: 'chirp3', audioFormat: 'wav' },
       },
-      { id: 'elevenlabs', label: 'ElevenLabs Real Audio', models: ELEVEN_MODELS, voices: [], defaultModel: ELEVEN_MODELS[0], enabled: true },
+      { id: 'elevenlabs', label: 'ElevenLabs Real Audio', models: ELEVEN_MODELS, voices: [], defaultModel: ELEVEN_MODELS[0], enabled: Boolean(getElevenKey()), credential: 'ElevenLabs API key', setupHref: '/settings/models#elevenlabs', note: 'Speech tests also need an ElevenLabs voice available to your account. Live agents need a separate agent binding.' },
       { id: 'vibevoice', label: 'VibeVoice Internal', models: VIBEVOICE_MODELS, voices: VIBEVOICE_VOICES, defaultModel: VIBEVOICE_MODELS[0], defaultVoice: 'default', enabled: hasVibeVoiceEndpoint(), demoUrl: VIBEVOICE_DEMO_URL, modelUrl: VIBEVOICE_MODEL_URL, repoUrl: VIBEVOICE_REPO_URL, note: hasVibeVoiceEndpoint() ? 'Self-hosted VibeVoice endpoint is configured.' : 'Use the Hugging Face demo now; self-hosted CRM rendering needs VIBEVOICE_BASE_URL.' },
       { id: 'chatterbox', label: 'Chatterbox', models: ['ResembleAI/chatterbox'], voices: [], defaultModel: 'ResembleAI/chatterbox', enabled: false, note: 'Chatterbox server rendering is not installed on Ubuntu yet.' },
     ],

@@ -42,7 +42,7 @@ export async function GET(request) {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       Origin: target,
-      'User-Agent': 'Farrington-Command-Center/DeerFlowAutoLogin',
+      'User-Agent': 'OpenOcti-Command-Center/DeerFlowAutoLogin',
       'X-Forwarded-Proto': 'https',
     },
     body: new URLSearchParams({ username: email, password }),

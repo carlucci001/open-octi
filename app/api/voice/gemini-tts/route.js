@@ -41,7 +41,7 @@ function getAgentStyle(agentId) {
   const agent = agentsFile.agents?.[agentId]
   if (!agent) return ''
   const lines = [
-    `Read as ${agent.name || agent.firstName || agentId}, ${agent.title || agent.role || 'a Farrington Command Center agent'}.`,
+    `Read as ${agent.name || agent.firstName || agentId}, ${agent.title || agent.role || 'a OpenOcti agent'}.`,
     agent.voiceProfile ? `Voice profile: ${agent.voiceProfile}.` : '',
     agent.description ? `Role context: ${agent.description}` : '',
     'Keep the delivery natural, clear, professional, and demo-ready.',

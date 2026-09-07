@@ -7,6 +7,10 @@ import { COMMAND_CENTER_MENU_GUIDE } from '@/lib/commandCenterNavigation'
 import { COMMAND_CENTER_LIVE_VOICE_RULES, OFFICE_AGENT_CONDUCT } from '@/lib/agentOfficeConduct'
 import { PRESET_BY_ID } from '@/lib/agent-presets'
 import { getOpenAIKeyCandidates, redactedKeyMeta } from '@/lib/openai-key-candidates'
+import { isOpenOcti } from '@/lib/edition'
+import { openOctiVoiceAgent } from '@/lib/openocti-voice-routing'
+import { OPENOCTI_GUIDE_INSTRUCTIONS } from '@/lib/openocti-assistant'
+import { readOpenOctiAgentKnowledge } from '@/lib/openocti-knowledge'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -45,7 +49,14 @@ function resolveAgent(agentId) {
   const agentsFile = readData('agents.json') || { agents: {} }
   const local = agentsFile.agents?.[agentId] || null
   const preset = PRESET_BY_ID[agentId] || null
+  if (isOpenOcti()) {
+    const starter = openOctiVoiceAgent(agentId, local || {}, preset || {})
+    if (starter) return starter
+  }
   if (!local && !preset && agentId !== 'matilda') return null
+  if (isOpenOcti() && agentId === 'octi-guide' && local) {
+    return { ...local, id: agentId, name: local.name || 'Octi', firstName: 'Octi', voice: { provider: 'openai', openaiVoice: 'marin', openaiModel: 'gpt-realtime' } }
+  }
   const explicitOpenAiVoice = local?.voice?.provider === 'openai' || local?.voice?.voiceProvider === 'openai'
   if (PRODUCTION_VOICE_LOCKED_IDS.has(agentId) && !explicitOpenAiVoice) return { error: `${local?.name || agentId} is locked to ElevenLabs for production voice.` }
   if (local && local.draft !== true && !OPENAI_VOICE_FALLBACK_IDS.has(agentId) && !explicitOpenAiVoice) {
@@ -57,7 +68,7 @@ function resolveAgent(agentId) {
       id: 'matilda',
       name: defaultCfg.name || 'Matilda',
       firstName: 'Matilda',
-      jobDescription: 'You are Matilda, Carl Farrington\'s in-Command Center voice assistant. Be brief, direct, and useful. Use the Command Center tools when Carl asks you to act.',
+      jobDescription: 'You are Matilda, Workspace owner\'s in-Command Center voice assistant. Be brief, direct, and useful. Use the Command Center tools when Carl asks you to act.',
       voice: { provider: 'openai', openaiVoice: 'marin', openaiModel: 'gpt-realtime' },
     }
   }
@@ -76,6 +87,17 @@ function resolveAgent(agentId) {
 }
 
 function buildInstructions(agent, snapshot) {
+  if (isOpenOcti() && agent.id === 'octi-guide') return OPENOCTI_GUIDE_INSTRUCTIONS
+  if (isOpenOcti()) return [
+    `You are ${agent.firstName || agent.name}, the user's ${agent.role || 'assistant'} in OpenOcti. Keep this identity.`,
+    'Always begin and respond in English. Change languages only when the user explicitly asks.',
+    `When the session opens, greet the user briefly as ${agent.firstName || agent.name}. Keep that same name and specialist role for every subsequent reply.`,
+    'Be brief, direct, and helpful. Use available tools for workspace actions. Do not claim an action succeeded without a confirming tool result.',
+    'Ask before sending messages, making purchases, or deleting data. Never ask for passwords or API keys in conversation.',
+    'You are an AI assistant with an AI-generated voice.',
+    `Your specialist knowledge:\n${readOpenOctiAgentKnowledge(agent.id)}`,
+    `Authoritative identity: You are ${agent.firstName || agent.name}. A navigation tool changes the displayed page, never your identity. A request to speak with a teammate requires transfer_to_agent. Do not impersonate that teammate in this session.`,
+  ].join('\n')
   const facts = [
     'CURRENT CRM STATE:',
     `- Clients: ${snapshot.clients}${snapshot.clientNames?.length ? ` (${snapshot.clientNames.join(', ')})` : ''}`,
@@ -102,7 +124,7 @@ function buildInstructions(agent, snapshot) {
     'For repository/repo/Gitea/Git/source control/source code/code repository requests, call navigate_to with section "repository". Do not open Documents, Products, Product Lab, or Ops Lab.',
     'Do not claim you sent, created, opened, booked, or changed anything unless a tool result confirms it.',
     'For emails, phone calls, billing actions, or destructive actions, confirm the recipient/action out loud before using the tool.',
-    'The audio voice is AI-generated and part of a Farrington Development CRM demo.',
+    'The audio voice is AI-generated and part of a Your organization CRM demo.',
   ].filter(Boolean).join('\n')
 }
 
@@ -111,7 +133,7 @@ export async function POST(request) {
   if (error) return error
 
   const keyCandidates = getOpenAIKeyCandidates()
-  if (!keyCandidates.length) return NextResponse.json({ error: 'No OpenAI API key in vault or environment' }, { status: 400 })
+  if (!keyCandidates.length) return NextResponse.json({ error: 'Add an OpenAI API key in Models & Keys to enable voice.' }, { status: 400 })
 
   const url = new URL(request.url)
   const agentId = url.searchParams.get('agent') || 'matilda'
@@ -139,7 +161,7 @@ export async function POST(request) {
       },
       output: { voice },
     },
-    tools: OPENAI_REALTIME_TOOLS,
+    tools: isOpenOcti() && agent.id === 'octi-guide' ? [] : OPENAI_REALTIME_TOOLS,
     tool_choice: 'auto',
   }
 
@@ -157,9 +179,10 @@ export async function POST(request) {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${candidate.key}`,
-        'OpenAI-Safety-Identifier': 'farrington-crm-demo',
+        'OpenAI-Safety-Identifier': 'openocti',
       },
       body: makeForm(),
+      signal: request.signal,
     })
 
     const text = await upstream.text()

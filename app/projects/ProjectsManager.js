@@ -35,7 +35,7 @@ const DUE_FILTERS = [
 ]
 
 const IN_HOUSE_ACCOUNT_ID = '__in_house__'
-const IN_HOUSE_LABEL = 'Farrington Development'
+const IN_HOUSE_LABEL = 'Your organization'
 
 function api(url, body) {
   return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json())
@@ -646,7 +646,7 @@ export default function ProjectsManager({ onNavigate }) {
         <ThemedSelect style={select} value={filterScope} onChange={e => setFilterScope(e.target.value)}>
           <option value="all">All Project Types</option>
           <option value="account">Account Projects</option>
-          <option value="in_house">Farrington Development</option>
+          <option value="in_house">Your organization</option>
         </ThemedSelect>
 
         <ThemedSelect style={select} value={filterAccount} onChange={e => setFilterAccount(e.target.value)}>

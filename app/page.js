@@ -64,13 +64,14 @@ import { canUseTab } from '@/lib/roles'
 import { Activity, Bot, Boxes, BrainCircuit, Cable, CircleDollarSign, Database, FlaskConical, Hammer, KeyRound, LifeBuoy, Megaphone, Mic2, Newspaper, Package, PhoneCall, Radio, Server, Settings2, ShieldAlert, Wrench } from 'lucide-react'
 
 const APP_BUILD_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 10) || '2026.06.11-api-lab-mobile'
-const PRODUCT_VERSION = isOpenOcti() ? '1.1.2' : '2.1'
+const PRODUCT_VERSION = isOpenOcti() ? '1.2.2' : '2.1'
 // Build stamp baked in by next.config.js at build time. Shown in the sidebar
 // footer so the running build is confirmable at a glance — no deploy logs.
 const BUILD_NUMBER = process.env.NEXT_PUBLIC_FCC_BUILD_NUMBER || ''
-const BUILD_COMMIT = process.env.NEXT_PUBLIC_FCC_BUILD_COMMIT || ''
+const RAW_BUILD_COMMIT = process.env.NEXT_PUBLIC_FCC_BUILD_COMMIT || ''
+const BUILD_COMMIT = RAW_BUILD_COMMIT === 'unknown' ? '' : RAW_BUILD_COMMIT
 const BUILT_AT = process.env.NEXT_PUBLIC_FCC_BUILT_AT || ''
-const PRODUCT_BUILD_LABEL = BUILD_NUMBER ? `${PRODUCT_VERSION}.${BUILD_NUMBER}` : PRODUCT_VERSION
+const PRODUCT_BUILD_LABEL = isOpenOcti() ? PRODUCT_VERSION : (BUILD_NUMBER ? `${PRODUCT_VERSION}.${BUILD_NUMBER}` : PRODUCT_VERSION)
 const PRODUCT_BUILD_TITLE = [
   BUILD_COMMIT ? `commit ${BUILD_COMMIT}` : '',
   BUILT_AT ? `built ${BUILT_AT}` : '',
@@ -556,7 +557,7 @@ function LabWorkspaceIcon({ lab, size = 18, strokeWidth = 2.25 }) {
 const NAV_TOOLS = [
   { id: 'switchboard', icon: <SwitchboardNavIcon />, label: 'Switchboard', desc: 'Live agent call monitoring and QA controls' },
   { id: 'agents', icon: <AgentsNavIcon />, label: 'Agents', desc: 'Manage your AI agents — your virtual team' },
-  { id: 'platforms', icon: <Boxes size={18} strokeWidth={2.25} />, label: 'Platforms', desc: 'Register and manage the platforms Farrington runs — SearchTools3 and future products' },
+  { id: 'platforms', icon: <Boxes size={18} strokeWidth={2.25} />, label: 'Platforms', desc: 'Register and manage the platforms OpenOcti runs — SearchTools3 and future products' },
   { id: 'automations', icon: <AutomationsNavIcon />, label: 'Automations', desc: 'Build guarded client-service workflows and reusable agent runs' },
   { id: 'builder', icon: <Hammer size={18} strokeWidth={2.25} />, label: 'Builder', desc: 'Create and run full applications in the private owner workspace' },
   { id: 'products', icon: <Package size={18} strokeWidth={2.25} />, label: 'Products', desc: 'Product catalog, licensing, prices, and order flow' },
@@ -1095,6 +1096,7 @@ function UserAvatarMenu({ user, isAdmin, isOwner, theme, onThemeChange, networkM
               <AvatarQuickAction icon={<MenuIcon type="timer" />} label="Tasks" detail="Work queue" onClick={() => go('tasks')} />
               <AvatarQuickAction icon={<MenuIcon type="feed" />} label="Calendar" detail="Schedule" onClick={() => go('calendar')} />
               <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Credentials" detail="Keys" onClick={() => go('credentials')} />
+              {OPENOCTI && isAdmin && <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Models & Keys" detail="AI providers" onClick={() => { window.location.href = '/settings/models' }} />}
               {isAdmin && <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Admin" detail="Settings" onClick={() => go('settings')} />}
             </div>
             <div className="avatar-menu-status-strip" aria-label="System status">
@@ -2305,7 +2307,7 @@ export default function Page() {
       <div className="mobile-topbar lg:hidden fixed top-0 left-0 right-0 z-30 grid items-center gap-2 px-3 py-2" style={{ gridTemplateColumns: 'minmax(0, 1fr) auto', background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         <button type="button" onClick={() => { handleNavTo('dashboard'); setNavOpen(false) }} aria-label={`Go to ${EDITION_BRAND.editionName}`} style={{ minWidth: 0, justifySelf: 'start', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}>
           <span style={mobileLogoFrameStyle}>
-            <img src={brandLogoSrc} alt={OPENOCTI ? 'OpenOcti' : 'Farrington Development'} style={mobileLogoImgStyle} />
+            <img src={brandLogoSrc} alt={OPENOCTI ? 'OpenOcti' : 'Your organization'} style={mobileLogoImgStyle} />
           </span>
         </button>
         <div className="flex items-center gap-2 shrink-0">
@@ -2448,15 +2450,15 @@ export default function Page() {
           {/* Bottom info */}
           <div className="sidebar-footer-block px-5 py-3 text-[10px]" style={{ color: 'var(--text-muted)' }}>
             <img
-              src={OPENOCTI ? EDITION_BRAND.shellLogo : '/brand/command-center-logo.png'}
-              alt=""
-              aria-hidden="true"
+              src={OPENOCTI ? EDITION_BRAND.productLogo : '/brand/command-center-logo.png'}
+              alt={OPENOCTI ? 'OpenOcti' : ''}
+              aria-hidden={OPENOCTI ? undefined : true}
               className={`sidebar-footer-logo ${OPENOCTI ? 'openocti-sidebar-footer-logo' : ''}`}
             />
-            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 500, color: 'var(--text)' }}>{EDITION_BRAND.editionName}</div>
+            {!OPENOCTI && <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 500, color: 'var(--text)' }}>{EDITION_BRAND.editionName}</div>}
             <div className="mt-0.5 opacity-50" title={PRODUCT_BUILD_TITLE}>
               Version {PRODUCT_BUILD_LABEL}
-              {BUILD_COMMIT ? <span className="opacity-70"> · {BUILD_COMMIT}</span> : null}
+              <span className="opacity-70"> · {BUILD_COMMIT || 'Local build'}</span>
             </div>
           </div>
         </>
@@ -2467,6 +2469,7 @@ export default function Page() {
       <div className="flex flex-col flex-1 overflow-hidden">
       <header className="desktop-toolbar hidden lg:flex shrink-0 items-center justify-end px-5 py-2.5 z-30 gap-2" style={{ height: topChromeHeight, boxSizing: 'border-box', background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         {OPENOCTI && <OpenOctiAskButton />}
+        {OPENOCTI && <GestureMode placement="header" />}
         {isAdmin && (
           <SettingsGearButton size={32} onNavigate={handleNavTo} />
         )}
@@ -2612,7 +2615,7 @@ export default function Page() {
       <ChatPanel />
       {isOwner && <ApiSpendMonitor mode="floating" />}
       <CommandPalette />
-      <GestureMode />
+      {!OPENOCTI && <GestureMode />}
     </div>
   )
 }

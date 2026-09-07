@@ -19,14 +19,14 @@ async function sendInviteEmail({ to, displayName, username, password, loginUrl, 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return { ok: false, error: 'RESEND_API_KEY not set' }
   if (!to) return { ok: false, error: 'no email address on file' }
-  const from = process.env.RESEND_FROM || 'Farrington Development <redacted@example.invalid>'
-  const fallbackFrom = process.env.RESEND_FALLBACK_FROM || 'Farrington Development <redacted@example.invalid>'
+  const from = process.env.RESEND_FROM || 'Your organization <redacted@example.invalid>'
+  const fallbackFrom = process.env.RESEND_FALLBACK_FROM || 'Your organization <redacted@example.invalid>'
   const cc = process.env.INVITE_CC_EMAIL || process.env.CARL_EMAIL || 'personal@example.invalid'
-  const subject = 'You have access to Farrington Command Center'
-  const senderName = sender?.displayName || sender?.username || 'Carl Farrington'
+  const subject = 'You have access to OpenOcti'
+  const senderName = sender?.displayName || sender?.username || 'Workspace owner'
   const bodyHtml = `
     <p>Hi ${displayName || username},</p>
-    <p>${senderName} has set up an account for you on the Farrington Command Center CRM.</p>
+    <p>${senderName} has set up an account for you on the OpenOcti CRM.</p>
     <p><a href="${loginUrl}" style="display:inline-block;padding:12px 20px;background:#3b82f6;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Open the CRM</a></p>
     <p style="margin-top:24px"><strong>Your sign-in details:</strong></p>
     <p style="font-family:monospace;background:#f4f4f5;padding:12px;border-radius:6px">

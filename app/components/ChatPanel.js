@@ -339,6 +339,7 @@ export default function ChatPanel() {
   const [voiceActive, setVoiceActive] = useState(false)
   const [voiceStarting, setVoiceStarting] = useState(false)
   const [voiceError, setVoiceError] = useState('')
+  const [connectedAgent, setConnectedAgent] = useState(null)
   const [autoOpen, setAutoOpen] = useState(true)
   const [activity, setActivity] = useState('')
   const scrollRef = useRef(null)
@@ -359,10 +360,14 @@ export default function ChatPanel() {
     avatar: CURATED_AGENT_AVATARS[sectionAgent.avatarKey] || MAGGIE_AVATAR,
     intro: sectionAgent.intro,
   }
-  const activeAgentName = activeAgent.name
+  const activeAgentName = (voiceActive || voiceStarting) && connectedAgent?.name ? connectedAgent.name : activeAgent.name
   const selectedModel = MODELS.find(m => m.id === model) || MODELS[0]
-  const liveProviderLabel = activeAgent.id === 'finance-manager' ? 'OpenAI Realtime' : 'ElevenLabs ConvAI'
-  const liveModelLabel = activeAgent.id === 'finance-manager'
+  const liveProviderLabel = BRAND_ASSETS.openOcti
+    ? ({ openai: 'OpenAI Realtime', gemini: 'Gemini Live', elevenlabs: 'ElevenLabs ConvAI' }[connectedAgent?.provider] || 'Go Live to connect')
+    : activeAgent.id === 'finance-manager' ? 'OpenAI Realtime' : 'ElevenLabs ConvAI'
+  const liveModelLabel = BRAND_ASSETS.openOcti
+    ? [connectedAgent?.model, connectedAgent?.voiceName].filter(Boolean).join(' / ') || 'Voice from Models & Keys'
+    : activeAgent.id === 'finance-manager'
     ? `${activeAgent.openaiModel || 'gpt-realtime'} / ${activeAgent.voiceName || 'ash'}`
     : `${activeAgentName} voice agent`
 
@@ -392,6 +397,7 @@ export default function ChatPanel() {
 
   useEffect(() => {
     const handler = event => {
+      if (BRAND_ASSETS.openOcti) return
       const prompt = String(event.detail?.prompt || '')
       setGuideMode(true)
       setWizardSectionOverride('settings')
@@ -409,7 +415,6 @@ export default function ChatPanel() {
   }, [voiceActive, voiceStarting, voiceError])
 
   // Which agent is actually connected (for the live badge avatar)
-  const [connectedAgent, setConnectedAgent] = useState(null)
   useEffect(() => {
     const onAgent = (e) => setConnectedAgent(e.detail || null)
     window.addEventListener('fcc:voice-agent', onAgent)

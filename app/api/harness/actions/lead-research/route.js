@@ -308,7 +308,7 @@ async function runOpenAiCompatible({ provider, base, key, model, lead }) {
       model,
       stream: false,
       messages: [
-        { role: 'system', content: 'You are a private Farrington Command Center harness. Return valid JSON only.' },
+        { role: 'system', content: 'You are a private OpenOcti harness. Return valid JSON only.' },
         { role: 'user', content: contractPrompt(lead) },
       ],
     }),

@@ -3,7 +3,7 @@ import { Resend } from 'resend'
 import { getCred } from '@/lib/agent-creds'
 
 const TO = process.env.VOICEMAIL_NOTIFY_TO || 'personal@example.invalid'
-const FROM = process.env.VOICEMAIL_NOTIFY_FROM || 'Farrington Command Center <redacted@example.invalid>'
+const FROM = process.env.VOICEMAIL_NOTIFY_FROM || 'OpenOcti <redacted@example.invalid>'
 
 export async function POST(request) {
   const { ids } = await request.json()
@@ -46,7 +46,7 @@ export async function POST(request) {
       to: [TO],
       subject: `📞 ${ids.length} new voicemail${ids.length > 1 ? 's' : ''} on your 770 line`,
       html: `<div style="max-width:640px;margin:0 auto;font-family:system-ui,-apple-system,sans-serif;background:#f4f5f7;padding:24px;">
-        <h1 style="color:#1a1c2e;font-size:22px;margin-bottom:20px;">Voicemails — Farrington Command Center</h1>
+        <h1 style="color:#1a1c2e;font-size:22px;margin-bottom:20px;">Voicemails — OpenOcti</h1>
         ${blocks.join('\n')}
         <div style="margin-top:20px;font-size:11px;color:#6b7084;text-align:center;">Sent from your ContentStudio Main Line via Lucci agent</div>
       </div>`,

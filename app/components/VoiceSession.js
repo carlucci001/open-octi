@@ -8,6 +8,7 @@ import { COMMAND_CENTER_LIVE_VOICE_RULES, OFFICE_AGENT_CONDUCT } from '@/lib/age
 import { OPENAI_REALTIME_TOOLS } from '@/lib/realtime-voice-tools'
 import { buildAgentHandoffPayload } from '@/lib/agent-handoff'
 import { buildWakeStartOptions } from '@/lib/voiceWakeStart'
+import { createRealtimeSessionScope, realtimeGreeting } from '@/lib/realtime-session-scope'
 import { appendVoiceTranscriptChunk, isVoiceEndIntent } from '@/lib/voice-end-intent'
 import { parseCrmActionArgs, rankCrmCapabilities } from '@/lib/crm-operator-tools'
 import { clientCapabilityStatus } from '@/lib/client-capabilities'
@@ -463,6 +464,7 @@ function emitVoiceLabTest(event = {}) {
 }
 
 function mergeVoiceRoster(agents = []) {
+  if (isOpenOcti()) return agents.filter(agent => agent?.id)
   const byId = new Map(FALLBACK_VOICE_AGENTS.map(agent => [agent.id, agent]))
   for (const agent of agents || []) {
     if (!agent?.id) continue
@@ -1133,21 +1135,30 @@ function VoiceButton({ activeContext, activeSection }) {
   const [lastAgentText, setLastAgentText] = useState('')
   const [wakeOn, setWakeOn] = useState(() => {
     if (typeof window === 'undefined') return false
+    if (isOpenOcti()) return localStorage.getItem('fcc-wake-word-on') === '1'
     return !isMobileOrTabletDevice()
   })
+  const [wakeListening, setWakeListening] = useState(false)
   const wakeRecRef = useRef(null)
   const wakeSupported = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
 
   // Multi-agent roster: each entry { id, firstName, name, voiceName, agentId, role }
   const [roster, setRoster] = useState(() => mergeVoiceRoster())
   const [activeAgent, setActiveAgent] = useState(null) // The agent the current session is connected to
-  const [selectedAgentId, setSelectedAgentId] = useState('matilda') // Which agent the click-to-start button launches
+  const [selectedAgentId, setSelectedAgentId] = useState(isOpenOcti() ? 'main' : 'matilda') // Which agent the click-to-start button launches
   const [pickerOpen, setPickerOpen] = useState(false) // AI-icon reveals the agent dropdown
   const [listenArmed, setListenArmed] = useState(false) // "Go Live" = ear open, NO agent connected/talking until summoned
   const [manualTransferTargetId, setManualTransferTargetId] = useState('')
   const [activeVoiceRuntime, setActiveVoiceRuntime] = useState(null)
   const [latestVoiceLabRun, setLatestVoiceLabRun] = useState(null)
   const [voiceSetupNeeded, setVoiceSetupNeeded] = useState(false)
+  const [voiceKeyRevision, setVoiceKeyRevision] = useState(0)
+  useEffect(() => {
+    if (!isOpenOcti()) return
+    const refresh = () => setVoiceKeyRevision(value => value + 1)
+    window.addEventListener('openocti:key-saved', refresh)
+    return () => window.removeEventListener('openocti:key-saved', refresh)
+  }, [])
   const [lastHeard, setLastHeard] = useState('') // Most recent wake-word transcript (for debug visibility)
   const transferInFlightRef = useRef(false)
   const pendingVoiceTransferRef = useRef(null)
@@ -1176,13 +1187,13 @@ function VoiceButton({ activeContext, activeSection }) {
     let cancelled = false
     Promise.all([
       fetch('/api/voice/roster').then(r => r.json()),
-      clientCapabilityStatus('elevenlabs'),
+      isOpenOcti() ? Promise.resolve(null) : clientCapabilityStatus('elevenlabs'),
     ]).then(([j, voiceCapability]) => {
       if (cancelled) return
       const merged = mergeVoiceRoster(Array.isArray(j.agents) ? j.agents : [])
       setRoster(merged)
-      setVoiceSetupNeeded(voiceCapability.status !== 'configured')
-      if (voiceCapability.status === 'configured') {
+      setVoiceSetupNeeded(isOpenOcti() ? !merged.some(agent => agent.providerReady) : voiceCapability.status !== 'configured')
+      if (voiceCapability?.status === 'configured') {
         const warmable = merged.filter(a => (a.voiceProfile?.provider || a.voiceProvider || 'elevenlabs') === 'elevenlabs')
         warmable.slice(0, 8).forEach((agent, index) => {
           window.setTimeout(() => { void warmSignedUrl(agent.id === 'matilda' ? '' : agent.id) }, index * 250)
@@ -1192,7 +1203,7 @@ function VoiceButton({ activeContext, activeSection }) {
       if (!cancelled) setRoster(mergeVoiceRoster())
     })
     return () => { cancelled = true }
-  }, [warmSignedUrl])
+  }, [warmSignedUrl, voiceKeyRevision])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !roster.length) return
@@ -1402,6 +1413,9 @@ function VoiceButton({ activeContext, activeSection }) {
 
   const endOpenAiSession = useCallback(() => {
     const s = openAiRef.current
+    s.scope?.retire()
+    if (s.dc) { s.dc.onopen = null; s.dc.onclose = null; s.dc.onerror = null; s.dc.onmessage = null }
+    if (s.pc) { s.pc.ontrack = null; s.pc.onconnectionstatechange = null }
     logRealtimeVoiceUsage(s, 'OpenAI Realtime stopped')
     try { s.dc?.close() } catch {}
     try {
@@ -1648,10 +1662,10 @@ function VoiceButton({ activeContext, activeSection }) {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const a = (isActive || isConnecting) ? activeAgent : null
-    const detail = a ? { id: a.id, name: a.firstName || a.name || 'Agent', avatar: (typeof a.avatar === 'string' ? a.avatar : a.avatar?.url) || null } : null
+    const detail = a ? { id: a.id, name: a.firstName || a.name || 'Agent', avatar: (typeof a.avatar === 'string' ? a.avatar : a.avatar?.url) || null, ...activeVoiceRuntime } : null
     window.__fccVoiceAgent = detail
     window.dispatchEvent(new CustomEvent('fcc:voice-agent', { detail }))
-  }, [activeAgent, isActive, isConnecting])
+  }, [activeAgent, isActive, isConnecting, activeVoiceRuntime])
 
   // Broadcast the roster so the live equalizer's hover-switcher can list agents (avatar + name).
   useEffect(() => {
@@ -1777,11 +1791,13 @@ function VoiceButton({ activeContext, activeSection }) {
   useEffect(() => {
     const mobileWake = typeof window !== 'undefined' && isMobileOrTabletDevice()
     if (mobileWake && !listenArmed) {
+      setWakeListening(false)
       try { wakeRecRef.current?.stop() } catch {}
       wakeRecRef.current = null
       return
     }
     if (!wakeOn || !wakeSupported || isActive || isConnecting) {
+      setWakeListening(false)
       // Surface the switched-off case. Everything else here is a legitimate
       // pause (a session owns the mic, or the browser has no SpeechRecognition).
       if (wakeSupported && !wakeOn && !isActive && !isConnecting) logWakeOffIdle()
@@ -1805,7 +1821,7 @@ function VoiceButton({ activeContext, activeSection }) {
       }
       try { wakeRecRef.current?.stop?.() } catch {}
       const rec = new SR()
-      rec.onstart = () => { recRunning = true }
+      rec.onstart = () => { recRunning = true; if (!stopped) setWakeListening(true) }
       rec.continuous = true
       rec.interimResults = true
       rec.lang = 'en-US'
@@ -1906,9 +1922,17 @@ function VoiceButton({ activeContext, activeSection }) {
           }
         }
       }
-      rec.onend = () => { recRunning = false; if (!stopped && wakeOn && !isActive && !isConnecting && !window.__fccVoiceStarting && !window.__fccChirpSessionActive && !window.__fccVoiceActive) setTimeout(() => launch(), 75) }
+      rec.onend = () => { recRunning = false; setWakeListening(false); if (!stopped && wakeOn && !isActive && !isConnecting && !window.__fccVoiceStarting && !window.__fccChirpSessionActive && !window.__fccVoiceActive) setTimeout(() => launch(), 75) }
       rec.onerror = (e) => {
-        if (e.error === 'not-allowed') { stopped = true; setWakeOn(false); setError('Microphone permission denied for wake-word'); return }
+        setWakeListening(false)
+        if (e.error === 'not-allowed') { stopped = true; setWakeOn(false); setListenArmed(false); setError('Microphone permission denied for wake-word'); return }
+        if (isOpenOcti() && ['network', 'service-not-allowed', 'audio-capture'].includes(e.error)) {
+          stopped = true
+          setWakeOn(false)
+          setListenArmed(false)
+          setError(`Wake words are unavailable in this browser (${e.error}). You can still start a voice conversation.`)
+          return
+        }
         // 'no-speech' / 'aborted' / 'audio-capture' — let onend restart us
       }
       try { rec.start(); wakeRecRef.current = rec } catch {}
@@ -1967,19 +1991,23 @@ function VoiceButton({ activeContext, activeSection }) {
     audioEl.dataset.fccOpenaiVoice = '1'
     audioEl.style.display = 'none'
     document.body.appendChild(audioEl)
-    pc.ontrack = (e) => { audioEl.srcObject = e.streams[0] }
-    pc.onconnectionstatechange = () => {
+    const session = { pc, dc: null, audioEl, micStream, ...(labRun || {}), provider: 'openai', agentId, model: labRun?.model || 'gpt-realtime', startedAt: labRun?.startedAt || Date.now() }
+    const scope = createRealtimeSessionScope(openAiRef, session)
+    pc.ontrack = scope.guard((e) => { audioEl.srcObject = e.streams[0] })
+    pc.onconnectionstatechange = scope.guard(() => {
       const state = pc.connectionState || ''
       if (state) setLastEvent(`OpenAI Realtime ${state}`)
       if (state === 'failed' || state === 'disconnected') {
         setError(`OpenAI Realtime connection ${state}.`)
       }
-    }
+    })
     micStream.getTracks().forEach(track => pc.addTrack(track, micStream))
 
     const dc = pc.createDataChannel('oai-events')
+    session.dc = dc
     const toolNames = new Set(OPENAI_REALTIME_TOOLS.map(t => t.name))
     const sendToolResult = async (call) => {
+      if (!scope.isCurrent()) return
       const name = call?.name
       const callId = call?.call_id
       if (!name || !callId || !toolNames.has(name)) return
@@ -1992,51 +2020,45 @@ function VoiceButton({ activeContext, activeSection }) {
       } catch (e) {
         output = `Tool ${name} failed: ${e.message || e}`
       }
-      dc.send(JSON.stringify({
+      if (!scope.send({
         type: 'conversation.item.create',
         item: {
           type: 'function_call_output',
           call_id: callId,
           output: typeof output === 'string' ? output : JSON.stringify(output),
         },
-      }))
-      dc.send(JSON.stringify({ type: 'response.create' }))
+      })) return
+      scope.send({ type: 'response.create' })
     }
 
-    dc.onopen = () => {
+    dc.onopen = scope.guard(() => {
       setOpenAiStatus('connected')
       setLastEvent('OpenAI Realtime connected')
       emitVoiceLabTest({ ...(labRun || activeVoiceLabRunRef.current || {}), stage: 'connected', status: 'connected' })
       // Listen mode: do not speak on connect. Stay silent until Carl talks.
       if (silent) return
       try {
-        dc.send(JSON.stringify({
-          type: 'response.create',
-          response: {
-            instructions: firstMessage
-              ? `Greet Carl as ${agentId === 'finance-manager' ? 'Frank' : 'your active persona'} in one short sentence: "${firstMessage}"`
-              : 'Greet Carl in one short sentence and ask how you can help.',
-          },
-        }))
+        scope.send(realtimeGreeting({ openOcti: isOpenOcti(), agentId, firstMessage }))
       } catch (e) {
         console.warn('[openai voice] initial response failed', e)
       }
-    }
-    dc.onclose = () => {
+    })
+    dc.onclose = scope.guard(() => {
       setOpenAiStatus('idle'); setLastEvent('OpenAI Realtime disconnected')
       emitVoiceLabTest({ ...(labRun || activeVoiceLabRunRef.current || {}), stage: 'ended', status: 'ended', reason: 'OpenAI Realtime disconnected' })
       logRealtimeVoiceUsage(labRun || activeVoiceLabRunRef.current, 'OpenAI Realtime disconnected')
       activeVoiceLabRunRef.current = null
       setActiveVoiceRuntime(null)
-    }
-    dc.onerror = () => {
+      scope.retire()
+    })
+    dc.onerror = scope.guard(() => {
       setError('OpenAI Realtime data channel error')
       emitVoiceLabTest({ ...(labRun || activeVoiceLabRunRef.current || {}), stage: 'error', status: 'error', error: 'OpenAI Realtime data channel error' })
-    }
-    dc.onmessage = async (event) => {
+    })
+    dc.onmessage = scope.guard(async (event) => {
       let msg
       try { msg = JSON.parse(event.data) } catch { return }
-      if (msg.type === 'response.audio_transcript.done' && msg.transcript) {
+      if (['response.audio_transcript.done', 'response.output_audio_transcript.done'].includes(msg.type) && msg.transcript) {
         setLastAgentText(msg.transcript)
         emitVoiceLabTest({ ...(labRun || activeVoiceLabRunRef.current || {}), stage: 'transcript', role: 'assistant', text: msg.transcript, status: 'running' })
       }
@@ -2056,24 +2078,28 @@ function VoiceButton({ activeContext, activeSection }) {
         setError(message)
         emitVoiceLabTest({ ...(labRun || activeVoiceLabRunRef.current || {}), stage: 'error', status: 'error', error: message })
       }
-    }
+    })
 
+    try {
     const offer = await pc.createOffer()
+    if (!scope.isCurrent()) return false
     await pc.setLocalDescription(offer)
     const res = await fetch(`/api/voice/openai/session?agent=${encodeURIComponent(agentId || 'matilda')}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/sdp' },
       credentials: 'include',
+      signal: session.abortController.signal,
       body: offer.sdp,
     })
     const answerText = await res.text()
+    if (!scope.isCurrent()) return false
     if (!res.ok) {
       let message = answerText
       try { message = JSON.parse(answerText).error || message } catch {}
       throw new Error(message || `OpenAI Realtime failed: HTTP ${res.status}`)
     }
     await pc.setRemoteDescription({ type: 'answer', sdp: answerText })
-    openAiRef.current = { pc, dc, audioEl, micStream, ...(labRun || {}), provider: 'openai', agentId, model: labRun?.model || 'gpt-realtime', startedAt: labRun?.startedAt || Date.now() }
+    if (!scope.isCurrent()) return false
     setTimeout(() => {
       if (dc.readyState !== 'open' && openAiRef.current?.dc === dc) {
         setError('OpenAI Realtime did not finish connecting. Try again, or use an ElevenLabs-bound agent.')
@@ -2081,6 +2107,12 @@ function VoiceButton({ activeContext, activeSection }) {
         try { endOpenAiSession() } catch {}
       }
     }, 12000)
+    return true
+    } catch (error) {
+      if (!scope.isCurrent()) return false
+      endOpenAiSession()
+      throw error
+    }
   }, [endOpenAiSession, handleUserVoiceTranscript, runDirectTransferFromTranscript])
 
   const startLabLiveSession = useCallback(async ({ agent, provider, model, voiceName, micStream, silent, runId, context }) => {
@@ -2605,6 +2637,11 @@ function VoiceButton({ activeContext, activeSection }) {
     const requestedRosterAgent = roster.find(a => a.id === agentIdOpt)
     const targetAgentId = agentIdOpt || selectedAgentId || requestedRosterAgent?.id || 'matilda'
     const startKey = `${targetAgentId}:${requestedRosterAgent?.voiceProvider || selectedVoiceProvider || ''}`
+    const liveOpenAi = openAiRef.current
+    if (liveOpenAi?.agentId === targetAgentId && liveOpenAi.scope?.isCurrent() && liveOpenAi.dc?.readyState === 'open') {
+      setLastEvent(`${requestedRosterAgent?.firstName || requestedRosterAgent?.name || targetAgentId} is already live`)
+      return false
+    }
     // "Hey Nadia" while Nadia's Chirp session is already live must NOT rebuild
     // the session (that killed the conversation mid-turn). Treat it as a nudge:
     // make sure her recognizer is actually listening and move on.
@@ -2703,6 +2740,7 @@ function VoiceButton({ activeContext, activeSection }) {
         ? 'elevenlabs'
         : rawVoiceProvider
       const useOpenAiVoice = selectedVoiceProvider === 'openai'
+      if (isOpenOcti() && selectedVoiceProvider === 'none') throw new Error('Add an OpenAI or Google Gemini key in Models & Keys to enable voice.')
       const useElevenLabsVoice = selectedVoiceProvider === 'elevenlabs'
       const useLabLiveVoice = selectedVoiceProvider === 'gemini'
       const useChirpTurnVoice = selectedVoiceProvider === 'chirp3'
@@ -2876,7 +2914,7 @@ function VoiceButton({ activeContext, activeSection }) {
         `  · Sponsor prospects: ${snap.sponsorByCampaign?.sponsors ?? 0}`,
         `  · Newspaper outreach: ${snap.sponsorByCampaign?.newspaper ?? 0}`,
         `  · State TDAs: ${snap.sponsorByCampaign?.tda ?? 0}`,
-        `  · Farrington Development: ${snap.sponsorByCampaign?.farrington_dev ?? 0}`,
+        `  · Your organization: ${snap.sponsorByCampaign?.farrington_dev ?? 0}`,
         `- This month's revenue: $${(snap.monthRevenue ?? 0).toLocaleString()} across ${snap.monthPaymentCount ?? 0} payment(s)`,
         `- Domains managed: ${snap.domainsTotal ?? 0}${snap.domainsExpiringSoon ? ` (${snap.domainsExpiringSoon} expiring soon)` : ''}`,
       ]
@@ -2892,7 +2930,7 @@ function VoiceButton({ activeContext, activeSection }) {
       factLines.push('', `COMMAND CENTER SECTIONS: ${COMPACT_COMMAND_CENTER_MAP}.`)
       factLines.push('', `For screen navigation, call navigate_to with the section id. For repository/repo/Gitea/Git/source control/source code, use "repository". For backup, restore, production health, CI/CD, deploy, or ops questions, use "ops".`)
       factLines.push('', `For telecom provisioning, Twilio numbers, leased-agent phone setup, area-code searches, or client voice-line setup, transfer to Craig if needed and use search_twilio_numbers. Buying or assigning a real number is a paid telecom action and requires explicit Carl approval.`)
-      factLines.push('', `Every Farrington voice agent can transfer the active voice session. When Carl asks to transfer, hand off, connect, route, put him through, or let him speak to a named teammate or agent (Craig, Maggie, Frank, Sasha, Linda, Cameron, Mark, Doreen, Diane), call transfer_to_agent immediately. This is an owner command, not a request for justification. The reason field is optional; never ask Carl to provide a reason, availability, or extra context before transferring. Confirm with direct professional language such as "Connecting you with Sasha now" or "I am transferring you to Craig." Do not end with "let me know if I can help with anything else" after a transfer request.`)
+      factLines.push('', `Every OpenOcti voice agent can transfer the active voice session. When Carl asks to transfer, hand off, connect, route, put him through, or let him speak to a named teammate or agent (Craig, Maggie, Frank, Sasha, Linda, Cameron, Mark, Doreen, Diane), call transfer_to_agent immediately. This is an owner command, not a request for justification. The reason field is optional; never ask Carl to provide a reason, availability, or extra context before transferring. Confirm with direct professional language such as "Connecting you with Sasha now" or "I am transferring you to Craig." Do not end with "let me know if I can help with anything else" after a transfer request.`)
       factLines.push('', `LIVE TOOL CONTRACT: Your active callable tools in this session are: ${CLIENT_TOOL_NAMES.join(', ')}. If Carl asks what tools you have, what you can do, or whether you can transfer, call, email, book, search, open, navigate, or send documents, answer from this list plainly. Do not say you lack a tool that appears in this list. If a tool call fails, say the tool failed and report the exact short error instead of pretending it succeeded.`)
       factLines.push('', `PERSISTENT MEMORY: Use recall_memory before answering questions about durable preferences, prior decisions, client-specific history, saved call summaries, or "what did we say before" context. Use remember_fact only for durable business facts, preferences, decisions, and instructions; never store passwords, API keys, tokens, private keys, or secrets. Use save_call_memory for call summaries and action items. Use list_agent_memory/forget_memory when Carl asks what is remembered or says to forget something. Use search_notes/read_note/write_note for Obsidian/Command Vault playbooks, SOPs, templates, and longer knowledge; CRM memory is for facts/events, Obsidian is for knowledge and procedures.`)
       if (resolved.id === 'legal') factLines.push('', `LINDA LEGAL BASICS: An NDA is a non-disclosure agreement. If Carl asks for an NDA, confidentiality agreement, mutual NDA, contract, or document for signature, explain briefly if asked, then use send_signature_document when he wants it sent.`)
@@ -2926,7 +2964,7 @@ function VoiceButton({ activeContext, activeSection }) {
         `Carl installed project agent skills as engineering playbooks. Treat them as workflow guidance and shared vocabulary, not as voice tools you can execute directly. Do not claim you have run a skill unless a tool or engineering executor actually did the work.`,
         `When Carl asks "use the skills" or names a skill, translate that into a practical operating mode: debugging-and-error-recovery for bugs, test-driven-development for fixes that need guardrails, frontend-ui-engineering for interface consistency, api-and-interface-design for contracts/tools, source-driven-development for official docs, code-review-and-quality for review, planning-and-task-breakdown for scope, incremental-implementation for small safe patches, ci-cd-and-automation for pipeline/build gates, documentation-and-adrs for durable notes, and shipping-and-launch for pre-demo readiness.`,
         `For any bug, follow stop-the-line order: reproduce, localize, reduce, fix root cause, add or run a guard, then verify. Do not suggest new features while Carl is in stabilization mode unless he explicitly changes priority.`,
-        `Remember Farrington Command Center has CI/CD and automation in place. Treat tests, builds, smoke checks, and pipeline results as the normal proof path. Do not bypass a failing gate or talk Carl into trusting a manual demo when automation is reporting a problem.`,
+        `Remember OpenOcti has CI/CD and automation in place. Treat tests, builds, smoke checks, and pipeline results as the normal proof path. Do not bypass a failing gate or talk Carl into trusting a manual demo when automation is reporting a problem.`,
         `Remember Gitea is Carl's active local source-control system on the Ubuntu box, integrated into the Command Center Repository area. When Carl says Gitea, repo, source control, or local repository, treat that as the active internal repository surface, not as a random external GitHub-only workflow. The repo integration is routed through the Repository section and the app/api/repository/gitea path.`,
         `When Carl gives you a repo task, capture the smallest useful task: problem, expected behavior, likely files, acceptance criteria, tests/build to run, and what is out of scope. If it can run asynchronously, delegate to Jules. If it is plugin/OpenClaw work, create a plugin change request. If it needs Codex or server access, say that engineering needs to run it and do not pretend you completed it from voice.`,
         `Current stabilization backlog to keep visible: voice transfers are working through a reload-based handoff and may still feel slow; true provider-native transfer is not finished; active voice sessions can cost usage, so stale sessions must be stopped; pre-demo proof should use smoke tests plus a direct AI Wizard start on the target agent.`,
@@ -2975,8 +3013,8 @@ function VoiceButton({ activeContext, activeSection }) {
         return `All right, goodbye.`
       }
       const voiceAgentMemoryContext = () => ({
-        agentName: activeAgent?.firstName || resolved?.firstName || resolved?.name || 'agent',
-        agentId: resolved?.id || activeAgent?.id || '',
+        agentName: resolved?.firstName || resolved?.name || 'agent',
+        agentId: resolved?.id || '',
       })
 
       // --- Orchestration flow helpers (voice-driven flow runs) ---
@@ -3544,7 +3582,7 @@ function VoiceButton({ activeContext, activeSection }) {
               address,
               notes,
               tags,
-              agentName: activeAgent?.firstName || 'Maggie',
+              agentName: resolved?.firstName || resolved?.name || 'agent',
             })
             if (!result?.id) return `I tried to create ${cleanName}, but the CRM did not return a saved account id.`
             window.dispatchEvent(new CustomEvent('fcc:set-tab', { detail: 'accounts' }))
@@ -3606,7 +3644,7 @@ function VoiceButton({ activeContext, activeSection }) {
                 signerName: recipientQuery || to,
                 signerEmail: looksLikeEmail(to) ? to : undefined,
                 templateName: /nda|non[-\s]?disclosure/i.test(`${subject || ''} ${body || ''}`) ? 'standard NDA' : subject || 'standard NDA',
-                agentName: activeAgent?.firstName || 'Maggie',
+                agentName: resolved?.firstName || resolved?.name || 'agent',
               })
               if (!r.sent) return `I created the signature request for ${r.signerName}, but the email did not send: ${r.email?.error || 'unknown error'}.`
               return `Done. ${r.voiceGuidance || ''} I sent ${r.title} to ${r.signerName} at ${r.signerEmail} for signature. You are carbon copied.`
@@ -3657,7 +3695,7 @@ function VoiceButton({ activeContext, activeSection }) {
               fields,
               title,
               folder,
-              agentName: activeAgent?.firstName || 'Linda',
+              agentName: resolved?.firstName || resolved?.name || 'agent',
             })
             return `Drafted "${r.title}" and saved it in Documents${r.clientName ? ` for ${r.clientName}` : ''}. Source: ${r.source}. Next step: review it or tell me to send it for signature.`
           } catch (e) { return `Legal draft failed: ${e.message}` }
@@ -3672,7 +3710,7 @@ function VoiceButton({ activeContext, activeSection }) {
               body,
               title,
               folder,
-              agentName: activeAgent?.firstName || 'agent',
+              agentName: resolved?.firstName || resolved?.name || 'agent',
             })
             return `Filed "${r.title}" under ${r.clientName || 'the selected account'} in ${r.folder || 'Documents'}.`
           } catch (e) { return `Document filing failed: ${e.message}` }
@@ -3685,7 +3723,7 @@ function VoiceButton({ activeContext, activeSection }) {
                 signerName,
                 signerEmail,
                 templateName: templateName || 'standard NDA',
-                agentName: activeAgent?.firstName || 'Maggie',
+                agentName: resolved?.firstName || resolved?.name || 'agent',
               })
               if (!r.sent) return `I created the signature request for ${r.signerName}, but the email did not send: ${r.email?.error || 'unknown error'}.`
               return `Done. ${r.voiceGuidance || ''} I sent ${r.title} to ${r.signerName} at ${r.signerEmail} for signature. You are carbon copied.`
@@ -3705,7 +3743,7 @@ function VoiceButton({ activeContext, activeSection }) {
               templateId,
               purpose,
               fields,
-              agentName: activeAgent?.firstName || 'Maggie',
+              agentName: resolved?.firstName || resolved?.name || 'agent',
             })
             if (!r.sent) return `I created the signature request for ${r.signerName}, but the email did not send: ${r.email?.error || 'unknown error'}.`
             return `Done. ${r.voiceGuidance || ''} I sent ${r.title} to ${r.signerName} at ${r.signerEmail} for signature. You are carbon copied.`
@@ -3717,7 +3755,7 @@ function VoiceButton({ activeContext, activeSection }) {
               const r = await agentExec('send_signature_document', {
                 clientName: clientQuery,
                 templateName: templateQuery || 'standard NDA',
-                agentName: activeAgent?.firstName || 'Maggie',
+                agentName: resolved?.firstName || resolved?.name || 'agent',
               })
               if (!r.sent) return `I created the signature request for ${r.signerName}, but the email did not send: ${r.email?.error || 'unknown error'}.`
               return `Done. ${r.voiceGuidance || ''} I sent ${r.title} to ${r.signerName} at ${r.signerEmail} for signature. You are carbon copied.`
@@ -3858,7 +3896,7 @@ function VoiceButton({ activeContext, activeSection }) {
                 signerName: to,
                 signerEmail: looksLikeEmail(to) ? to : undefined,
                 templateName: /nda|non[-\s]?disclosure/i.test(`${subject || ''} ${body || ''}`) ? 'standard NDA' : subject || 'standard NDA',
-                agentName: activeAgent?.firstName || 'Maggie',
+                agentName: resolved?.firstName || resolved?.name || 'agent',
               })
               if (!r.sent) return `I created the signature request for ${r.signerName}, but the email did not send: ${r.email?.error || 'unknown error'}.`
               return `Done. ${r.voiceGuidance || ''} I sent ${r.title} to ${r.signerName} at ${r.signerEmail} for signature. You are carbon copied.`
@@ -3950,7 +3988,7 @@ function VoiceButton({ activeContext, activeSection }) {
             const reminder = Number.isInteger(Number(r.reminderMinutes))
               ? ` Reminder: ${Number(r.reminderMinutes)} minutes before.`
               : ''
-            return `Verified calendar event created for ${r.displayTime || r.start} on ${r.calendarName || 'Farrington Development'}. Booking ID: ${r.bookingId}.${reminder}`
+            return `Verified calendar event created for ${r.displayTime || r.start} on ${r.calendarName || 'Your organization'}. Booking ID: ${r.bookingId}.${reminder}`
           } catch (e) {
             return `Appointment was not scheduled: ${e.message || 'calendar request failed'}.`
           }
@@ -4006,7 +4044,7 @@ function VoiceButton({ activeContext, activeSection }) {
                 body: JSON.stringify({
                   to: account.email || '',
                   name: account.name,
-                  subject: `Video call with Farrington Development`,
+                  subject: `Video call with Your organization`,
                   persistent: false,
                   seed: account.name,
                   linkedTo: { accountId: account.id },
@@ -4045,7 +4083,7 @@ function VoiceButton({ activeContext, activeSection }) {
           }
           const key = (campaign || '').toLowerCase().trim()
           const target = map[key]
-          if (!target) return `I don't recognize the campaign "${campaign}". Try sponsors, newspapers, TDAs, or Farrington Development.`
+          if (!target) return `I don't recognize the campaign "${campaign}". Try sponsors, newspapers, TDAs, or Your organization.`
           window.dispatchEvent(new CustomEvent('fcc:set-tab', { detail: 'leads' }))
           setTimeout(() => window.dispatchEvent(new CustomEvent('fcc:set-leads-campaign', { detail: target })), 250)
           return `Showing ${target.replace('_outreach','').replace('_',' ')} leads.`
@@ -4357,9 +4395,9 @@ function VoiceButton({ activeContext, activeSection }) {
       // Every live voice session gets the current Command Center transfer rules.
       // This prevents stored provider prompts from asking Carl for a transfer reason.
       const isCraig = (resolved.id === 'coding') || String(resolved.firstName || resolved.name || '').toLowerCase() === 'craig'
-      const identityLine = `VOICE SESSION IDENTITY: You are ${resolved.name || resolved.firstName || 'the active Farrington agent'}. Keep your normal specialty and persona, but obey the transfer, screen-control, and call-ending rules in this session context.`
+      const identityLine = `VOICE SESSION IDENTITY: You are ${resolved.name || resolved.firstName || 'the active OpenOcti agent'}. Keep your normal specialty and persona, but obey the transfer, screen-control, and call-ending rules in this session context.`
       const baseAgentPrompt = String(resolved.jobDescription || res.jobDescription || '').trim()
-      const personaBlock = baseAgentPrompt || `You are ${resolved.name || resolved.firstName || 'the active Farrington agent'} in Farrington Development's Command Center. Your visible role is ${resolved.role || 'voice agent'}.`
+      const personaBlock = baseAgentPrompt || `You are ${resolved.name || resolved.firstName || 'the active OpenOcti agent'} in Your organization's Command Center. Your visible role is ${resolved.role || 'voice agent'}.`
       const promptOverride = isCraig
         ? [personaBlock, '', identityLine, '', COMMAND_CENTER_LIVE_VOICE_RULES, ...factLines, '', compactCraigContext].join('\n')
         : [personaBlock, '', identityLine, '', COMMAND_CENTER_LIVE_VOICE_RULES, ...factLines].join('\n')
@@ -4378,7 +4416,8 @@ function VoiceButton({ activeContext, activeSection }) {
       }
       if (useOpenAiVoice) {
         try { conversation.endSession() } catch {}
-        await startOpenAiSession({ agentId: resolved.id || agentIdOpt || 'matilda', micStream, clientTools, firstMessage, silent, labRun: resolvedLabRun })
+        const connected = await startOpenAiSession({ agentId: resolved.id || agentIdOpt || 'matilda', micStream, clientTools, firstMessage, silent, labRun: resolvedLabRun })
+        if (!connected) return false
       } else {
         endOpenAiSession()
         try { conversation.setVolume({ volume: 1 }) } catch {}
@@ -4472,7 +4511,7 @@ function VoiceButton({ activeContext, activeSection }) {
       const matched = roster.find(a => a.id === agentId)
       setSelectedAgentId(agentId)
       startRef.current?.(matched?.id || agentId, {
-        silent: true,
+        silent: e?.detail?.silent !== false,
         suppressHandoffNavigation: e?.detail?.suppressHandoffNavigation === true || e?.detail?.stayOnPage === true,
       })
     }
@@ -4512,9 +4551,31 @@ function VoiceButton({ activeContext, activeSection }) {
   // agent connects.
   useEffect(() => {
     if (typeof window === 'undefined') return
-    window.__fccVoiceListening = listenArmed
-    window.dispatchEvent(new CustomEvent('fcc:voice-listening', { detail: listenArmed }))
-  }, [listenArmed])
+    const listening = isOpenOcti() ? wakeListening : listenArmed
+    window.__fccVoiceListening = listening
+    window.dispatchEvent(new CustomEvent('fcc:voice-listening', { detail: listening }))
+  }, [listenArmed, wakeListening])
+
+  useEffect(() => {
+    if (!isOpenOcti()) return
+    const status = {
+      ready: roster.some(agent => agent.providerReady), available: Boolean(wakeSupported),
+      enabled: Boolean(wakeSupported && wakeOn), listening: wakeListening, active: isActive, connecting: isConnecting, error: error || '',
+    }
+    window.__openOctiVoiceStatus = status
+    window.dispatchEvent(new CustomEvent('openocti:voice-status', { detail: status }))
+  }, [roster, wakeSupported, wakeOn, wakeListening, isActive, isConnecting, error])
+
+  useEffect(() => {
+    if (!isOpenOcti()) return
+    const toggle = event => {
+      setError(null)
+      setListenArmed(Boolean(event.detail))
+      setWakeOn(Boolean(event.detail) && Boolean(wakeSupported))
+    }
+    window.addEventListener('openocti:voice-wake-toggle', toggle)
+    return () => window.removeEventListener('openocti:voice-wake-toggle', toggle)
+  }, [wakeSupported])
 
   // Persist wake toggle
   useEffect(() => {

@@ -27,7 +27,7 @@ function buildContext() {
 }
 
 function systemPromptFor(ctx, leadContext) {
-  return `You are the AI assistant inside the Farrington Command Center CRM, built by Carl Farrington at Farrington Development LLC in City, ST.
+  return `You are the AI assistant inside the OpenOcti CRM, built by Workspace owner at Your organization in City, ST.
 
 You help Carl work his leads, draft outreach, research prospects, and run his CRM. Be terse, direct, and action-oriented. Use bullet points. Never add filler.
 
@@ -146,7 +146,7 @@ async function callOpenRouter(model, system, messages) {
   try {
     res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${cred.key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'http://localhost:3000', 'X-Title': 'Farrington Command Center' },
+      headers: { Authorization: `Bearer ${cred.key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'http://localhost:3000', 'X-Title': 'OpenOcti' },
       body: JSON.stringify({ model, messages: fullMessages, max_tokens: 1024 }),
       signal: timeout.signal,
     })

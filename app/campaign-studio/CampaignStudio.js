@@ -277,7 +277,7 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
   // Brand streams: resolve a channel's brand from the same map the server enforces.
   const channelBrandId = (channelId) => brandCatalog.brandMap?.[String(channelId)] || brandCatalog.defaultBrandId || 'farrington-development'
   const channelsForBrand = (list, brandId) => (list || []).filter(channel => channelBrandId(channel.id) === (brandId || 'farrington-development'))
-  const brandLabel = (brandId) => brandCatalog.brands?.find(brand => brand.id === brandId)?.label || brandId || 'Farrington Development'
+  const brandLabel = (brandId) => brandCatalog.brands?.find(brand => brand.id === brandId)?.label || brandId || 'Your organization'
 
   const load = async () => {
     setLoading(true)
@@ -906,7 +906,7 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
                 }}
                 style={{ ...inputStyle(), minHeight: 52, fontSize: 16 }}
               >
-                <option value="">Farrington Development (in-house)</option>
+                <option value="">Your organization (in-house)</option>
                 {ownerAccounts.filter(a => a.type === 'in-house').map(a => <option key={a.id} value={a.id}>{a.name} — in-house</option>)}
                 {ownerAccounts.filter(a => a.type === 'client').map(a => <option key={a.id} value={a.id}>{a.name} — client</option>)}
               </select>

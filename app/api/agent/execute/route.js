@@ -429,7 +429,7 @@ function signaturePolicyForTemplate(template) {
   return {
     mode: 'both_client_first',
     requiredSigners: ['client', 'farrington'],
-    voiceGuidance: 'This contract should be signed by both parties. The client signs first, then Farrington countersigns.',
+    voiceGuidance: 'This contract should be signed by both parties. The client signs first, then OpenOcti countersigns.',
   }
 }
 
@@ -472,10 +472,10 @@ async function sendAgentSignatureEmail({ to, signerName, title, signUrl }) {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return { ok: false, error: 'RESEND_API_KEY not set' }
   const openEdition = isOpenOcti()
-  const from = process.env.RESEND_FROM || (openEdition ? 'OpenOcti <noreply@openocti.com>' : 'Farrington Development <redacted@example.invalid>')
+  const from = process.env.RESEND_FROM || (openEdition ? 'OpenOcti <noreply@openocti.com>' : 'Your organization <redacted@example.invalid>')
   const fallbackFrom = process.env.RESEND_FALLBACK_FROM || from
   const replyTo = openEdition ? (process.env.OWNER_EMAIL || '') : (process.env.CARL_EMAIL || 'personal@example.invalid')
-  const senderName = openEdition ? (process.env.OPENOCTI_BUSINESS_NAME || 'Your business') : 'Carl Farrington'
+  const senderName = openEdition ? (process.env.OPENOCTI_BUSINESS_NAME || 'Your business') : 'Workspace owner'
   const bodyHtml = `
     <p>Hi ${signerName || 'there'},</p>
     <p>${senderName} has sent you <strong>${title}</strong> for electronic review and signature.</p>
@@ -733,7 +733,7 @@ function createOpenClawPluginSpec(args = {}) {
     templateId: 'openclaw-plugin-spec',
     templateName: 'OpenClaw Plugin Spec',
     clientId: '',
-    clientName: 'Farrington Development',
+    clientName: 'Your organization',
     folder: 'Engineering / OpenClaw',
     body,
     values: { name, purpose },
@@ -955,7 +955,7 @@ function oneOffLegalTemplate(args = {}) {
 
 > Draft business template, not legal advice. Review before use.
 
-This ${mutual ? 'Mutual ' : ''}Non-Disclosure Agreement is entered into as of {{effective_date}} by and between Farrington Development LLC and {{client_business_name}}.
+This ${mutual ? 'Mutual ' : ''}Non-Disclosure Agreement is entered into as of {{effective_date}} by and between Your organization and {{client_business_name}}.
 
 ## 1. Purpose
 The parties wish to discuss {{purpose_of_disclosure}} and may exchange confidential business, technical, financial, operational, customer, marketing, product, or strategic information.
@@ -989,11 +989,11 @@ This agreement is governed by the laws of {{state_of_governing_law}}.
 
 ## Signatures
 
-Farrington Development LLC
+Your organization
 
 Signature: ______________________________
 
-Name: Carl Farrington
+Name: Workspace owner
 
 Date: __________________
 
@@ -1014,13 +1014,13 @@ Date: __________________
 
 > Draft business template, not legal advice. Review before use.
 
-This agreement is entered into as of {{effective_date}} by and between Farrington Development LLC and {{client_business_name}}.
+This agreement is entered into as of {{effective_date}} by and between Your organization and {{client_business_name}}.
 
 ## Purpose
 The parties intend to document the terms for {{purpose_of_disclosure}}.
 
 ## Scope
-Farrington Development LLC will provide the services, deliverables, or consultation described in the attached notes or statement of work.
+Your organization will provide the services, deliverables, or consultation described in the attached notes or statement of work.
 
 ## Responsibilities
 Each party will provide timely information, access, approvals, and cooperation reasonably needed to perform the agreement.
@@ -1042,7 +1042,7 @@ This agreement is governed by the laws of {{state_of_governing_law}}.
 
 ## Signatures
 
-Farrington Development LLC
+Your organization
 
 Signature: ______________________________
 
@@ -1619,7 +1619,7 @@ const TOOLS = {
 
   // Live UI Control
   navigate_to: {
-    description: `Open any Farrington Command Center screen in Carl's live browser. Args: { tabId? or page? or target? }. Always use this for menu navigation. Authoritative menu map:\n${COMMAND_CENTER_MENU_GUIDE}`,
+    description: `Open any OpenOcti screen in Carl's live browser. Args: { tabId? or page? or target? }. Always use this for menu navigation. Authoritative menu map:\n${COMMAND_CENTER_MENU_GUIDE}`,
     run: (args = {}) => {
       const tabId = resolveUiTab(args.tabId || args.page || args.section || args.target || args.name)
       if (!tabId) throw new Error('tabId, page, section, target, or name required')
@@ -2339,7 +2339,7 @@ const TOOLS = {
       const html = wrapEmailBody(marked.parse(doc.body || ''))
       const resend = new Resend(key)
       const r = await resend.emails.send({
-        from: 'Carl Farrington <redacted@example.invalid>',
+        from: 'Workspace owner <redacted@example.invalid>',
         to: [email],
         replyTo: 'personal@example.invalid',
         subject: doc.title,
@@ -2416,7 +2416,7 @@ const TOOLS = {
         requestedAt: now,
         requestedBy: isOpenOcti()
           ? { agentName: args.agentName || args.agent || 'Maggie', name: args.ownerName || 'Workspace owner', email: process.env.OWNER_EMAIL || '' }
-          : { agentName: args.agentName || args.agent || 'Maggie', name: 'Carl Farrington', email: process.env.CARL_EMAIL || 'personal@example.invalid' },
+          : { agentName: args.agentName || args.agent || 'Maggie', name: 'Workspace owner', email: process.env.CARL_EMAIL || 'personal@example.invalid' },
         expiresAt,
         documentHash,
         consentVersion: 'fcc-esign-v1',
@@ -2427,7 +2427,7 @@ const TOOLS = {
           ? {
               required: true,
               status: 'pending_client_signature',
-              signerName: isOpenOcti() ? (args.ownerName || 'Workspace owner') : 'Carl Farrington',
+              signerName: isOpenOcti() ? (args.ownerName || 'Workspace owner') : 'Workspace owner',
               signerEmail: isOpenOcti() ? (process.env.OWNER_EMAIL || '') : (process.env.CARL_EMAIL || 'personal@example.invalid'),
             }
           : { required: false },
@@ -2479,7 +2479,7 @@ const TOOLS = {
         requiredSigners: signaturePolicy.requiredSigners,
         voiceGuidance: signaturePolicy.voiceGuidance,
         nextStep: signaturePolicy.mode === 'both_client_first'
-          ? 'After the client signs, the document should move to Farrington countersignature.'
+          ? 'After the client signs, the document should move to OpenOcti countersignature.'
           : 'After the client signs, the document is complete for this flow.',
         storage: 'Documents module; production persists this record in SQLite kv_store as documents.json.',
         afterSigning: 'The /sign page updates this same document to signed and the Documents PDF action generates the signed copy with its certificate page.',
@@ -3838,7 +3838,7 @@ const TOOLS = {
       // recipient's name and the company name are the only template variables. The actual
       // call topic is passed as a dynamic variable so Doreen can use it in turn 2 naturally.
       const firstName = recipientName ? recipientName.split(/\s+/)[0] : ''
-      const opener = `Hi${firstName ? ' ' + firstName : ''}, this is Doreen at Farrington Development. Carl asked me to give you a quick call. Got a minute?`
+      const opener = `Hi${firstName ? ' ' + firstName : ''}, this is Doreen at Your organization. Carl asked me to give you a quick call. Got a minute?`
 
       const r = await fetch('https://api.elevenlabs.io/v1/convai/twilio/outbound-call', {
         method: 'POST',
@@ -3945,7 +3945,7 @@ const TOOLS = {
     run: () => {
       if (!isOpenOcti()) throw new Error('OpenOcti guide tools are unavailable in this edition')
       const stored = readData('agents.json')?.agents || {}
-      const modelReady = listOpenOctiKeyStatus().some(item => ['anthropic', 'openai', 'gemini', 'openrouter'].includes(item.id) && item.source)
+      const modelReady = listOpenOctiKeyStatus().some(item => ['anthropic', 'openai', 'gemini', 'openrouter', 'orcarouter'].includes(item.id) && item.source)
       return Object.entries(stored).map(([id, agent]) => ({ id: id === 'octi-guide' ? 'octi' : id, name: id === 'octi-guide' ? 'Octi' : agent.name, role: agent.role || agent.title || '', enabled: modelReady && agent.disabled !== true }))
     },
   },

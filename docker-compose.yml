@@ -19,13 +19,19 @@ services:
       OPENCLAW_GATEWAY_TOKEN: "${OPENCLAW_GATEWAY_TOKEN:-}"
       OPENCLAW_API_KEY: "${OPENCLAW_API_KEY:-}"
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+      GITEA_INTERNAL_URL: http://gitea:3000
     ports:
-      - "${OPENOCTI_PORT:-3000}:3000"
+      - "${OPENOCTI_PORT:-127.0.0.1:3000}:3000"
     volumes:
       - openocti-data:/data
     depends_on:
       openclaw:
         condition: service_started
+      gitea:
+        condition: service_started
+    networks:
+      - default
+      - repository
     restart: unless-stopped
 
   openclaw:
@@ -49,6 +55,28 @@ services:
       - "18789"
     restart: unless-stopped
 
+  gitea:
+    image: docker.gitea.com/gitea:1.27.3@sha256:87a67ee09d3ae0d1df5fda5dcda3e2a1f9236a45b0a59025d6e00e46adc43bef
+    environment:
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__database__PATH: /data/gitea/gitea.db
+      GITEA__server__ROOT_URL: ${PUBLIC_APP_URL:-http://localhost:3000}/api/repository/gitea/
+      GITEA__server__DISABLE_SSH: "true"
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__security__REVERSE_PROXY_TRUSTED_PROXIES: "*"
+      GITEA__security__REVERSE_PROXY_LIMIT: "0"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__service__REQUIRE_SIGNIN_VIEW: "true"
+      GITEA__service__ENABLE_REVERSE_PROXY_AUTHENTICATION: "true"
+      GITEA__service__ENABLE_REVERSE_PROXY_AUTO_REGISTRATION: "true"
+      GITEA__service__ENABLE_REVERSE_PROXY_FULL_NAME: "true"
+      GITEA__packages__ENABLED: "false"
+    volumes:
+      - gitea-data:/data
+    networks:
+      - repository
+    restart: unless-stopped
+
   deerflow:
     image: ghcr.io/bytedance/deer-flow@sha256:bd3e961b52095a1cb92762458725c2c49f85a2385b4705b43674d32c9db1fa8a
     profiles:
@@ -61,3 +89,8 @@ services:
 
 volumes:
   openocti-data:
+  gitea-data:
+
+# Only the authenticated app proxy can reach Gitea; no host ports are published.
+networks:
+  repository:

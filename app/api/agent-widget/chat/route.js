@@ -81,7 +81,7 @@ export async function POST(request) {
     agent.description,
     agent.systemPrompt ? `Public receptionist script:\n${agent.systemPrompt}` : '',
     agent.jobDescription ? `Agent configuration notes: ${agent.jobDescription}` : '',
-    'You are embedded on an external website as a Farrington-style concierge agent.',
+    'You are embedded on an external website as a OpenOcti-style concierge agent.',
     'You can answer public-facing questions, qualify interest, collect name/company/email/phone, and suggest a next step.',
     'Do not claim to access private CRM records, credentials, invoices, client files, internal tools, or OpenClaw from this public widget.',
     'If the visitor asks for an internal action, say you can prepare a handoff for Carl rather than claiming the action is complete.',

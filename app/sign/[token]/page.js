@@ -60,7 +60,7 @@ export default function SignaturePage({ params }) {
     <main style={{ minHeight: '100vh', background: '#f4f6f8', color: '#111827', padding: '32px 16px', fontFamily: '-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif' }}>
       <div style={{ maxWidth: 980, margin: '0 auto' }}>
         <header style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 13, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}>Farrington Development</div>
+          <div style={{ fontSize: 13, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}>Your organization</div>
           <h1 style={{ margin: '6px 0 4px', fontSize: 32, lineHeight: 1.1 }}>{document?.title || 'Electronic Signature'}</h1>
           {document?.clientName && <div style={{ color: '#64748b', fontSize: 15 }}>{document.clientName}</div>}
         </header>

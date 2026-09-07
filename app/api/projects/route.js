@@ -12,7 +12,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const IN_HOUSE_ACCOUNT_ID = '__in_house__'
-const IN_HOUSE_LABEL = 'Farrington Development'
+const IN_HOUSE_LABEL = 'Your organization'
 const GITEA_API = 'http://127.0.0.1:3001/api/v1'
 const GITEA_AUTH_HEADER = '/srv/openocti/.config/fcc/gitea-auth-header'
 const PROTECTED_FOLDERS = new Set(['farrington-command-center', 'farrington-command-center-preview', 'farrington-command-center-ship'])
@@ -154,7 +154,7 @@ export async function POST(request) {
 
   if (body.action === 'add') {
     const project = normalizeProject(body.project, body)
-    if (!project.isInternal && !project.accountId) return NextResponse.json({ error: 'accountId or Farrington Development owner required' }, { status: 400 })
+    if (!project.isInternal && !project.accountId) return NextResponse.json({ error: 'accountId or Your organization owner required' }, { status: 400 })
     if (project.accountId && !accountExists(project.accountId)) return NextResponse.json({ error: 'account not found' }, { status: 404 })
     const rec = create('projects', {
       name: '',

@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildFeatureManifest } from '../lib/feature-manifest'
+import { POST as createConferenceRoom } from '../app/api/video/create-room/route'
 import {
   effectiveProviderEnv,
   listOpenOctiKeyStatus,
@@ -28,6 +29,8 @@ function testEnv(extra = {}) {
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
   for (const directory of temporaryDirs.splice(0)) fs.rmSync(directory, { recursive: true, force: true })
 })
 
@@ -106,14 +109,38 @@ describe('OpenOcti encrypted provider keys', () => {
     expect(resolveProviderKey('openai', env)).toMatchObject({ key: 'environment-fallback-value', source: 'env' })
   })
 
-  it.each(['anthropic', 'openai', 'gemini', 'openrouter', 'elevenlabs'])('validates %s with a read-only request', async provider => {
+  it.each(['anthropic', 'openai', 'gemini', 'openrouter', 'elevenlabs', 'daily'])('validates %s with a read-only request', async provider => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }))
     await expect(validateOpenOctiProviderKey(provider, 'test-provider-value', { fetchImpl })).resolves.toEqual({ ok: true, provider })
     expect(fetchImpl).toHaveBeenCalledOnce()
     expect(fetchImpl.mock.calls[0][1].method).toBe('GET')
   })
 
-  it('writes the provider block and agent model for OpenClaw file-watch reload', () => {
+  it('activates conferences from an encrypted Daily key without a separate subdomain setting', async () => {
+    const env = testEnv({ DAILY_API_KEY: '', DAILY_SUBDOMAIN: '', NEXT_PUBLIC_DAILY_SUBDOMAIN: '' })
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value)
+    const key = 'synthetic-daily-integration-test-key'
+    const testProvider = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+    await validateOpenOctiProviderKey('daily', key, { fetchImpl: testProvider })
+    expect(testProvider.mock.calls[0][0]).toBe('https://api.daily.co/v1/rooms?limit=1')
+    expect(testProvider.mock.calls[0][1].headers.Authorization).toBe(`Bearer ${key}`)
+    storeOpenOctiProviderKey('daily', key, env)
+    expect(fs.readFileSync(openOctiKeyStorePath(env), 'utf8')).not.toContain(key)
+    const status = buildFeatureManifest(env, { providerStatuses: listOpenOctiKeyStatus(env) }).capabilities.find(item => item.id === 'daily')
+    expect(status).toMatchObject({ status: 'configured', source: 'app', missing: [], needs: ['DAILY_API_KEY'] })
+    const provider = vi.fn().mockResolvedValue(new Response(JSON.stringify({ name: 'demo', url: 'https://public-demo.daily.co/demo' }), { status: 200 }))
+    vi.stubGlobal('fetch', provider)
+    const response = await createConferenceRoom(new Request('http://localhost/api/video/create-room', { method: 'POST', body: JSON.stringify({ seed: 'demo' }) }))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ ok: true, url: 'https://public-demo.daily.co/demo' })
+    expect(provider.mock.calls[0][1].headers.Authorization).toBe(`Bearer ${key}`)
+    removeOpenOctiProviderKey('daily', env)
+    provider.mockClear()
+    expect((await createConferenceRoom(new Request('http://localhost/api/video/create-room', { method: 'POST', body: '{}' }))).status).toBe(503)
+    expect(provider).not.toHaveBeenCalled()
+  })
+
+  it('writes provider models and restarts the pinned gateway automatically to refresh agent registries', () => {
     const env = testEnv()
     const configPath = path.join(env.CRM_DATA_DIR, 'openclaw.json')
     env.OPENCLAW_CONFIG_PATH = configPath
@@ -125,12 +152,13 @@ describe('OpenOcti encrypted provider keys', () => {
 
     expect(syncOpenOctiKeysToOpenClaw(env)).toMatchObject({
       updated: true,
-      reload: 'automatic-file-watch',
+      reload: 'automatic-gateway-restart',
       provider: 'anthropic',
       agents: ['main', 'coding'],
     })
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
     expect(config.models.providers.custom).toEqual({ api: 'custom' })
+    expect(config.gateway.reload.mode).toBe('restart')
     expect(config.models.providers.anthropic).toMatchObject({
       api: 'anthropic-messages',
       baseUrl: 'https://api.anthropic.com',

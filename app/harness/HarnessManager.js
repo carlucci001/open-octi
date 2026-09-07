@@ -191,7 +191,7 @@ export default function HarnessManager() {
   const [chatError, setChatError] = useState('')
   const chatRef = useRef(null)
 
-  const [compareTask, setCompareTask] = useState('Sasha, dry-run a 9:16 product reel concept for Farrington Development. Include the intended tool call JSON and the media-library folder.')
+  const [compareTask, setCompareTask] = useState('Sasha, dry-run a 9:16 product reel concept for Your organization. Include the intended tool call JSON and the media-library folder.')
   const [compareMode, setCompareMode] = useState('dry-run')
   const [compareOpenClaw, setCompareOpenClaw] = useState(true)
   const [compareHermes, setCompareHermes] = useState(true)
@@ -206,7 +206,7 @@ export default function HarnessManager() {
   const [actionBusy, setActionBusy] = useState(false)
   const [actionResult, setActionResult] = useState(null)
   const [actionError, setActionError] = useState('')
-  const [sampleLead, setSampleLead] = useState('{"businessName":"Farrington Development sample lead","contact":"Owner","website":"","phone":"","address":"City, ST NC","notes":"Test the lead research action contract."}')
+  const [sampleLead, setSampleLead] = useState('{"businessName":"Your organization sample lead","contact":"Owner","website":"","phone":"","address":"City, ST NC","notes":"Test the lead research action contract."}')
 
   const [terminalInput, setTerminalInput] = useState('status')
   const [terminalBusy, setTerminalBusy] = useState(false)

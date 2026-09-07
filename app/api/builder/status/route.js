@@ -22,7 +22,7 @@ export async function GET(request) {
       cache: 'no-store',
       redirect: 'manual',
       signal: controller.signal,
-      headers: { 'user-agent': 'Farrington-Command-Center/Builder-Health' },
+      headers: { 'user-agent': 'OpenOcti-Command-Center/Builder-Health' },
     })
     return NextResponse.json({
       ok: true,
