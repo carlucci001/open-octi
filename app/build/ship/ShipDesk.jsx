@@ -5,6 +5,7 @@ import { Copy, Edit3, FileText, Github, GitCommitHorizontal, RefreshCw, Rocket, 
 import PageHeader from '../../components/PageHeader'
 import ItemActionsMenu from '../../components/ItemActionsMenu'
 import ViewModeToggle from '../../components/ViewModeToggle'
+import { isOpenOcti } from '@/lib/edition'
 
 const VIEW_KEY = 'fcc:ship-desk-view'
 
@@ -37,6 +38,15 @@ function whatChanged(platform, release) {
 }
 
 export default function ShipDesk() {
+  if (isOpenOcti()) return <section role="status" className="m-6 p-5 rounded-xl" style={{ border: '1px solid var(--border)', color: 'var(--text)' }}>
+    <h1 className="text-xl font-semibold">Ship Desk</h1>
+    <p className="mt-3 text-sm">Platform release monitoring is not included in this OpenOcti build. Its platform registry and release-feed connection are not packaged, so there is no release history to display here.</p>
+    <a href="/?tab=repository" className="inline-block mt-3 text-sm underline" style={{ color: 'var(--accent)' }}>Open the repository console</a>
+  </section>
+  return <ConnectedShipDesk />
+}
+
+function ConnectedShipDesk() {
   const [snapshot, setSnapshot] = useState({ platforms: [], pollIntervalMs: 60_000 })
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')

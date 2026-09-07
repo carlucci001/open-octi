@@ -5,6 +5,7 @@
 .tmp
 node_modules
 .next
+*.tsbuildinfo
 out
 output
 remotion

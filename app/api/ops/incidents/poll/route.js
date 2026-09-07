@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { isOpenOcti } from '@/lib/edition'
 import { pollIncidentSources } from '@/lib/incident-poller'
 
 export const runtime = 'nodejs'
@@ -19,6 +20,7 @@ function authorized(request) {
 export async function POST(request) {
   const auth = authorized(request)
   if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status })
+  if (isOpenOcti()) return NextResponse.json({ ok: false, error: 'capability_unavailable', capability: 'platform-incidents', message: 'Live platform monitoring is not included in this OpenOcti build.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   try {
     const result = await pollIncidentSources()
     return NextResponse.json({ ok: true, generatedAt: result.generatedAt, platforms: result.platforms, incidentCount: result.incidents.length }, { headers: { 'Cache-Control': 'no-store' } })

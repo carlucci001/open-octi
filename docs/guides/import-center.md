@@ -1,6 +1,6 @@
 # Import contacts and CRM data
 
-Open **Settings → Import Center** or go directly to `/settings/import`.
+Open **System → Import & migrate** or go directly to `/settings/import`.
 
 1. Choose the target record type and upload a CSV, XLSX, or vCard file.
 2. Review the preview and map each source column to an OpenOcti field. Saved presets can reuse a mapping on later imports.

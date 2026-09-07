@@ -1,6 +1,34 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { buildFeatureManifest, capabilityStatus, capabilityForPath, requireCapability, requiredCapabilityReport } from '../lib/feature-manifest'
+import { commandCenterSectionsFor } from '../lib/commandCenterNavigation'
+
+describe('OpenOcti administration navigation', () => {
+  it('resolves old route names and voice requests to the Admin label', async () => {
+    vi.stubEnv('FCC_EDITION', 'openocti')
+    vi.resetModules()
+    try {
+      const { resolveCommandCenterTab, labelForCommandCenterTab } = await import('../lib/commandCenterNavigation')
+      for (const alias of ['control-services', 'control services', 'admin', 'settings']) {
+        expect(resolveCommandCenterTab(alias)).toBe('settings')
+        expect(labelForCommandCenterTab(alias)).toBe('System > Admin')
+      }
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+
+  it('keeps one Admin screen while retaining legacy service navigation aliases', () => {
+    const sections = commandCenterSectionsFor({ FCC_EDITION: 'openocti' })
+    expect(sections.filter(section => ['settings', 'control-services'].includes(section.id))).toHaveLength(1)
+    expect(sections.find(section => section.id === 'settings')).toMatchObject({
+      label: 'System > Admin',
+      aliases: expect.arrayContaining(['admin', 'control-services', 'control services', 'service catalog']),
+    })
+    expect(commandCenterSectionsFor({ FCC_EDITION: 'commandcenter' }).some(section => section.id === 'control-services')).toBe(true)
+  })
+})
 
 describe('external capability manifest', () => {
   it('boots with only the required CRM session secret and reports providers as not configured', () => {
@@ -34,7 +62,11 @@ describe('external capability manifest', () => {
       for (const need of capability.needs) {
         const link = capability.settings.find(item => item.need === need)
         expect(link, `${capability.id}:${need}`).toBeTruthy()
-        expect(link.href, `${capability.id}:${need}`).toMatch(/^\/settings(?:\/models)?#[-a-z0-9]+$/)
+        if (['STRIPE_SECRET_KEY', 'NEXT_PUBLIC_STRIPE_PK'].includes(need)) {
+          expect(link.href).toBe('/?tab=settings&settings=stripe')
+        } else {
+          expect(link.href, `${capability.id}:${need}`).toMatch(/^\/settings(?:\/models)?#[-a-z0-9]+$/)
+        }
       }
     }
   })

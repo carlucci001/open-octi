@@ -1,6 +1,6 @@
 # Connection monitoring
 
-Settings → Monitoring shows the latest application, Cloudflare zone, and Nylas mailbox checks, plus recent history. Owners and administrators can run a check. Missing optional providers appear as **not configured**; a missing required connection fails the installation check. An installation with no completed checks is not reported healthy.
+Admin → Monitoring shows the latest application, Cloudflare zone, and Nylas mailbox checks, plus recent history. Owners and administrators can run a check. Missing optional providers appear as **not configured**; a missing required connection fails the installation check. An installation with no completed checks is not reported healthy.
 
 Set `PUBLIC_APP_URL` for the application check. Optional Cloudflare checks use `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ZONE_ID`; Nylas checks use `NYLAS_API_KEY` and `NYLAS_GRANT_ID`. EU Nylas accounts can set the adapter's `config.apiBaseUrl` to `https://api.eu.nylas.com`.
 

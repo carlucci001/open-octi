@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
+import { isOpenOcti } from '@/lib/edition'
 import {
   AlertTriangle,
   CheckCircle2,
@@ -398,7 +399,16 @@ function ClientSubscriptions({
   )
 }
 
-export default function StripeCatalogSyncPanel({ onToast, mode = 'all', view = 'grid', onViewChange }) {
+export default function StripeCatalogSyncPanel(props) {
+  if (isOpenOcti()) return <section role="status" className="rounded-xl p-5" style={{ border: '1px solid var(--border)' }}>
+    <h3 className="font-semibold">Stripe products and subscriptions</h3>
+    <p className="text-sm mt-2">Create products, prices, payment links, and customer subscriptions in your Stripe Dashboard. Automatic catalog and subscription synchronization is not included in this OpenOcti build.</p>
+    <a href="/?tab=settings&settings=stripe" className="inline-block mt-3 text-sm underline" style={{ color: 'var(--accent)' }}>Open Stripe setup and billing guide</a>
+  </section>
+  return <ConnectedStripeCatalogSyncPanel {...props} />
+}
+
+function ConnectedStripeCatalogSyncPanel({ onToast, mode = 'all', view = 'grid', onViewChange }) {
   const [preview, setPreview] = useState(null)
   const [loading, setLoading] = useState(false)
   const [applying, setApplying] = useState(false)

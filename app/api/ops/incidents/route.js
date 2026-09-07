@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isOpenOcti } from '@/lib/edition'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
 import { findById } from '@/lib/entityStore'
 import { createIncidentTask, listIncidents, readIncidentStatusState, updateIncidentAction } from '@/lib/incidents'
@@ -14,6 +15,11 @@ function json(body, status = 200) {
 export async function GET(request) {
   const { error } = await requireCrmRead(request)
   if (error) return error
+  if (isOpenOcti()) return json({
+    generatedAt: null, pollIntervalMs: 60_000, platforms: [], incidents: listIncidents(),
+    telemetryAvailable: false,
+    warning: 'Showing saved incidents from this installation. Live platform monitoring is not included in this OpenOcti build.',
+  })
   try {
     return json(await pollIncidentSources())
   } catch (pollError) {

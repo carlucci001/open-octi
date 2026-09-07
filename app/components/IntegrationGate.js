@@ -77,7 +77,7 @@ export default function IntegrationGate({ capability, title, description, childr
           )
         })}
       </div>
-      <Link href="/?tab=settings&settings=integrations" className="mt-4 inline-block text-sm font-semibold underline">Settings → Integrations</Link>
+      <Link href="/?tab=settings&settings=integrations" className="mt-4 inline-block text-sm font-semibold underline">{isOpenOcti() ? 'Admin' : 'Settings'} → Integrations</Link>
     </section>
   )
 }

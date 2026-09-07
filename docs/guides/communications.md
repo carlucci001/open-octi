@@ -13,7 +13,7 @@ Communications combines the activity timeline, phone dialer, video launch contro
 
 ## Enable it
 
-Open Communications and choose **Activity**, **Phone**, **Video**, **Messages**, or **Email**. Configure the corresponding provider in Settings, refresh its status, select a contact, and test with a non-customer destination first.
+Open Communications and choose **Activity**, **Phone**, **Video**, **Messages**, or **Email**. Configure the corresponding provider in Admin, refresh its status, select a contact, and test with a non-customer destination first.
 
 ## What it needs
 

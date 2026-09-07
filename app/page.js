@@ -17,6 +17,8 @@ import ChatPanel from './components/ChatPanel'
 import CommandPalette, { CommandPaletteTrigger } from './components/CommandPalette'
 import OperatorPromptBar from './components/OperatorPromptBar'
 import OperatorContextRail from './components/OperatorContextRail'
+import WorkspaceLayoutSettings from './components/WorkspaceLayoutSettings'
+import { useWorkspaceLayout } from '@/lib/use-workspace-layout'
 import Calendar from './calendar/Calendar'
 import ProjectsManager from './projects/ProjectsManager'
 import TasksManager from './tasks/TasksManager'
@@ -64,7 +66,7 @@ import { canUseTab } from '@/lib/roles'
 import { Activity, Bot, Boxes, BrainCircuit, Cable, CircleDollarSign, Database, FlaskConical, Hammer, KeyRound, LifeBuoy, Megaphone, Mic2, Newspaper, Package, PhoneCall, Radio, Server, Settings2, ShieldAlert, Wrench } from 'lucide-react'
 
 const APP_BUILD_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 10) || '2026.06.11-api-lab-mobile'
-const PRODUCT_VERSION = isOpenOcti() ? '1.2.2' : '2.1'
+const PRODUCT_VERSION = isOpenOcti() ? '1.2.3' : '2.1'
 // Build stamp baked in by next.config.js at build time. Shown in the sidebar
 // footer so the running build is confirmable at a glance — no deploy logs.
 const BUILD_NUMBER = process.env.NEXT_PUBLIC_FCC_BUILD_NUMBER || ''
@@ -613,7 +615,7 @@ const SECTION_BY_ID = (() => {
   }
   m['settings'] = { id: 'settings', label: 'Admin', icon: <Server size={16} strokeWidth={2.25} /> }
   m['migrate'] = { id: 'migrate', label: 'Import & migrate', icon: <Database size={16} strokeWidth={2.25} /> }
-  m['control-services'] = { id: 'control-services', label: 'Control Services', icon: <Server size={16} strokeWidth={2.25} /> }
+  if (!OPENOCTI) m['control-services'] = { id: 'control-services', label: 'Control Services', icon: <Server size={16} strokeWidth={2.25} /> }
   return m
 })()
 
@@ -627,7 +629,7 @@ const WORKSPACES = [
   { id: 'sell', label: 'Sell', ids: ['dashboard', 'leads', 'press-desk', 'pipelines', 'accounts', 'support', 'contacts', 'finance'] },
   { id: 'build', label: 'Build', ids: ['agents', 'platforms', 'automations', 'builder', 'campaign-studio', 'social', 'products', 'repository', 'ship-desk', 'build-board', 'switchboard', 'labs'] },
   { id: 'projects', label: 'Projects', ids: ['projects', 'tasks', 'documents', 'research', 'content-lab', 'media', 'notes', 'phone', 'conference', 'calendar', 'meeting-capture', 'feed'] },
-  { id: 'system', label: 'System', ids: ['incident-inbox', 'money-console', 'network', 'domains', 'credentials', 'migrate', 'control-services', ...(OPENOCTI ? ['settings'] : [])] },
+  { id: 'system', label: 'System', ids: ['incident-inbox', 'money-console', 'network', 'domains', 'credentials', 'migrate', ...(OPENOCTI ? ['settings'] : ['control-services'])] },
 ].map(workspace => ({
   ...workspace,
   ids: OPENOCTI ? workspace.ids.filter(id => !OPENOCTI_CLOSED_TABS.has(id)) : workspace.ids,
@@ -663,11 +665,14 @@ const VALID_TABS = new Set([
 
 const FINANCE_SUBS = new Set(['overview', 'overhead', 'payments', 'invoices', 'privacy', 'api-spend'])
 const FULL_BLEED_TABS = new Set(['notes', 'repository', 'media', 'content-lab', 'social'])
-const SHOW_OPERATOR_PROMPT_BAR = true
-const HIDE_OPERATOR_RIGHT_RAIL = !OPENOCTI
+// OpenOcti uses the existing header dropdown for agent and command controls.
+// Old browser preferences must not restore the duplicate legacy surfaces.
+const SHOW_OPERATOR_PROMPT_BAR = !OPENOCTI
+const HIDE_OPERATOR_RIGHT_RAIL = true
 
 // Map old tab IDs to new ones so localStorage doesn't break
 const TAB_MIGRATION = {
+  ...(OPENOCTI ? { 'control-services': 'settings', admin: 'settings' } : {}),
   // Old tabs → new canonical IDs
   'migration-center': 'migrate',
   'crm': 'leads',
@@ -1109,6 +1114,7 @@ function UserAvatarMenu({ user, isAdmin, isOwner, theme, onThemeChange, networkM
                 <small>Build</small>
               </span>
             </div>
+            {OPENOCTI && ['command', 'codex', 'codex-blue'].includes(theme) && <WorkspaceLayoutSettings />}
             {!OPENOCTI && isAdmin && <PortalHeaderLink menuItem />}
             <div className="avatar-menu-divider" />
             <AvatarMenuItem icon={<MenuIcon type="logout" />} label="Log out" detail={`End this ${EDITION_BRAND.editionName} session`} onClick={logout} />
@@ -1216,6 +1222,8 @@ function MobileAccountDrawer({ user, isAdmin, theme, onThemeChange, networkMode,
       </div>
 
       <div className="mobile-menu-separator" />
+
+      {OPENOCTI && ['command', 'codex', 'codex-blue'].includes(theme) && <WorkspaceLayoutSettings />}
 
       <div className="mobile-workspace-row" aria-label="Workspaces">
         {WORKSPACES.map(w => {
@@ -1418,7 +1426,11 @@ export default function Page() {
   const [theme, setTheme] = useState('command')
   const [sidebarCompact, setSidebarCompact] = useState(false)
   const [rightRailCollapsed, setRightRailCollapsed] = useState(false)
+  const { layout: optionalWorkspaceLayout, updateLayout: updateWorkspaceLayout } = useWorkspaceLayout()
   const [promptBarHidden, setPromptBarHidden] = useState(false)
+  useEffect(() => {
+    if (OPENOCTI && optionalWorkspaceLayout.rightSidebar) setRightRailCollapsed(false)
+  }, [optionalWorkspaceLayout.rightSidebar])
   // Social link reveals the Postiz sub-nav as a sliding drawer; closes on pick.
   const [socialDrawerOpen, setSocialDrawerOpen] = useState(false)
   const [operatorContext, setOperatorContext] = useState({})
@@ -2157,6 +2169,8 @@ export default function Page() {
   }
 
   const operatorMode = ['command', 'codex', 'codex-blue'].includes(theme)
+  const rightRailVisible = OPENOCTI ? optionalWorkspaceLayout.rightSidebar : !HIDE_OPERATOR_RIGHT_RAIL
+  const promptBarEnabled = OPENOCTI ? optionalWorkspaceLayout.bottomBar : SHOW_OPERATOR_PROMPT_BAR
 
   const renderNavItem = (item) => {
     const active = isActive(item)
@@ -2292,11 +2306,11 @@ export default function Page() {
 
   return (
     <div
-      className={`flex flex-col h-screen overflow-hidden relative ${operatorMode ? 'operator-workspace' : ''} ${sidebarCompact ? 'sidebar-compact' : ''} ${rightRailCollapsed ? 'right-rail-compact' : ''}`}
+      className={`flex flex-col h-screen overflow-hidden relative ${OPENOCTI ? 'openocti-workspace' : ''} ${OPENOCTI && !promptBarEnabled ? 'without-command-bar' : ''} ${operatorMode ? 'operator-workspace' : ''} ${sidebarCompact ? 'sidebar-compact' : ''} ${rightRailCollapsed ? 'right-rail-compact' : ''}`}
       style={{
         background: 'var(--base)',
         '--fcc-left-sidebar-width': sidebarCompact ? '76px' : '224px',
-        '--fcc-right-sidebar-width': operatorMode && !HIDE_OPERATOR_RIGHT_RAIL
+        '--fcc-right-sidebar-width': operatorMode && rightRailVisible
           ? (rightRailCollapsed ? 'var(--operator-right-rail-compact-width)' : 'var(--operator-right-rail-width)')
           : '0px',
       }}
@@ -2491,7 +2505,7 @@ export default function Page() {
       <div
         className="operator-content-row"
         style={operatorMode ? {
-          '--operator-right-rail-active-width': HIDE_OPERATOR_RIGHT_RAIL
+          '--operator-right-rail-active-width': !rightRailVisible
             ? '0px'
             : rightRailCollapsed
             ? 'var(--operator-right-rail-compact-width)'
@@ -2555,7 +2569,7 @@ export default function Page() {
           {tab === 'harness' && isAdmin && <HarnessManager />}
           {tab === 'network' && isAdmin && <NetworkManager />}
           {tab === 'settings' && isAdmin && <SettingsManager initialSub="control-services" />}
-          {tab === 'control-services' && isAdmin && <SettingsManager initialSub="control-services" />}
+          {!OPENOCTI && tab === 'control-services' && isAdmin && <SettingsManager initialSub="control-services" />}
           {tab === 'my-account' && <MyAccount onSaved={setUser} />}
           {tab === 'voice-guide' && <VoiceGuide />}
           {tab === 'agents' && <AgentsManager />}
@@ -2580,18 +2594,19 @@ export default function Page() {
           {tab === 'outreach-campaigns' && <SponsorCRM onNavigate={handleNavTo} activeLifecycleTab={tab} />}
         </div>
       </main>
-      {operatorMode && !HIDE_OPERATOR_RIGHT_RAIL && (
+      {operatorMode && rightRailVisible && (
         <OperatorContextRail
           activeTab={tab}
           operatorContext={operatorContext}
           collapsed={rightRailCollapsed}
-          promptHidden={promptBarHidden}
+          promptHidden={OPENOCTI ? !promptBarEnabled : promptBarHidden}
           onToggle={() => {
             const next = !rightRailCollapsed
             setRightRailCollapsed(next)
             localStorage.setItem('fcc-right-rail-collapsed', next ? '1' : '0')
           }}
           onShowPrompt={() => {
+            if (OPENOCTI) updateWorkspaceLayout('bottomBar', true)
             setPromptBarHidden(false)
             localStorage.setItem('fcc-operator-prompt-hidden', '0')
           }}
@@ -2600,13 +2615,14 @@ export default function Page() {
       </div>
       </div>
       </div>
-      {SHOW_OPERATOR_PROMPT_BAR && operatorMode && (
+      {promptBarEnabled && operatorMode && (
         <OperatorPromptBar
           activeTab={tab}
           operatorContext={operatorContext}
           rightRailCollapsed={rightRailCollapsed}
-          hidden={promptBarHidden || tab === 'media' || tab === 'content-lab'}
+          hidden={(!OPENOCTI && promptBarHidden) || tab === 'media' || tab === 'content-lab'}
           onHide={() => {
+            if (OPENOCTI) updateWorkspaceLayout('bottomBar', false)
             setPromptBarHidden(true)
             localStorage.setItem('fcc-operator-prompt-hidden', '1')
           }}

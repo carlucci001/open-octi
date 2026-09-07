@@ -4,6 +4,7 @@ import { OPENOCTI_MODEL_PROVIDERS, resolveProviderKey } from '@/lib/openocti-key
 import { capabilityStatus } from '@/lib/feature-manifest'
 import { testIntegrationConnection } from '@/lib/integration-probes'
 import { recordIntegrationTest } from '@/lib/integration-test-status'
+import { stripeConfigurationEnv } from '@/lib/stripe-configuration'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,7 @@ export async function POST(request) {
 
   const { capability } = await request.json().catch(() => ({}))
   if (!capability) return NextResponse.json({ ok: false, error: 'capability_required' }, { status: 400 })
-  const env = { ...process.env }
+  const env = { ...stripeConfigurationEnv() }
   for (const provider of OPENOCTI_MODEL_PROVIDERS) {
     const resolved = resolveProviderKey(provider.id, env)
     if (resolved.key) env[provider.envKeys[0]] = resolved.key

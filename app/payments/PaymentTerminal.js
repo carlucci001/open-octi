@@ -1,7 +1,6 @@
 'use client'
 import ThemedSelect from '../components/ThemedSelect'
 import { useState, useEffect, useMemo } from 'react'
-import { loadStripe } from '@stripe/stripe-js'
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import PageHeader from '../components/PageHeader'
 import BulkActionsMenu from '../components/BulkActionsMenu'
@@ -9,6 +8,7 @@ import ItemActionsMenu from '../components/ItemActionsMenu'
 import { isOpenOcti } from '@/lib/edition'
 import { OpenOctiConfigurationLinks } from '../components/OpenOctiConfigurationNotice'
 import IntegrationGate from '../components/IntegrationGate'
+import { useStripeClient } from '@/lib/use-stripe-client'
 
 function api(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()) }
 function logPaymentTerminalStage(stage, extra = {}) {
@@ -334,11 +334,8 @@ export default function PaymentTerminal() {
 }
 
 function PaymentTerminalContent() {
-  const stripePromise = useMemo(() => {
-    const pk = process.env.NEXT_PUBLIC_STRIPE_PK
-    if (!pk) return null
-    return loadStripe(pk)
-  }, [])
+  const { stripePromise, loading } = useStripeClient()
+  if (loading) return <p role="status" className="p-5">Loading payment connection…</p>
 
   if (!stripePromise) {
     return (

@@ -1,10 +1,10 @@
 'use client'
+import { isOpenOcti } from '@/lib/edition'
 
 import { useEffect, useMemo, useState } from 'react'
 import { CircleDollarSign, MailPlus, PauseCircle, RefreshCw, Save } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { FinanceCsvExportButton } from '../../finance/FinanceImportButton'
-import { PlatformActionConfirmDialog } from '../../platforms/PlatformAdminWorkspace'
 
 function money(value, currency = 'USD') {
   if (value === 'unknown') return 'unknown'
@@ -34,6 +34,18 @@ function handoffPayload(candidate, template) {
 }
 
 export default function MoneyConsole() {
+  if (isOpenOcti()) return <section role="status" className="m-6 rounded-xl p-5" style={{ border: '1px solid var(--border)', color: 'var(--text)' }}>
+    <h1 className="text-xl font-semibold">Money Console</h1>
+    <p className="mt-3 text-sm">Portfolio revenue monitoring is not included in this OpenOcti build. Its platform connections are not packaged, so revenue, subscription movement, and failed-payment totals are unavailable here.</p>
+    <p className="mt-3 text-sm">You can manage this installation's invoices, payments, and finance records in Finance. Connect your Stripe account in Admin to enable payment collection.</p>
+    <div className="mt-3 flex flex-wrap gap-4 text-sm underline" style={{ color: 'var(--accent)' }}>
+      <a href="/?tab=finance">Open Finance</a><a href="/?tab=settings&settings=stripe">Set up Stripe</a>
+    </div>
+  </section>
+  return <ConnectedMoneyConsole />
+}
+
+function ConnectedMoneyConsole() {
   const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7))
   const [snapshot, setSnapshot] = useState(null)
   const [settings, setSettings] = useState({ dunningProposalDays: 7 })

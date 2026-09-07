@@ -15,15 +15,17 @@ import { isOpenOcti } from '@/lib/edition'
 import OpenOctiModelsSettings from './OpenOctiModelsSettings'
 import IntegrationsSettings from './IntegrationsSettings'
 import MonitoringSettings from './MonitoringSettings'
+import StripeSettings from './StripeSettings'
 
 const OPENOCTI = isOpenOcti()
 
 const SUB_TABS = [
   ...(OPENOCTI ? [{ id: 'models', label: 'Models & Keys' }] : []),
+  ...(OPENOCTI ? [{ id: 'stripe', label: 'Stripe' }] : []),
   { id: 'integrations', label: 'Integrations' },
   { id: 'monitoring', label: 'Monitoring' },
   { id: 'components', label: 'Screens' },
-  { id: 'control-services', label: 'Control Services' },
+  { id: 'control-services', label: OPENOCTI ? 'Services' : 'Control Services' },
   { id: 'users', label: 'Users' },
   { id: 'roles', label: 'Roles' },
   { id: 'voice', label: 'Voice' },
@@ -35,7 +37,7 @@ const SUB_TABS = [
 export default function SettingsManager({ initialSub = 'control-services' }) {
   const [sub, setSub] = useState(initialSub)
   const [me, setMe] = useState(null)
-  const visibleTabs = SUB_TABS.filter(t => !['ai-keys', 'security-log'].includes(t.id) || me?.role === 'owner')
+  const visibleTabs = SUB_TABS.filter(t => !['ai-keys', 'security-log', 'stripe'].includes(t.id) || me?.role === 'owner')
 
   const change = (id) => {
     setSub(id)
@@ -61,7 +63,7 @@ export default function SettingsManager({ initialSub = 'control-services' }) {
   }, [initialSub])
 
   useEffect(() => {
-    if (['ai-keys', 'security-log'].includes(sub) && me && me.role !== 'owner') change('voice')
+    if (['ai-keys', 'security-log', 'stripe'].includes(sub) && me && me.role !== 'owner') change('voice')
   }, [sub, me])
 
   const isControlServices = sub === 'control-services'
@@ -71,12 +73,12 @@ export default function SettingsManager({ initialSub = 'control-services' }) {
     <div className="command-workspace p-6">
       <PageHeader
         icon={<ShieldCheck size={22} />}
-        title={isComponents ? 'Screen Settings' : isControlServices ? 'Control Services' : 'System Admin'}
+        title={OPENOCTI ? 'Admin' : isComponents ? 'Screen Settings' : isControlServices ? 'Control Services' : 'System Admin'}
         subtitle={isComponents
           ? 'Configure every screen from one place — defaults, layouts, metrics, and per-brand or per-campaign overrides.'
           : isControlServices
-          ? 'CRUD service specs, pricing, delivery controls, approval gates, safeguards, and operator runbooks.'
-          : 'Users, roles, voice, providers, inbound channels, control services, and security.'}
+          ? 'Manage service specs, pricing, delivery controls, approval gates, safeguards, and operator runbooks.'
+          : 'Users, roles, voice, providers, inbound channels, services, and security.'}
         actions={<DemoModeSwitch />}
       />
 
@@ -111,6 +113,7 @@ export default function SettingsManager({ initialSub = 'control-services' }) {
       {sub === 'components' && <ComponentSettingsHub />}
       {sub === 'integrations' && <IntegrationsSettings />}
       {sub === 'monitoring' && <MonitoringSettings />}
+      {sub === 'stripe' && OPENOCTI && me?.role === 'owner' && <StripeSettings />}
       {sub === 'models' && me && ['owner', 'admin'].includes(me.role) && <OpenOctiModelsSettings />}
       {sub === 'voice' && <VoiceSettings />}
       {sub === 'ai-keys' && me?.role === 'owner' && <AIKeysSettings />}

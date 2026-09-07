@@ -9,6 +9,7 @@ import { OPENAI_REALTIME_TOOLS } from '@/lib/realtime-voice-tools'
 import { buildAgentHandoffPayload } from '@/lib/agent-handoff'
 import { buildWakeStartOptions } from '@/lib/voiceWakeStart'
 import { createRealtimeSessionScope, realtimeGreeting } from '@/lib/realtime-session-scope'
+import { createStreamAudioMeter, playRealtimeAudio } from '@/lib/realtime-audio'
 import { appendVoiceTranscriptChunk, isVoiceEndIntent } from '@/lib/voice-end-intent'
 import { parseCrmActionArgs, rankCrmCapabilities } from '@/lib/crm-operator-tools'
 import { clientCapabilityStatus } from '@/lib/client-capabilities'
@@ -1409,11 +1410,18 @@ function VoiceButton({ activeContext, activeSection }) {
   const startInFlightRef = useRef(false)
   const voiceStartGuardRef = useRef({ key: '', at: 0 })
   const [openAiStatus, setOpenAiStatus] = useState('idle')
+  const [openAiSpeaking, setOpenAiSpeaking] = useState(false)
+  const [audioPlaybackBlocked, setAudioPlaybackBlocked] = useState(false)
   const [labLiveStatus, setLabLiveStatus] = useState('idle')
 
   const endOpenAiSession = useCallback(() => {
     const s = openAiRef.current
     s.scope?.retire()
+    s.inputMeter?.close()
+    s.outputMeter?.close()
+    clearTimeout(s.greetingTimer)
+    setOpenAiSpeaking(false)
+    setAudioPlaybackBlocked(false)
     if (s.dc) { s.dc.onopen = null; s.dc.onclose = null; s.dc.onerror = null; s.dc.onmessage = null }
     if (s.pc) { s.pc.ontrack = null; s.pc.onconnectionstatechange = null }
     logRealtimeVoiceUsage(s, 'OpenAI Realtime stopped')
@@ -1595,10 +1603,14 @@ function VoiceButton({ activeContext, activeSection }) {
   const isOpenAiActive = openAiStatus === 'connected'
   const isLabLiveActive = labLiveStatus !== 'idle'
   const isActive = isElevenActive || isOpenAiActive || isLabLiveActive
-  const isSpeaking = isElevenActive ? conversation.isSpeaking : labLiveStatus === 'speaking'
+  const isSpeaking = isElevenActive ? conversation.isSpeaking : isOpenAiActive ? openAiSpeaking : labLiveStatus === 'speaking'
   const isConnecting = isElevenConnecting || openAiStatus === 'connecting' || labLiveStatus === 'thinking'
-  const outputLevel = useAudioLevel(isActive && isSpeaking, conversation.getOutputByteFrequencyData)
-  const inputLevel = useAudioLevel(isActive && !isSpeaking, conversation.getInputByteFrequencyData)
+  const getOpenAiOutputBytes = useCallback(() => openAiRef.current.outputMeter?.read() || null, [])
+  const getOpenAiInputBytes = useCallback(() => openAiRef.current.inputMeter?.read() || null, [])
+  const getOutputBytes = isOpenAiActive ? getOpenAiOutputBytes : conversation.getOutputByteFrequencyData
+  const getInputBytes = isOpenAiActive ? getOpenAiInputBytes : conversation.getInputByteFrequencyData
+  const outputLevel = useAudioLevel(isActive && isSpeaking, getOutputBytes)
+  const inputLevel = useAudioLevel(isActive && !isSpeaking, getInputBytes)
   const level = isSpeaking ? outputLevel : inputLevel
 
   useEffect(() => {
@@ -1745,9 +1757,10 @@ function VoiceButton({ activeContext, activeSection }) {
   useEffect(() => {
     if (typeof window === 'undefined') return
     window.__fccVoiceSpeaking = isActive && isSpeaking
-    window.__fccVoiceGetOutputBytes = conversation.getOutputByteFrequencyData || null
+    window.__fccVoiceGetOutputBytes = isActive ? getOutputBytes || null : null
+    window.__fccVoiceGetInputBytes = isActive ? getInputBytes || null : null
     window.dispatchEvent(new CustomEvent('fcc:voice-speaking', { detail: isActive && isSpeaking }))
-  }, [isActive, isSpeaking, conversation.getOutputByteFrequencyData])
+  }, [isActive, isSpeaking, getOutputBytes, getInputBytes])
 
   // When Matilda's session ENDS, check for a pending Twilio dial that was queued during the
   // session. This gives the mic time to release before Twilio Voice SDK grabs it.
@@ -1993,7 +2006,17 @@ function VoiceButton({ activeContext, activeSection }) {
     document.body.appendChild(audioEl)
     const session = { pc, dc: null, audioEl, micStream, ...(labRun || {}), provider: 'openai', agentId, model: labRun?.model || 'gpt-realtime', startedAt: labRun?.startedAt || Date.now() }
     const scope = createRealtimeSessionScope(openAiRef, session)
-    pc.ontrack = scope.guard((e) => { audioEl.srcObject = e.streams[0] })
+    session.inputMeter = createStreamAudioMeter(micStream)
+    void session.inputMeter?.resume()
+    const reportPlaybackBlocked = message => { setAudioPlaybackBlocked(true); setError(message) }
+    pc.ontrack = scope.guard((e) => {
+      const stream = e.streams[0] || new MediaStream([e.track])
+      audioEl.srcObject = stream
+      session.outputMeter?.close()
+      session.outputMeter = createStreamAudioMeter(stream)
+      void session.outputMeter?.resume()
+      void playRealtimeAudio(audioEl, scope, reportPlaybackBlocked)
+    })
     pc.onconnectionstatechange = scope.guard(() => {
       const state = pc.connectionState || ''
       if (state) setLastEvent(`OpenAI Realtime ${state}`)
@@ -2039,8 +2062,12 @@ function VoiceButton({ activeContext, activeSection }) {
       if (silent) return
       try {
         scope.send(realtimeGreeting({ openOcti: isOpenOcti(), agentId, firstMessage }))
+        session.greetingTimer = setTimeout(scope.guard(() => {
+          setError('Your assistant connected but has not answered yet. Try speaking again or restart the voice session.')
+        }), 15000)
       } catch (e) {
         console.warn('[openai voice] initial response failed', e)
+        setError('The voice greeting could not start. Please restart the voice session.')
       }
     })
     dc.onclose = scope.guard(() => {
@@ -2049,7 +2076,7 @@ function VoiceButton({ activeContext, activeSection }) {
       logRealtimeVoiceUsage(labRun || activeVoiceLabRunRef.current, 'OpenAI Realtime disconnected')
       activeVoiceLabRunRef.current = null
       setActiveVoiceRuntime(null)
-      scope.retire()
+      endOpenAiSession()
     })
     dc.onerror = scope.guard(() => {
       setError('OpenAI Realtime data channel error')
@@ -2058,7 +2085,14 @@ function VoiceButton({ activeContext, activeSection }) {
     dc.onmessage = scope.guard(async (event) => {
       let msg
       try { msg = JSON.parse(event.data) } catch { return }
+      if (msg.type === 'output_audio_buffer.started') {
+        clearTimeout(session.greetingTimer)
+        setOpenAiSpeaking(true)
+        void playRealtimeAudio(audioEl, scope, reportPlaybackBlocked)
+      }
+      if (['output_audio_buffer.stopped', 'output_audio_buffer.cleared'].includes(msg.type)) setOpenAiSpeaking(false)
       if (['response.audio_transcript.done', 'response.output_audio_transcript.done'].includes(msg.type) && msg.transcript) {
+        clearTimeout(session.greetingTimer)
         setLastAgentText(msg.transcript)
         emitVoiceLabTest({ ...(labRun || activeVoiceLabRunRef.current || {}), stage: 'transcript', role: 'assistant', text: msg.transcript, status: 'running' })
       }
@@ -2069,10 +2103,18 @@ function VoiceButton({ activeContext, activeSection }) {
         runDirectTransferFromTranscript(msg.transcript)
       }
       if (msg.type === 'response.done') {
+        if (msg.response?.status === 'failed') {
+          clearTimeout(session.greetingTimer)
+          setOpenAiSpeaking(false)
+          setError(msg.response?.status_details?.error?.message || 'The voice provider could not answer. Please try again.')
+          return
+        }
         const calls = (msg.response?.output || []).filter(o => o.type === 'function_call')
         for (const call of calls) await sendToolResult(call)
       }
       if (msg.type === 'error') {
+        clearTimeout(session.greetingTimer)
+        setOpenAiSpeaking(false)
         const message = msg.error?.message || 'OpenAI Realtime error'
         console.warn('[openai voice] error', msg.error || msg)
         setError(message)
@@ -4561,10 +4603,26 @@ function VoiceButton({ activeContext, activeSection }) {
     const status = {
       ready: roster.some(agent => agent.providerReady), available: Boolean(wakeSupported),
       enabled: Boolean(wakeSupported && wakeOn), listening: wakeListening, active: isActive, connecting: isConnecting, error: error || '',
+      audioPlaybackBlocked,
     }
     window.__openOctiVoiceStatus = status
     window.dispatchEvent(new CustomEvent('openocti:voice-status', { detail: status }))
-  }, [roster, wakeSupported, wakeOn, wakeListening, isActive, isConnecting, error])
+  }, [roster, wakeSupported, wakeOn, wakeListening, isActive, isConnecting, error, audioPlaybackBlocked])
+
+  useEffect(() => {
+    const resumeAudio = async () => {
+      const session = openAiRef.current
+      if (!session.scope?.isCurrent() || !session.audioEl) return
+      await session.outputMeter?.resume()
+      await session.inputMeter?.resume()
+      if (await playRealtimeAudio(session.audioEl, session.scope, setError)) {
+        setAudioPlaybackBlocked(false)
+        setError(current => current?.startsWith('Your browser paused voice playback.') ? null : current)
+      }
+    }
+    window.addEventListener('openocti:resume-voice-audio', resumeAudio)
+    return () => window.removeEventListener('openocti:resume-voice-audio', resumeAudio)
+  }, [])
 
   useEffect(() => {
     if (!isOpenOcti()) return

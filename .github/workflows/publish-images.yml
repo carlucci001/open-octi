@@ -26,6 +26,13 @@ env:
   OWNER: ${{ github.repository_owner }}
 
 jobs:
+  verify_release:
+    name: Full verification before image publication
+    if: github.repository == 'carlucci001/open-octi'
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   boundary:
     name: Image publication boundary and secret scan
     if: github.repository == 'carlucci001/open-octi'
@@ -55,8 +62,8 @@ jobs:
 
   build:
     name: build ${{ matrix.image.name }} (${{ matrix.platform.arch }})
-    needs: boundary
-    if: github.repository == 'carlucci001/open-octi' && needs.boundary.result == 'success'
+    needs: [boundary, verify_release]
+    if: github.repository == 'carlucci001/open-octi' && needs.boundary.result == 'success' && needs.verify_release.result == 'success'
     permissions:
       contents: read
       packages: write
@@ -114,8 +121,8 @@ jobs:
 
   publish:
     name: publish ${{ matrix.image }}
-    needs: [boundary, build]
-    if: github.repository == 'carlucci001/open-octi' && needs.boundary.result == 'success' && needs.build.result == 'success'
+    needs: [boundary, verify_release, build]
+    if: github.repository == 'carlucci001/open-octi' && needs.boundary.result == 'success' && needs.verify_release.result == 'success' && needs.build.result == 'success'
     permissions:
       contents: read
       packages: write

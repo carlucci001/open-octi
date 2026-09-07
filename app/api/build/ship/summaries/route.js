@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
 import { getReleaseSummary, saveReleaseSummary } from '@/lib/release-summaries'
 import { deleteReleaseAnnotation, saveReleaseAnnotation } from '@/lib/release-annotations'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -23,6 +24,7 @@ function publicSummary(row) {
 export async function GET(request) {
   const { error } = await requireCrmRead(request)
   if (error) return error
+  if (isOpenOcti()) return NextResponse.json({ ok: false, error: 'capability_unavailable', capability: 'ship-desk' }, { status: 503 })
   const { searchParams } = new URL(request.url)
   const summary = getReleaseSummary(searchParams.get('platformId'), searchParams.get('releaseId'))
   return NextResponse.json({ ok: true, summary: publicSummary(summary) }, { headers: { 'Cache-Control': 'no-store' } })
@@ -31,6 +33,7 @@ export async function GET(request) {
 export async function POST(request) {
   const { error } = await requireCrmWrite(request)
   if (error) return error
+  if (isOpenOcti()) return NextResponse.json({ ok: false, error: 'capability_unavailable', capability: 'ship-desk' }, { status: 503 })
   try {
     const body = await request.json()
     if (body?.action === 'save-annotation') {

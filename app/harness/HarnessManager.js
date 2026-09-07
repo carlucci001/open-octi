@@ -3,6 +3,8 @@
 import ThemedSelect from '../components/ThemedSelect'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader'
+import { isOpenOcti } from '../../lib/edition'
+import HarnessSupport, { getHarnessReleaseInfo } from './HarnessSupport'
 import { Activity, Bot, Cable, Code2, ExternalLink, GitCompare, RefreshCw, Send, ShieldCheck, Terminal, Wrench } from 'lucide-react'
 
 const COMMANDS = ['help', 'status', 'agents', 'tools', 'routes', 'pricing', 'health']
@@ -21,10 +23,10 @@ function normalizeAgents(data) {
   return Object.entries(raw).map(([id, value]) => ({ id, ...(value || {}) }))
 }
 
-function StatusPill({ ok, label }) {
-  const color = ok ? 'var(--green)' : 'var(--red)'
+function StatusPill({ ok, label, neutral = false }) {
+  const color = ok ? 'var(--green)' : neutral ? 'var(--text-muted)' : 'var(--red)'
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold" style={{ background: ok ? 'var(--green-soft)' : 'var(--red-soft)', color }}>
+    <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold" style={{ background: ok ? 'var(--green-soft)' : neutral ? 'var(--surface2)' : 'var(--red-soft)', color }}>
       <span style={{ width: 7, height: 7, borderRadius: 999, background: color, boxShadow: ok ? `0 0 8px ${color}` : 'none' }} />
       {label}
     </span>
@@ -49,7 +51,9 @@ function MetricCard({ icon, label, value, detail, ok }) {
 }
 
 function RuntimeCard({ runtime, active, onSelect }) {
-  const ok = !!runtime?.ok
+  const ok = !!runtime?.ok && !runtime?.deferred
+  const releaseInfo = isOpenOcti() ? getHarnessReleaseInfo(runtime?.type) : null
+  const optional = !!releaseInfo?.note && !ok && (runtime?.deferred || runtime?.configured === false)
   const dashboardUrl = ok ? runtime?.dashboardUrl : ''
   const openDashboard = e => {
     e.stopPropagation()
@@ -60,6 +64,7 @@ function RuntimeCard({ runtime, active, onSelect }) {
     <div
       onClick={onSelect}
       onKeyDown={event => {
+        if (event.target !== event.currentTarget) return
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
           onSelect()
@@ -81,18 +86,18 @@ function RuntimeCard({ runtime, active, onSelect }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-bold" style={{ color: 'var(--text)' }}>{runtime?.label || 'Harness'}</h3>
-            <StatusPill ok={ok} label={ok ? 'Online' : 'Check'} />
+            <StatusPill ok={ok} neutral={optional} label={ok ? 'Online' : optional ? releaseInfo.label : 'Check'} />
           </div>
-          <div className="mt-1 text-xs font-semibold uppercase" style={muted}>{runtime?.lane || 'Runtime lane'}</div>
+          <div className="mt-1 text-xs font-semibold uppercase" style={muted}>{releaseInfo?.lane || runtime?.lane || 'Runtime lane'}</div>
         </div>
-        <div className="shrink-0 rounded-lg flex items-center justify-center" style={{ width: 34, height: 34, background: ok ? 'var(--green-soft)' : 'var(--red-soft)', color: ok ? 'var(--green)' : 'var(--red)' }}>
+        <div className="shrink-0 rounded-lg flex items-center justify-center" style={{ width: 34, height: 34, background: ok ? 'var(--green-soft)' : optional ? 'var(--surface2)' : 'var(--red-soft)', color: ok ? 'var(--green)' : optional ? 'var(--text-muted)' : 'var(--red)' }}>
           {runtime?.type === 'openclaw' ? <Bot size={17} /> : <Cable size={17} />}
         </div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
         <div>
           <div className="font-bold uppercase" style={muted}>Provider</div>
-          <div className="mt-1 truncate" style={{ color: 'var(--text)' }}>{runtime?.provider || 'Unknown'}</div>
+          <div className="mt-1 truncate" style={{ color: 'var(--text)' }}>{runtime?.provider || 'Not configured'}</div>
         </div>
         <div>
           <div className="font-bold uppercase" style={muted}>Model</div>
@@ -107,7 +112,7 @@ function RuntimeCard({ runtime, active, onSelect }) {
           <div className="mt-1 truncate" style={{ color: 'var(--text)' }}>{runtime?.ms ? `${runtime.ms}ms` : 'n/a'}</div>
         </div>
       </div>
-      {!ok && runtime?.error && <div className="mt-3 text-xs" style={{ color: 'var(--red)' }}>{runtime.error}</div>}
+      {!ok && runtime?.error && <div className="mt-3 text-xs" style={{ color: optional ? 'var(--text-muted)' : 'var(--red)' }}>{runtime.error}</div>}
       {dashboardUrl ? (
         <button
           type="button"
@@ -194,7 +199,7 @@ export default function HarnessManager() {
   const [compareTask, setCompareTask] = useState('Sasha, dry-run a 9:16 product reel concept for Your organization. Include the intended tool call JSON and the media-library folder.')
   const [compareMode, setCompareMode] = useState('dry-run')
   const [compareOpenClaw, setCompareOpenClaw] = useState(true)
-  const [compareHermes, setCompareHermes] = useState(true)
+  const [compareHermes, setCompareHermes] = useState(!isOpenOcti())
   const [compareDeerFlow, setCompareDeerFlow] = useState(true)
   const [compareDeepSeek, setCompareDeepSeek] = useState(false)
   const [compareBusy, setCompareBusy] = useState(false)
@@ -227,7 +232,9 @@ export default function HarnessManager() {
     { id: 'deepseek-harness', label: 'DeepSeek Harness', lane: 'Hetzner isolated sidecar', type: 'deepseek', ok: false, privateSurface: 'loopback', provider: 'DeepSeek official', model: 'deepseek-v4-flash', dashboardUrl: '' },
   ]
   const selectedRuntime = runtimeList.find(r => r.id === selectedRuntimeId) || runtimeList[0]
-  const selectedRuntimeReady = !!selectedRuntime?.ok
+  const selectedRuntimeReady = !!selectedRuntime?.ok && !selectedRuntime?.deferred
+  const selectedReleaseInfo = isOpenOcti() ? getHarnessReleaseInfo(selectedRuntime?.type) : null
+  const selectedOptional = !!selectedReleaseInfo?.note && !selectedRuntimeReady && (selectedRuntime?.deferred || selectedRuntime?.configured === false)
   const deepSeekSelected = selectedRuntime?.type === 'deepseek'
   const chatAgentId = deepSeekSelected ? 'deepseek-lab-operator' : (selectedAgent || 'main')
   const chatRuntimeLabel = deepSeekSelected ? 'DeepSeek Harness' : 'OpenClaw'
@@ -259,7 +266,7 @@ export default function HarnessManager() {
   }
 
   const runSelectedRuntimeCheck = async () => {
-    if (!selectedRuntime?.id || runtimeCheckBusy) return
+    if (!selectedRuntime?.id || runtimeCheckBusy || selectedRuntime?.deferred) return
     setRuntimeCheckBusy(true)
     setRuntimeCheckError('')
     try {
@@ -392,7 +399,7 @@ export default function HarnessManager() {
     if (!task || compareBusy) return
     const harnesses = [
       compareOpenClaw ? 'openclaw-hetzner' : '',
-      compareHermes ? 'hermes-hetzner' : '',
+      compareHermes && !isOpenOcti() ? 'hermes-hetzner' : '',
       compareDeerFlow ? 'deerflow-hetzner' : '',
       compareDeepSeek ? 'deepseek-harness' : '',
     ].filter(Boolean)
@@ -492,7 +499,7 @@ export default function HarnessManager() {
             <GitCompare size={18} style={{ color: 'var(--accent)' }} />
             <div>
               <h2 className="text-sm font-bold" style={{ color: 'var(--text)' }}>Harness Lab</h2>
-              <p className="text-xs" style={muted}>Command Center orchestrates private Hetzner runtimes without opening harness ports.</p>
+              <p className="text-xs" style={muted}>{isOpenOcti() ? 'OpenClaw is included. Explore optional harnesses and help shape upcoming releases.' : 'Command Center orchestrates private Hetzner runtimes without opening harness ports.'}</p>
             </div>
           </div>
           <div className="text-xs font-semibold" style={muted}>
@@ -508,8 +515,8 @@ export default function HarnessManager() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {runtimeList.map(runtime => (
+              <div key={runtime.id} className="min-w-0">
               <RuntimeCard
-                key={runtime.id}
                 runtime={runtime}
                 active={runtime.id === selectedRuntime?.id}
                 onSelect={() => {
@@ -517,6 +524,8 @@ export default function HarnessManager() {
                   if (runtime.type === 'deepseek') setSelectedAgent('deepseek-lab-operator')
                 }}
               />
+              <HarnessSupport type={runtime.type} publicEdition={isOpenOcti()} />
+              </div>
             ))}
           </div>
 
@@ -525,9 +534,9 @@ export default function HarnessManager() {
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
                   <h3 className="text-sm font-bold" style={{ color: 'var(--text)' }}>{selectedRuntime?.label || 'Harness'} Configuration</h3>
-                  <p className="text-xs" style={muted}>{selectedRuntime?.lane || 'Hetzner runtime'} is selected for the next runtime health check.</p>
+                  <p className="text-xs" style={muted}>{selectedReleaseInfo?.lane || selectedRuntime?.lane || 'Runtime'}{selectedRuntime?.deferred ? ' — follow OpenOcti on GitHub for availability.' : ' is selected for the next runtime health check.'}</p>
                 </div>
-                <StatusPill ok={selectedRuntimeReady} label={selectedRuntimeReady ? 'Online' : 'Check'} />
+                <StatusPill ok={selectedRuntimeReady} neutral={selectedOptional} label={selectedRuntimeReady ? 'Online' : selectedOptional ? selectedReleaseInfo.label : 'Check'} />
               </div>
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
                 <label>
@@ -599,7 +608,7 @@ export default function HarnessManager() {
               )}
               <button
                 onClick={runSelectedRuntimeCheck}
-                disabled={runtimeCheckBusy}
+                disabled={runtimeCheckBusy || selectedRuntime?.deferred}
                 className="inline-flex items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold disabled:opacity-60"
                 style={{ minHeight: 42, background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}
               >
@@ -755,8 +764,8 @@ export default function HarnessManager() {
                     OpenClaw
                   </label>
                   <label className="inline-flex items-center gap-2 rounded-lg px-3 text-sm" style={{ minHeight: 40, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-                    <input type="checkbox" checked={compareHermes} onChange={e => setCompareHermes(e.target.checked)} />
-                    Hermes
+                    <input type="checkbox" checked={compareHermes} disabled={isOpenOcti()} onChange={e => setCompareHermes(e.target.checked)} />
+                    Hermes{isOpenOcti() ? ' (planned)' : ''}
                   </label>
                   <label className="inline-flex items-center gap-2 rounded-lg px-3 text-sm" style={{ minHeight: 40, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
                     <input type="checkbox" checked={compareDeerFlow} onChange={e => setCompareDeerFlow(e.target.checked)} />
