@@ -110,7 +110,7 @@ Point OpenOcti at that gateway in `.env` with `OPENCLAW_HOST`, `OPENCLAW_PORT`, 
 
 ## Enable agents
 
-The CRM works without provider credentials. After signing in as the owner or an administrator, open **Settings → Models & Keys**. Paste an OpenAI, Anthropic, Google Gemini, OpenRouter, or OrcaRouter key and select **Save & test**. OpenOcti encrypts the key at rest and updates the shared OpenClaw configuration. The pinned gateway restarts itself automatically to load the new model registry; allow a few seconds before testing a starter agent. Octi's text setup assistant remains available during that restart. OpenAI or Gemini enables the setup voice option; other model keys receive a text-only notice with a link to add voice later.
+The CRM works without provider credentials. After signing in as the owner or an administrator, open **Admin → Models & Keys**. Paste an OpenAI, Anthropic, Google Gemini, OpenRouter, or OrcaRouter key and select **Save & test**. OpenOcti encrypts the key at rest and updates the shared OpenClaw configuration. The pinned gateway restarts itself automatically to load the new model registry; allow a few seconds before testing a starter agent. Octi's text setup assistant remains available during that restart. OpenAI or Gemini enables the setup voice option; other model keys receive a text-only notice with a link to add voice later.
 
 Environment variables remain an advanced alternative. Set `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `OPENROUTER_API_KEY` before starting the stack. An app-saved key takes precedence over the matching environment value.
 

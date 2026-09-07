@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isOpenOcti } from '@/lib/edition'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
 import { getMoneySettings, pollMoneyConsole, saveMoneySettings } from '@/lib/money-console'
 
@@ -12,6 +13,7 @@ function json(body, status = 200) {
 export async function GET(request) {
   const { error } = await requireCrmRead(request)
   if (error) return error
+  if (isOpenOcti()) return json({ ok: false, error: 'capability_unavailable', capability: 'portfolio-revenue', message: 'Portfolio revenue monitoring is not included in this OpenOcti build.' }, 503)
   const { searchParams } = new URL(request.url)
   try {
     const snapshot = await pollMoneyConsole({ periodKey: searchParams.get('period') || undefined, bypassCache: searchParams.get('refresh') === '1' })

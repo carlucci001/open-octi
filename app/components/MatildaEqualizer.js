@@ -31,6 +31,7 @@ export default function MatildaEqualizer() {
   const [roster, setRoster] = useState([])
   const [menuOpen, setMenuOpen] = useState(false)
   const [listening, setListening] = useState(false)
+  const [voiceStatus, setVoiceStatus] = useState({})
   const closeTimer = useRef(null)
 
   useEffect(() => {
@@ -40,6 +41,8 @@ export default function MatildaEqualizer() {
     setAgent(window.__fccVoiceAgent || null)
     setRoster(window.__fccVoiceRoster || [])
     setListening(!!window.__fccVoiceListening)
+    setVoiceStatus(window.__openOctiVoiceStatus || {})
+    const onVoiceStatus = e => setVoiceStatus(e.detail || {})
     const onActive = (e) => { setActive(!!e.detail); if (!e.detail) setMenuOpen(false) }
     const onSpeak = (e) => { speakingRef.current = !!e.detail }
     const onAgent = (e) => setAgent(e.detail || null)
@@ -50,12 +53,14 @@ export default function MatildaEqualizer() {
     window.addEventListener('fcc:voice-agent', onAgent)
     window.addEventListener('fcc:voice-roster', onRoster)
     window.addEventListener('fcc:voice-listening', onListening)
+    window.addEventListener('openocti:voice-status', onVoiceStatus)
     return () => {
       window.removeEventListener('fcc:voice-active', onActive)
       window.removeEventListener('fcc:voice-speaking', onSpeak)
       window.removeEventListener('fcc:voice-agent', onAgent)
       window.removeEventListener('fcc:voice-roster', onRoster)
       window.removeEventListener('fcc:voice-listening', onListening)
+      window.removeEventListener('openocti:voice-status', onVoiceStatus)
     }
   }, [])
 
@@ -111,10 +116,12 @@ export default function MatildaEqualizer() {
     const start = performance.now()
 
     const tick = (t) => {
-      const getBytes = typeof window !== 'undefined' ? window.__fccVoiceGetOutputBytes : null
+      const getBytes = typeof window !== 'undefined'
+        ? speakingRef.current ? window.__fccVoiceGetOutputBytes : window.__fccVoiceGetInputBytes
+        : null
       const targets = new Array(BARS).fill(0)
 
-      if (speakingRef.current && typeof getBytes === 'function') {
+      if (active && typeof getBytes === 'function') {
         let bytes = null
         try { bytes = getBytes() } catch {}
         if (bytes && bytes.length) {
@@ -161,7 +168,7 @@ export default function MatildaEqualizer() {
     if (closeTimer.current) clearTimeout(closeTimer.current)
   }, [])
 
-  if (!active && !listening) return null
+  if (!active && !listening && !voiceStatus.error) return null
 
   const speaking = speakingRef.current
   const heights = heightsRef.current
@@ -200,6 +207,18 @@ export default function MatildaEqualizer() {
         gap: 6,
       }}
     >
+      {voiceStatus.audioPlaybackBlocked ? (
+        <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('openocti:resume-voice-audio'))}
+          title="Your browser paused assistant audio. Resume playback."
+          className="rounded-full border border-amber-400/50 bg-slate-950 px-3 py-2 text-xs text-amber-200">
+          Resume audio
+        </button>
+      ) : voiceStatus.error ? (
+        <details className="relative rounded-full border border-amber-400/50 bg-slate-950 px-3 py-2 text-xs text-amber-200">
+          <summary className="cursor-pointer">Voice needs attention</summary>
+          <div role="status" className="absolute top-full mt-2 w-72 rounded-lg border border-amber-400/40 bg-slate-950 p-3 text-left text-sm">{voiceStatus.error}</div>
+        </details>
+      ) : null}
       <div
         style={{
           height: 48,

@@ -3,20 +3,11 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
 import { recordPayment } from '@/lib/paymentLedger'
-
-function getStripeKeyFromVault() {
-  const creds = readData('credentials.json') || { credentials: [] }
-  const entry = (creds.credentials || []).find(c => /stripe/i.test(c.name || ''))
-  if (!entry) return ''
-  const fields = entry.fields || []
-  const prod = fields.find(f => /secret.*\(p\)/i.test(f.label || ''))
-  const test = fields.find(f => /secret.*\(s\)/i.test(f.label || ''))
-  const fallback = fields.find(f => /secret/i.test(f.label || ''))
-  return (prod || test || fallback)?.value?.trim() || ''
-}
+import { resolveStripeConfiguration } from '@/lib/stripe-configuration'
+import { isOpenOcti } from '@/lib/edition'
 
 function getStripe() {
-  const key = process.env.STRIPE_SECRET_KEY || getStripeKeyFromVault()
+  const key = resolveStripeConfiguration().secretKey
   if (!key) return null
   return new Stripe(key)
 }
@@ -51,7 +42,7 @@ export async function POST(request) {
   if (body.action === 'create_intent') {
     if (!stripe) {
       console.warn('[payments] create_intent blocked: stripe key missing')
-      return NextResponse.json({ error: 'Stripe not configured. Add STRIPE_SECRET_KEY or a Stripe secret in the CRM vault.' }, { status: 400 })
+      return NextResponse.json({ error: isOpenOcti() ? 'Stripe is not configured. Open System → Admin → Stripe.' : 'Stripe not configured. Add STRIPE_SECRET_KEY or a Stripe secret in the CRM vault.' }, { status: 400 })
     }
     try {
       const amount = Math.round(parseFloat(body.amount) * 100)

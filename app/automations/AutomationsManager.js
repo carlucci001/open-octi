@@ -501,10 +501,6 @@ export default function AutomationsManager() {
     <div className="automations-workspace command-workspace p-4 sm:p-5">
       <PageHeader className="automations-page-header" icon={<Workflow size={20} />} title="Automations" subtitle="Productized workflows you can test, sell, and gate before anything touches a client."
         viewToggle={<ViewModeToggle value={viewMode} onChange={setViewMode} modes={['list', 'card']} />} />
-      <Toast toast={toast} />
-
-      <StudioBench templates={STUDIO_TEMPLATES} onCreate={createFromTemplate} counts={counts} />
-
       <div className="automations-toolbar command-toolbar flex items-center justify-between flex-wrap gap-3 mb-4">
         <div className="automations-filter-row flex items-center gap-2 flex-wrap" style={{ flex: '1 1 520px', minWidth: 0 }}>
           <div className="automation-search relative" style={{ flex: '1 1 260px', minWidth: 220 }}>
@@ -540,6 +536,9 @@ export default function AutomationsManager() {
           />
         </div>
       </div>
+
+      <Toast toast={toast} />
+      <StudioBench templates={STUDIO_TEMPLATES} onCreate={createFromTemplate} counts={counts} />
 
       {loading ? (
         <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading…</div>

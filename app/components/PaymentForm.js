@@ -1,10 +1,10 @@
 "use client";
 import ThemedSelect from './ThemedSelect'
-import { useState, useEffect, useMemo } from "react";
-import { loadStripe } from "@stripe/stripe-js";
+import { useState, useEffect } from "react";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { isOpenOcti } from "@/lib/edition";
 import { OpenOctiConfigurationLinks } from "./OpenOctiConfigurationNotice";
+import { useStripeClient } from '@/lib/use-stripe-client'
 
 function api(url, body) {
   return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json());
@@ -228,12 +228,8 @@ function InnerForm({ prefillClient, onSuccess, onClose }) {
 }
 
 export default function PaymentForm(props) {
-  // Load Stripe.js once. Re-memoize only if PK changes (it won't at runtime).
-  const stripePromise = useMemo(() => {
-    const pk = process.env.NEXT_PUBLIC_STRIPE_PK;
-    if (!pk) return null;
-    return loadStripe(pk);
-  }, []);
+  const { stripePromise, loading } = useStripeClient();
+  if (loading) return <p role="status" className="p-5">Loading payment connection…</p>;
 
   if (!stripePromise) {
     return (

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { listAgents } from '@/lib/agents-store'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -150,6 +151,12 @@ async function checkOpenClaw() {
 }
 
 async function checkHetznerHermes() {
+  if (isOpenOcti()) return {
+    id: 'hermes-hetzner', label: 'Hermes', lane: 'Future release', type: 'hermes',
+    ok: false, configured: false, deferred: true, status: 0,
+    privateSurface: 'private', dashboardUrl: '', provider: 'Not configured',
+    error: 'Hermes is planned for a future OpenOcti release.',
+  }
   for (const url of HETZNER_HERMES_CANDIDATES) {
     const result = await checkHermes({ id: 'hermes-hetzner', label: 'Hermes', lane: 'Hetzner sidecar', url })
     if (result.ok) return result
@@ -172,6 +179,7 @@ async function checkDeerFlow() {
   const base = privateHarnessBase(configured, 'DeerFlow')
   if (!base) {
     return {
+      configured: !!configured,
       id: 'deerflow-hetzner',
       label: 'DeerFlow',
       lane: 'Hetzner sidecar',
@@ -191,6 +199,7 @@ async function checkDeerFlow() {
     const probe = await timedFetch(url, {}, 3500)
     if (probe.ok) {
       return {
+        configured: true,
         id: 'deerflow-hetzner',
         label: 'DeerFlow',
         lane: 'Hetzner sidecar',
@@ -209,6 +218,7 @@ async function checkDeerFlow() {
 
   return {
     id: 'deerflow-hetzner',
+    configured: true,
     label: 'DeerFlow',
     lane: 'Hetzner sidecar',
     type: 'deerflow',
@@ -235,6 +245,7 @@ async function checkDeepSeekHarness() {
   const base = privateHarnessBase(DEEPSEEK_HARNESS_URL, 'DeepSeek Harness')
   const baseResult = {
     id: 'deepseek-harness',
+    configured: deepSeekHarnessEnabled(),
     label: 'DeepSeek Harness',
     lane: 'Hetzner isolated sidecar',
     type: 'deepseek',
@@ -248,7 +259,7 @@ async function checkDeepSeekHarness() {
   }
 
   if (!deepSeekHarnessEnabled()) {
-    return { ...baseResult, ok: false, error: 'DeepSeek Harness is installed but disabled by its production feature flag.' }
+    return { ...baseResult, ok: false, error: 'DeepSeek Harness is disabled. Enable it only after configuring a separate runtime.' }
   }
   if (!base) {
     return { ...baseResult, ok: false, error: 'DeepSeek Harness must use a localhost/private bridge URL.' }

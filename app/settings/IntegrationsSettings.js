@@ -36,7 +36,7 @@ export default function IntegrationsSettings() {
     <section aria-labelledby="integrations-title">
       <div className="mb-5">
         <h2 id="integrations-title" className="text-xl font-semibold">Integrations</h2>
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>Configuration is read from the server environment. Credential values are never displayed or stored here.</p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>Configuration comes from this installation’s saved keys and server environment. Use Models & Keys for AI providers and Stripe for payments; other integrations list their required server settings below.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-testid="integration-grid">
         {capabilities.map(capability => {
@@ -57,6 +57,7 @@ export default function IntegrationsSettings() {
               </div>
               {result?.message && <div role="status" className="mt-3 text-xs" style={{ color }}>{result.message}</div>}
               <div className="mt-auto pt-4 flex items-center gap-2">
+                {role === 'owner' && ['stripe', 'stripe-client'].includes(capability.id) && <a href="/?tab=settings&settings=stripe" className="text-sm underline" style={{ color: 'var(--accent)' }}>Configure Stripe</a>}
                 <a href={directory.signupUrl} target={directory.signupUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer" title={`Open ${capability.label} setup`} className="inline-flex items-center justify-center rounded-lg" style={{ width: 48, height: 48, border: '1px solid var(--border)' }}><ExternalLink size={18} /><span className="sr-only">Open vendor setup</span></a>
                 {canTest && <button type="button" title={`Test ${capability.label} connection`} onClick={() => test(capability.id)} disabled={testing === capability.id} className="inline-flex items-center justify-center rounded-lg disabled:opacity-60" style={{ width: 48, height: 48, border: '1px solid var(--border)' }}><RefreshCw size={18} className={testing === capability.id ? 'animate-spin' : ''} /><span className="sr-only">Test connection</span></button>}
               </div>

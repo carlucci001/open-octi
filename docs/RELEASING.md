@@ -2,6 +2,10 @@
 
 Only release a reviewed, clean source tree. The versioned exporter is the public boundary: never copy live credentials, local environment files, build output, or private business data into a release.
 
+The image publisher calls the complete reusable OpenOcti CI workflow at the same revision. Both image build and publication depend on its success, including secret scanning, documentation checks, tests, production build, and fresh keyless Docker smoke checks. This gate also applies to version tags and manual image runs.
+
+Before exporting a shared feature, record its approved private Command Center revision and deployment status in the release review. Shared improvements must reach the owner's approved private release first; explicitly identify public-only onboarding or packaging changes as exceptions. A different label or commit SHA alone is not a parity check: compare committed trees and deployed behavior. Resolve divergent private release branches through a reviewed pull request, and deploy only the resulting approved, passing GitHub revision. Never promote a dirty working tree or copy private runtime data to establish parity.
+
 1. Prepare `docs/releases/X.Y.Z.md` and run the public test suite.
 2. Review the explicit export-source allowlist and commit approved source changes. Run `node scripts/export-openocti.mjs --version X.Y.Z`; it reads only those committed Git objects.
 3. Confirm `package.json` and `VERSION.json` contain the requested version.

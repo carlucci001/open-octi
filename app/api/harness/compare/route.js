@@ -5,6 +5,7 @@ import { getCred } from '@/lib/agent-creds'
 import { openclawChat } from '@/lib/openclaw-client'
 import { deepSeekHarnessChat } from '@/lib/deepseek-harness-client'
 import { isOwner } from '@/lib/roles'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -337,7 +338,9 @@ export async function POST(request) {
   for (const harnessId of requested) {
     try {
       if (harnessId === 'openclaw-hetzner') results.push(await runOpenClaw({ agent, task, mode }))
-      else if (harnessId === 'hermes-hetzner') results.push(await runHermesApi({ agent, task, mode }))
+      else if (harnessId === 'hermes-hetzner') results.push(isOpenOcti()
+        ? { id: harnessId, label: 'Hermes', ok: false, deferred: true, error: 'Hermes is planned for a future OpenOcti release.' }
+        : await runHermesApi({ agent, task, mode }))
       else if (harnessId === 'deerflow-hetzner') results.push(await runDeerFlowApi({ agent, task, mode }))
       else if (harnessId === 'deepseek-harness') results.push(await runDeepSeekHarness({ agent, task, mode, user }))
       else results.push({ id: harnessId, label: harnessId, ok: false, error: 'Unknown harness.' })

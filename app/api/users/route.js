@@ -5,6 +5,7 @@ import { requireUserManagement } from '@/lib/permissions'
 import { isOwner } from '@/lib/roles'
 import { logAuditEvent } from '@/lib/auditLog'
 import { buildEmail } from '@/lib/emailSignature'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -34,7 +35,7 @@ async function sendInviteEmail({ to, displayName, username, password, loginUrl, 
       Username: <strong>${username}</strong><br>
       Password: <strong>${password}</strong>
     </p>
-    <p style="font-size:13px;color:#666">After signing in, you can change your password in Settings → Users (if you have admin) — or ask ${senderName} to update it for you.</p>
+    <p style="font-size:13px;color:#666">After signing in, you can change your password in ${isOpenOcti() ? 'Admin' : 'Settings'} → Users (if you have admin) — or ask ${senderName} to update it for you.</p>
   `
   const { html, inlineAttachments } = buildEmail(bodyHtml, 'farrington')
   try {

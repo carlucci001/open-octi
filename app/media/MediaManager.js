@@ -1,6 +1,6 @@
 'use client'
 import ThemedSelect from '../components/ThemedSelect'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { ChevronDown, ChevronRight, FileText, Film, Image as ImageIcon, Megaphone, MessageSquare, Newspaper, Smile, UploadCloud, Wand2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { buildContentImageContext, buildImageRequestPrompt, requireGeneratedImageItem } from '../../lib/content-image-flow'
@@ -149,6 +149,7 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
   const [contentWorkflows, setContentWorkflows] = useState(CONTENT_WORKFLOW_FALLBACKS)
   const [contentJobs, setContentJobs] = useState([])
   const [openMontage, setOpenMontage] = useState(null)
+  const contentTopicRef = useRef(null)
   const [contentLoading, setContentLoading] = useState(false)
   const [contentGenerating, setContentGenerating] = useState(false)
   const [contentWorkflow, setContentWorkflow] = useState('social-post')
@@ -182,7 +183,7 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
     try {
       const [j, om] = await Promise.all([
         fetchJsonWithTimeout('/api/content-lab?limit=30', { cache: 'no-store' }, 25_000),
-        fetchJsonWithTimeout('/api/openmontage', { cache: 'no-store' }, 12_000).catch(() => null),
+        fetchJsonWithTimeout('/api/openmontage', { cache: 'no-store' }, 12_000).catch(() => ({ ok: false })),
       ])
       setContentWorkflows(j.workflows?.length ? j.workflows : CONTENT_WORKFLOW_FALLBACKS)
       setContentJobs(j.jobs || [])
@@ -448,7 +449,10 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
       setWorkspaceMode('create')
       applyContentWorkflow('video-package')
       setContentGoal(current => current || 'OpenMontage pipeline')
-      flash(openMontage?.installed ? 'OpenMontage video package mode ready' : 'OpenMontage workflow selected; install/config is not visible on this server yet', openMontage?.installed ? 'ok' : 'err')
+      requestAnimationFrame(() => {
+        contentTopicRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        contentTopicRef.current?.focus({ preventScroll: true })
+      })
       return
     }
     setGeneratedItem(null)
@@ -672,14 +676,18 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
                   <div style={briefHeaderStyle}>
                     <div>
                       <div style={sidebarTitle}>OpenMontage</div>
-                      <strong>{openMontage?.installed ? `${openMontage.pipelineCount} pipelines found` : 'Video package planner'}</strong>
+                      <strong>Video package planner</strong>
                     </div>
-                    <span style={openMontage?.installed ? readyPillStyle : viewPillStyle}>{openMontage?.installed ? 'Ready' : 'Plan only'}</span>
+                    <span style={viewPillStyle}>Plan only</span>
                   </div>
                   <p style={mutedText}>
-                    {openMontage?.installed
-                      ? `Best fits: ${(openMontage.featured || []).slice(0, 3).map(item => item.label).join(', ') || 'pipeline discovery loaded'}.`
-                      : 'Create the production brief here; live rendering can be enabled when OpenMontage is installed on the CRM server.'}
+                    Create a script, scene plan, captions, and production handoff here. Video rendering requires a separate OpenMontage renderer; no renderer is connected to this planner.
+                  </p>
+                  <p style={mutedText}>
+                    {openMontage === null ? 'Checking optional pipeline templates…' : !openMontage.ok
+                      ? 'Optional pipeline templates could not be checked. Built-in planning templates remain available.'
+                      : openMontage.installed ? `${openMontage.pipelineCount} local pipeline templates found.`
+                      : 'Using the built-in planning templates.'}
                   </p>
                   <div style={openMontagePipelineGridStyle}>
                     {openMontagePipelines.slice(0, 6).map(pipeline => (
@@ -712,7 +720,7 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
                 <div className="content-brief-fields" style={contentFormGridStyle}>
                   <div>
                     <Label>Topic / Assignment</Label>
-                    <input value={contentTopic} onChange={e => setContentTopic(e.target.value)} placeholder="What should the agent produce?" style={inputStyle} />
+                    <input ref={contentTopicRef} value={contentTopic} onChange={e => setContentTopic(e.target.value)} placeholder="What should the agent produce?" style={inputStyle} />
                   </div>
                   <div>
                     <Label>Audience</Label>

@@ -28,13 +28,13 @@ On a new installation, choose your own username and password on **Create your ad
 
 ## One key lights it up
 
-**Want voice interaction during first setup? OpenAI is recommended.** In **Settings → Models & Keys**, save an OpenAI key for Marin voice or a Google Gemini key for Kore voice. Octi selects an available voice automatically; choose **Start voice with Octi** and allow microphone access when ready. English is the default. Active voice usage is billed by the selected provider. With only an Anthropic, OpenRouter, or OrcaRouter key, the expert setup assistant remains available in text and explains how to add voice later.
+**Want voice interaction during first setup? OpenAI is recommended.** In **Admin → Models & Keys**, save an OpenAI key for Ballad voice or a Google Gemini key for Charon voice. Octi selects an available voice automatically; choose **Start voice with Octi** and allow microphone access when ready. English is the default. Active voice usage is billed by the selected provider. With only an Anthropic, OpenRouter, or OrcaRouter key, the expert setup assistant remains available in text and explains how to add voice later.
 
 The CRM, projects, documents, and local knowledge tools work without an AI provider. Add any one supported model key in Models & Keys—OpenAI, Anthropic, Google Gemini, OpenRouter, or OrcaRouter—to activate text assistance. The Docker agent service restarts automatically after provider changes so starter agents load the new models; allow a few seconds. OrcaRouter is recommended for routed text tasks and uses its own key. Voice, email, calling, and research connectors need their corresponding credentials or service installation. Start with [Model providers](docs/guides/model-providers.md).
 
 ## Highlights
 
-- **Connection setup and monitoring** — Settings explains missing provider connections and offers administrator connection tests. Application, Cloudflare and Nylas checks include persistent history, optional failure/recovery alerts, and a recurring timer template. [Guide](docs/guides/MONITORING.md)
+- **Connection setup and monitoring** — Admin explains missing provider connections and offers administrator connection tests. Application, Cloudflare and Nylas checks include persistent history, optional failure/recovery alerts, and a recurring timer template. [Guide](docs/guides/MONITORING.md)
 
 - **A starter AI staff, one model key** — Octi, Maggie, Craig, Sasha, Linda and Matilda ship as agent definitions. Add a supported model key in Models & Keys and allow the Docker agent service to finish restarting. Voice and phone features show their separate setup requirements. [Guide](docs/guides/agents.md) · [Screen](docs/screenshots/agents.jpg)
 - **Context-aware agents on every screen** — the Operator rail follows the section and the record you have open; on a lead, one click gives you Next Calls, an email draft or a clean-data pass built from that lead. [Guide](docs/guides/operator-rail.md) · [Screen](docs/screenshots/operator-rail-lead.jpg)
@@ -61,11 +61,19 @@ The CRM, projects, documents, and local knowledge tools work without an AI provi
 ## Everything inside
 
 - **Sell:** dashboard, leads, Press Desk, pipelines, accounts, support, contacts, and Finance for invoices and overhead.
-- **Build:** agents, automations, Builder (roadmap card in this edition), campaigns, products, repository status, Ship Desk, Build Board, Switchboard, and Labs.
+- **Build:** agents, automations, Builder (roadmap card in this edition), campaigns, local product definitions, repository status, Switchboard, and Labs. Ship Desk release monitoring is not packaged. Build Board requires a separately configured Hermes dashboard and Kanban service; Docker does not install Hermes.
+
+Stripe setup is always available to the installation owner under **System → Admin → Stripe**. See the [billing setup guide](docs/guides/stripe-setup.md) for the connected payment flows and the steps still performed in Stripe Dashboard. This build does not automatically provision Stripe catalogs or reconcile subscription webhooks.
 - **Projects:** projects, tasks, documents, content, media, Command Vault, communications, calendar, transcription, and activity feed.
 - **Tools:** imports, credentials, model keys, network and account settings, API usage, and operational diagnostics.
 
+Money Console portfolio revenue monitoring is not packaged in this edition. Use Finance for this installation's invoices, payments, and records. Incident Inbox retains saved local incidents and their actions; live platform polling is unavailable and is labelled accordingly.
+
 ## Meet the staff
+
+The six starter staff agents and eight prepared specialist templates include replaceable default headshots. Octi uses the mascot. Portraits work offline without keys; a prepared template's portrait does not mean its optional runtime is connected.
+
+Harness Lab includes OpenClaw and shows which other runtimes need configuration. Hermes is planned for a future release. [Star OpenOcti on GitHub](https://github.com/carlucci001/open-octi) to support the next harness integrations. See the [1.2.3 release notes](docs/releases/1.2.3.md) for Gitea, Daily conferencing, agent improvements, and current limits.
 
 | Agent | Verified role |
 | --- | --- |

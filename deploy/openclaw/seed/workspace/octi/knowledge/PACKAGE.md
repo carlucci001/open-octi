@@ -20,17 +20,25 @@ docker compose up -d
 
 Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
 
+On a new installation, choose your own username and password on **Create your admin account**. You are signed in immediately; later visits show the normal sign-in screen. No `.env` file, preassigned password, or API key is needed for local Docker setup. The app generates and stores its session secret in the persistent data volume. Docker binds to localhost by default; see the installation guide before exposing a remote server.
+
+**Allow time for the first launch.** Downloading the Docker images and starting the containers can take several minutes. After creating your account, keep the page open while your workspace loads. In a development preview, the first dashboard load may take a minute while pages compile; later visits are faster. Published Docker images contain precompiled pages.
+
+**Your own repository workspace.** Docker Compose includes Gitea with separate persistent storage. Open **Repository** to sign in with your OpenOcti account and create or import your own repositories. No company repositories or business accounts are preloaded. See [Repository setup](docs/INSTALL.md#repository-workspace) for access and startup details.
+
 > See the [1.2.1 release notes](docs/releases/1.2.1.md) for enforced release privacy checks, and the [1.2.0 release notes](docs/releases/1.2.0.md) for connection setup and monitoring. Versioned images are published from the matching release tag; use a source build when testing an untagged checkout.
 
 ## One key lights it up
 
-The CRM, projects, documents, and local knowledge tools work without an AI provider. Add any one supported model key in Models & Keys—OpenAI, Anthropic, Google Gemini, or OpenRouter—to activate Octi and the starter staff. Voice, email, calling, and research connectors need their own provider credentials only when you enable those features. Start with [Model providers](docs/guides/model-providers.md).
+**Want voice interaction during first setup? OpenAI is recommended.** In **Admin → Models & Keys**, save an OpenAI key for Ballad voice or a Google Gemini key for Charon voice. Octi selects an available voice automatically; choose **Start voice with Octi** and allow microphone access when ready. English is the default. Active voice usage is billed by the selected provider. With only an Anthropic, OpenRouter, or OrcaRouter key, the expert setup assistant remains available in text and explains how to add voice later.
+
+The CRM, projects, documents, and local knowledge tools work without an AI provider. Add any one supported model key in Models & Keys—OpenAI, Anthropic, Google Gemini, OpenRouter, or OrcaRouter—to activate text assistance. The Docker agent service restarts automatically after provider changes so starter agents load the new models; allow a few seconds. OrcaRouter is recommended for routed text tasks and uses its own key. Voice, email, calling, and research connectors need their corresponding credentials or service installation. Start with [Model providers](docs/guides/model-providers.md).
 
 ## Highlights
 
-- **Connection setup and monitoring** — Settings explains missing provider connections and offers administrator connection tests. Application, Cloudflare and Nylas checks include persistent history, optional failure/recovery alerts, and a recurring timer template. [Guide](docs/guides/MONITORING.md)
+- **Connection setup and monitoring** — Admin explains missing provider connections and offers administrator connection tests. Application, Cloudflare and Nylas checks include persistent history, optional failure/recovery alerts, and a recurring timer template. [Guide](docs/guides/MONITORING.md)
 
-- **A starter AI staff, one key to light it up** — Octi, Maggie, Craig, Sasha, Linda and Matilda ship as agent definitions; paste one OpenAI, Anthropic, Google Gemini or OpenRouter key in Models & Keys and they come alive on your own server. [Guide](docs/guides/agents.md) · [Screen](docs/screenshots/agents.jpg)
+- **A starter AI staff, one model key** — Octi, Maggie, Craig, Sasha, Linda and Matilda ship as agent definitions. Add a supported model key in Models & Keys and allow the Docker agent service to finish restarting. Voice and phone features show their separate setup requirements. [Guide](docs/guides/agents.md) · [Screen](docs/screenshots/agents.jpg)
 - **Context-aware agents on every screen** — the Operator rail follows the section and the record you have open; on a lead, one click gives you Next Calls, an email draft or a clean-data pass built from that lead. [Guide](docs/guides/operator-rail.md) · [Screen](docs/screenshots/operator-rail-lead.jpg)
 - **Command Vault** — an Obsidian-compatible Markdown knowledge base built in: multiple vault roots (one per project), wikilinks, graph view, semantic search, orphan detection and a Prompt Workshop. [Guide](docs/guides/command-vault.md) · [Screen](docs/screenshots/command-vault-graph.jpg)
 - **TruthDiff** — pick a note and see which knowledge is affected by what changed in Git: drift analysis between your docs and your code, built into the vault's Impact view. [Guide](docs/guides/truthdiff.md)
@@ -55,11 +63,19 @@ The CRM, projects, documents, and local knowledge tools work without an AI provi
 ## Everything inside
 
 - **Sell:** dashboard, leads, Press Desk, pipelines, accounts, support, contacts, and Finance for invoices and overhead.
-- **Build:** agents, automations, Builder (roadmap card in this edition), campaigns, products, repository status, Ship Desk, Build Board, Switchboard, and Labs.
+- **Build:** agents, automations, Builder (roadmap card in this edition), campaigns, local product definitions, repository status, Switchboard, and Labs. Ship Desk release monitoring is not packaged. Build Board requires a separately configured Hermes dashboard and Kanban service; Docker does not install Hermes.
+
+Stripe setup is always available to the installation owner under **System → Admin → Stripe**. See the [billing setup guide](docs/guides/stripe-setup.md) for the connected payment flows and the steps still performed in Stripe Dashboard. This build does not automatically provision Stripe catalogs or reconcile subscription webhooks.
 - **Projects:** projects, tasks, documents, content, media, Command Vault, communications, calendar, transcription, and activity feed.
 - **Tools:** imports, credentials, model keys, network and account settings, API usage, and operational diagnostics.
 
+Money Console portfolio revenue monitoring is not packaged in this edition. Use Finance for this installation's invoices, payments, and records. Incident Inbox retains saved local incidents and their actions; live platform polling is unavailable and is labelled accordingly.
+
 ## Meet the staff
+
+The six starter staff agents and eight prepared specialist templates include replaceable default headshots. Octi uses the mascot. Portraits work offline without keys; a prepared template's portrait does not mean its optional runtime is connected.
+
+Harness Lab includes OpenClaw and shows which other runtimes need configuration. Hermes is planned for a future release. [Star OpenOcti on GitHub](https://github.com/carlucci001/open-octi) to support the next harness integrations. See the [1.2.3 release notes](docs/releases/1.2.3.md) for Gitea, Daily conferencing, agent improvements, and current limits.
 
 | Agent | Verified role |
 | --- | --- |
@@ -125,20 +141,34 @@ OpenOcti is licensed under [GNU AGPL v3](LICENSE). Developed by **OpenOcti contr
 ```sh
 git clone https://github.com/carlucci001/open-octi.git openocti
 cd openocti
-cp .env.example .env
+docker compose up -d
 ```
 
-Edit only the six required values at the top of `.env`. Generate a long random `CRM_SESSION_SECRET`, choose the first-login password, and leave the remaining keyless defaults unchanged.
+For a local Docker installation, no `.env` file or preassigned password is required. Open [http://localhost:3000](http://localhost:3000), choose your username and password on **Create your admin account**, and select **Create account and get started**. You are signed in immediately. Keep this login for later visits; there is no shared default password.
 
 ```sh
-docker compose config
-docker compose up -d --build
 docker compose ps
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The first startup may take several minutes while images build and the health check settles.
+The first startup may take several minutes while images download and the health check settles. To test an unreleased checkout, use `docker compose up -d --build` instead of pulling published images. OpenOcti generates a session secret and stores it in the data volume so your login keeps working after a restart. After the first account exists, account creation is disabled and the normal sign-in page appears.
 
-The CRM and OpenClaw share the named `openocti-data` volume. Removing containers does not remove this volume. Do not run `docker compose down -v` unless you intend to erase OpenOcti data.
+After selecting **Create account and get started**, leave the page open while the workspace loads. A development preview's first dashboard load may take a minute because it compiles pages on demand. The published Docker images already contain compiled pages; their initial download and startup are separate from this development-only compilation delay.
+
+Docker binds the app to `127.0.0.1` by default. To use another local port, set `OPENOCTI_PORT=127.0.0.1:3302` and `PUBLIC_APP_URL=http://localhost:3302` in `.env` before starting.
+
+### Remote or unattended installation
+
+Before exposing OpenOcti through a public hostname or reverse proxy, copy `.env.example` to `.env`, set a unique `INITIAL_ADMIN_PASSWORD`, and set `PUBLIC_APP_URL` to your HTTPS address. Sign in as **admin** with the password you selected. Browser-based first-account creation is restricted to localhost. For remote browser setup, use an SSH tunnel to the server's localhost port. Keep the persistent data volume; do not expose an unconfigured instance. A custom `CRM_SESSION_SECRET` is optional; otherwise the app generates one.
+
+The CRM and OpenClaw share the named `openocti-data` volume. Gitea has its own `gitea-data` volume for repositories and accounts. Removing containers preserves both volumes. Do not run `docker compose down -v` unless you intend to erase the installation, including its repositories.
+
+### Repository workspace
+
+Docker Compose includes Gitea. Open **Repository** after creating your OpenOcti admin account; the app signs you into a separate Gitea identity belonging to your account. No default Gitea password or company repository is preloaded. Create or import your own repositories there. Initial Gitea startup may take a minute; use **Refresh** if the service is still starting.
+
+Gitea is reachable through the authenticated OpenOcti proxy on an isolated Docker network. Its web and SSH ports are not published to the host. The bundled workflow supports repository management in the browser. Direct Git CLI authentication is not configured by this setup. When changing the app address or port, set `PUBLIC_APP_URL` before restarting the services so Gitea generates the correct links.
+
+Plain Node installations do not start sidecar services. Configure your own Gitea service and `GITEA_INTERNAL_URL` to enable the Repository workspace there.
 
 ## Install with Node (no Docker)
 
@@ -151,7 +181,7 @@ npm ci
 cp .env.example .env
 ```
 
-Edit the six required values at the top of `.env`, using a throwaway first-login password only for temporary test installations. Then build and start OpenOcti:
+Leave `INITIAL_ADMIN_PASSWORD` and `CRM_SESSION_SECRET` blank for local browser account setup, or configure the initial password for an unattended installation as described above. Then build and start OpenOcti:
 
 ```sh
 npm run build
@@ -209,7 +239,7 @@ Point OpenOcti at that gateway in `.env` with `OPENCLAW_HOST`, `OPENCLAW_PORT`, 
 
 ## Enable agents
 
-The CRM works without provider credentials. After signing in as the owner or an administrator, open **Settings → Models & Keys**. Paste an Anthropic, OpenAI, Google Gemini, or OpenRouter key and select **Save & test**. OpenOcti encrypts the key at rest, updates the shared OpenClaw configuration, and the gateway applies the provider through its file watcher without a container restart.
+The CRM works without provider credentials. After signing in as the owner or an administrator, open **Admin → Models & Keys**. Paste an OpenAI, Anthropic, Google Gemini, OpenRouter, or OrcaRouter key and select **Save & test**. OpenOcti encrypts the key at rest and updates the shared OpenClaw configuration. The pinned gateway restarts itself automatically to load the new model registry; allow a few seconds before testing a starter agent. Octi's text setup assistant remains available during that restart. OpenAI or Gemini enables the setup voice option; other model keys receive a text-only notice with a link to add voice later.
 
 Environment variables remain an advanced alternative. Set `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `OPENROUTER_API_KEY` before starting the stack. An app-saved key takes precedence over the matching environment value.
 
@@ -238,6 +268,10 @@ Run `docker compose ps` and confirm that the app is healthy. Review release note
 # Releasing OpenOcti
 
 Only release a reviewed, clean source tree. The versioned exporter is the public boundary: never copy live credentials, local environment files, build output, or private business data into a release.
+
+The image publisher calls the complete reusable OpenOcti CI workflow at the same revision. Both image build and publication depend on its success, including secret scanning, documentation checks, tests, production build, and fresh keyless Docker smoke checks. This gate also applies to version tags and manual image runs.
+
+Before exporting a shared feature, record its approved private Command Center revision and deployment status in the release review. Shared improvements must reach the owner's approved private release first; explicitly identify public-only onboarding or packaging changes as exceptions. A different label or commit SHA alone is not a parity check: compare committed trees and deployed behavior. Resolve divergent private release branches through a reviewed pull request, and deploy only the resulting approved, passing GitHub revision. Never promote a dirty working tree or copy private runtime data to establish parity.
 
 1. Prepare `docs/releases/X.Y.Z.md` and run the public test suite.
 2. Review the explicit export-source allowlist and commit approved source changes. Run `node scripts/export-openocti.mjs --version X.Y.Z`; it reads only those committed Git objects.
@@ -386,7 +420,7 @@ Communications combines the activity timeline, phone dialer, video launch contro
 
 ## Enable it
 
-Open Communications and choose **Activity**, **Phone**, **Video**, **Messages**, or **Email**. Configure the corresponding provider in Settings, refresh its status, select a contact, and test with a non-customer destination first.
+Open Communications and choose **Activity**, **Phone**, **Video**, **Messages**, or **Email**. Configure the corresponding provider in Admin, refresh its status, select a contact, and test with a non-customer destination first.
 
 ## What it needs
 
@@ -430,15 +464,19 @@ Treat the audit trail as business evidence, not a substitute for legal advice ab
 
 # First run: one key lights it up
 
-1. Copy `.env.example` to `.env` and replace the required session secret and administrator password placeholders.
-2. Run `docker compose up -d --build`, then open the local address shown in the README.
-3. Sign in and follow the dashboard checklist to name the workspace.
-4. Open **Settings → Models & Keys**, paste one Anthropic, OpenAI, Gemini, or OpenRouter key, and choose **Save & test**. The key is encrypted and OpenClaw reloads it without a container restart.
+**System → Admin** is the single administration screen for this installation. It includes Models & Keys, integrations, monitoring, screens, services, users, roles, voice, inbound channels, and security. Existing Control Services bookmarks open Admin automatically.
+
+In the command workspace themes, the top-right account dropdown includes **Workspace layout** switches for the **Right assistant sidebar** and **Bottom command bar**. Both start off. An explicit choice is saved in that browser; older visibility preferences do not turn them on automatically. The existing dropdown and Go Live controls remain available.
+
+1. Clone the repository and run `docker compose up -d`. No `.env` file is required for the default local Docker installation. Use `--build` to test an unreleased source checkout.
+2. Open the local address shown in the README. On **Create your admin account**, choose your own username and a password of at least 12 characters.
+3. Select **Create account and get started**. You are signed in immediately; follow the dashboard checklist to name the workspace. Later visits use the username and password you chose. The app generates its internal session secret and keeps it in the data volume.
+4. Open **Admin → Models & Keys**, paste an OpenAI, Anthropic, Gemini, OpenRouter, or OrcaRouter key, and choose **Save & test**. The key is encrypted. The Docker agent service restarts automatically to activate its models; allow a few seconds. The text setup assistant is available immediately.
 5. Meet Octi, Maggie, Craig, Sasha, Linda, and Matilda. Octi can guide imports, capabilities, storage, and upgrades from the shipped package documentation.
 
-The first boot creates the OpenClaw configuration and workspace in the Docker volume. Later restarts do not overwrite it. App-saved keys update only the managed provider and agent model blocks; see the model-provider guide for the environment-variable path.
+The first boot creates the OpenClaw configuration and workspace in the Docker volume. Later restarts preserve your workspace. App-saved keys update managed provider models and request the gateway restart needed to refresh its model registry; see the model-provider guide for the environment-variable path.
 
-Matilda remains available as a text agent with any supported model key. Gemini Live voice specifically requires a Gemini key.
+Octi selects OpenAI Marin voice when an OpenAI key is available, or Gemini Kore voice when Gemini is available. Voice starts only when you choose **Start voice with Octi**. English is the default unless you request another language. With a text-only provider, setup continues in text and shows how to add voice later. Other agents' voice and phone integrations show their own provider requirements.
 
 # Source: docs/guides/gesture-mode.md
 
@@ -471,7 +509,7 @@ Tracking may switch itself off when permission is denied, no camera exists, or a
 
 # Import contacts and CRM data
 
-Open **Settings → Import Center** or go directly to `/settings/import`.
+Open **System → Import & migrate** or go directly to `/settings/import`.
 
 1. Choose the target record type and upload a CSV, XLSX, or vCard file.
 2. Review the preview and map each source column to an OpenOcti field. Saved presets can reuse a mapping on later imports.
@@ -515,25 +553,43 @@ Lab labels do not mean every provider is installed. Preview and sample results d
 
 # Model providers
 
-Open **Settings → Models & Keys** to save and test a provider. OpenOcti chooses the first configured provider in this order: Anthropic, OpenAI, Gemini, then OpenRouter. One key is enough for Octi and the five specialist agents to use the OpenClaw gateway.
+Open **Admin → Models & Keys** to save and test a provider. OpenAI is recommended for first setup with live voice. OrcaRouter is recommended for routed text tasks and has a separate key from OpenRouter. **Models & Keys** is also available from the account menu and the Credentials screen, so you can return whenever you want to add a service.
+
+Octi's setup assistant uses OrcaRouter for text when configured, otherwise OpenAI, Anthropic, Gemini, or OpenRouter in that order. It chooses OpenAI Ballad voice when available, then Gemini Charon voice. Each starter agent has a distinct default voice. Text setup remains available without a voice-capable key, and Ask Octi stays accessible while you enter keys. Voice starts only when requested, and English is the default.
+
+The Docker starter agents use the configured OpenClaw model. Adding or changing a model provider key restarts the pinned gateway automatically so each agent reloads its model registry. Allow a few seconds before starting an agent. This refresh does not require a manual container restart. Saving a Daily conferencing key does not restart the gateway.
 
 | Variable | Unlocks |
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Claude-backed OpenClaw chat and reasoning. |
-| `OPENAI_API_KEY` | OpenAI-backed OpenClaw chat and supported media features. |
-| `GEMINI_API_KEY` | Gemini-backed chat plus Matilda's Gemini Live voice path. |
+| `OPENAI_API_KEY` | OpenAI-backed OpenClaw chat, live voice for Octi and the starter agents, and supported media features. |
+| `GEMINI_API_KEY` | Gemini-backed chat and Gemini Live voice for Octi and the starter agents. |
 | `OPENROUTER_API_KEY` | OpenRouter model routing for OpenClaw. |
-| `ORCAROUTER_API_KEY` | Optional Orca handoff routing; it is separate from OpenRouter. |
+| `ORCAROUTER_API_KEY` | Orca handoffs, AI Lab routing, Octi text setup, and OpenClaw model routing. The setup assistant starts with OrcaRouter's free router. |
+| `ELEVENLABS_API_KEY` | ElevenLabs speech tests; live agent conversations also require an agent binding. |
+| `DAILY_API_KEY` | Daily room creation for Conference and video invitations. |
 
 App-saved provider values are encrypted in `/data/openocti-keys.json`; the UI returns only source and last-four status. Environment variables remain an advanced alternative, and app-saved values take precedence.
 
-The initial OpenClaw configuration is first-boot-only. A successful in-app key save updates the managed provider and agent model blocks in the shared config; OpenClaw's file watcher applies that change without a container restart.
+Voice Labs disables provider choices whose required key or service is missing and links to key entry. The current **Chirp aliases (Gemini TTS)** lab option uses a Google Gemini key and maps Chirp-style names to Gemini voices; it does not call native Google Cloud Chirp 3 HD. VibeVoice requires its own installed service endpoint. Chatterbox rendering is not installed in the standard image.
+
+NVIDIA, Hugging Face, DeepSeek, Kimi, and other advanced integrations retain their entries in the credential vault and AI Lab. A configured key makes a provider eligible for testing; a successful connection or model response is separate evidence. A router key covers supported model requests, not unrelated phone, email, or external voice services.
+
+## Conferencing and remote access
+
+The Daily card links to the [Daily developer dashboard](https://dashboard.daily.co/developers) and [current plans](https://www.daily.co/pricing/video-sdk/). Choose a plan for your needs, obtain an API key, then return to **Models & Keys → Daily → Save & test**. Open Conference from the same card. The connection test reads your room list without creating a room; a live conference is a separate test.
+
+Models & Keys also provides optional Tailscale Serve and Cloudflare Tunnel with Access setup guidance. These guides help you choose private access or a protected public hostname. Opening a guide does not change your network or expose your installation.
+
+Media uses the same saved OpenAI key for image generation. An explicitly configured image-only key takes precedence; otherwise the app-saved model key is used before environment or legacy vault keys. New keys take effect on the next image request.
+
+OpenMontage in Content opens a video package planner for scripts, scene plans, captions, and production handoffs. It does not connect to a video renderer. A separate OpenMontage renderer and a working rendering integration are required to turn the plan into a video; finding local pipeline templates does not establish that connection.
 
 # Source: docs/guides/MONITORING.md
 
 # Connection monitoring
 
-Settings → Monitoring shows the latest application, Cloudflare zone, and Nylas mailbox checks, plus recent history. Owners and administrators can run a check. Missing optional providers appear as **not configured**; a missing required connection fails the installation check. An installation with no completed checks is not reported healthy.
+Admin → Monitoring shows the latest application, Cloudflare zone, and Nylas mailbox checks, plus recent history. Owners and administrators can run a check. Missing optional providers appear as **not configured**; a missing required connection fails the installation check. An installation with no completed checks is not reported healthy.
 
 Set `PUBLIC_APP_URL` for the application check. Optional Cloudflare checks use `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ZONE_ID`; Nylas checks use `NYLAS_API_KEY` and `NYLAS_GRANT_ID`. EU Nylas accounts can set the adapter's `config.apiBaseUrl` to `https://api.eu.nylas.com`.
 
@@ -644,6 +700,34 @@ OpenOcti 1.1.2 generates strong machine secrets automatically when valid overrid
 Set `PUBLIC_APP_URL` and `SIGNING_PUBLIC_URL` to the public HTTPS origin. Store `.env` outside source control, use long unique values for the session secret and administrator password, and restrict file permissions.
 
 Back up the `openocti-data` volume before upgrades. Verify app health, login, the main CRM lanes, Agents, Documents, and any configured provider after each change. Do not enable the optional research profile unless the host has adequate resources and the required services are intentionally configured.
+
+# Source: docs/guides/stripe-setup.md
+
+# Stripe setup and current public billing scope
+
+Return to **System → Admin → Stripe** whenever you need to configure payments. Only the installation owner can save these keys.
+
+1. Select **Test** or **Live**. Copy the secret and publishable keys from the same Stripe account and mode. Use **Check connection & save keys**. OpenOcti checks the secret key's account access and stores the pair encrypted alongside the installation's other saved keys. It never displays the saved secret. Verify the publishable key belongs to that account during a test checkout.
+2. Open the linked Stripe product catalog. Create each product and its one-time or recurring price. Test and live catalogs are separate. OpenOcti's local product definitions do not automatically provision or synchronize Stripe products or prices.
+3. Create a Stripe Payment Link using the selected price. A recurring price creates a subscription when a customer completes checkout. Review the customer, payment, and subscription in Stripe Dashboard. This happens in the installation owner's Stripe account, using that account's own products and prices.
+4. Test the complete customer checkout before switching to live mode. A working API key alone does not mean Stripe has enabled live charges or that every billing workflow has been tested.
+
+Official guides: [products and prices](https://docs.stripe.com/products-prices/manage-prices), [Payment Links](https://docs.stripe.com/payment-links).
+
+## What is connected inside OpenOcti
+
+- The payment terminal and invoice checkout resolve the owner's saved secret key on each server request.
+- Browser payment forms retrieve only the publishable key through an authenticated runtime endpoint. Saving keys does not require rebuilding Docker. Existing forms reset when the saved connection changes.
+- App-saved Stripe configuration takes precedence over environment or legacy credential-vault entries. Ambiguous legacy Stripe accounts or test/live pairs require an explicit choice in Admin. Unreadable encrypted configuration refuses fallback or replacement.
+- Payment Terminal records a successful payment after its confirmation flow. Invoice checkout stores its Stripe session and reconciles after the customer returns or an operator checks payment status. Configure `INVOICE_BASE_URL` to the public address of this installation for usable invoice return links.
+
+## What is not automatic
+
+This public build does not include in-app Stripe catalog provisioning, subscription creation/management, or signed webhook reconciliation. Payment Link activity and recurring subscription updates are not imported into OpenOcti. The Subscriptions screen tracks vendor expenses; it is not a customer Stripe subscription manager.
+
+If browser checkout is interrupted, check Stripe before retrying a charge. The current payment terminal does not have background recovery for a pending payment intent. Stripe is the source of truth for charges and subscriptions until the complete event-reconciliation integration is implemented and verified.
+
+Never describe entering keys as automatically creating products, prices, subscriptions, or a complete billing lifecycle. Connecting an account, creating an offer, completing checkout, and reconciling the result are separate steps.
 
 # Source: docs/guides/truthdiff.md
 

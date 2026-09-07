@@ -418,6 +418,15 @@ code, pre, .font-mono {
   padding: var(--operator-frame-pad-y) var(--operator-frame-pad-x) 150px;
 }
 
+/* The public edition uses the header menu, with no legacy bottom dock. */
+.openocti-workspace.without-command-bar.operator-workspace main {
+  padding-bottom: 0;
+}
+
+.openocti-workspace.without-command-bar .operator-main-frame:not(.is-full-bleed) {
+  padding-bottom: var(--operator-frame-pad-y, 16px);
+}
+
 .operator-main-frame > .command-workspace {
   max-width: 100% !important;
   margin-left: 0 !important;

@@ -1,6 +1,6 @@
 # Model providers
 
-Open **Settings → Models & Keys** to save and test a provider. OpenAI is recommended for first setup with live voice. OrcaRouter is recommended for routed text tasks and has a separate key from OpenRouter. **Models & Keys** is also available from the account menu and the Credentials screen, so you can return whenever you want to add a service.
+Open **Admin → Models & Keys** to save and test a provider. OpenAI is recommended for first setup with live voice. OrcaRouter is recommended for routed text tasks and has a separate key from OpenRouter. **Models & Keys** is also available from the account menu and the Credentials screen, so you can return whenever you want to add a service.
 
 Octi's setup assistant uses OrcaRouter for text when configured, otherwise OpenAI, Anthropic, Gemini, or OpenRouter in that order. It chooses OpenAI Ballad voice when available, then Gemini Charon voice. Each starter agent has a distinct default voice. Text setup remains available without a voice-capable key, and Ask Octi stays accessible while you enter keys. Voice starts only when requested, and English is the default.
 
@@ -27,3 +27,7 @@ NVIDIA, Hugging Face, DeepSeek, Kimi, and other advanced integrations retain the
 The Daily card links to the [Daily developer dashboard](https://dashboard.daily.co/developers) and [current plans](https://www.daily.co/pricing/video-sdk/). Choose a plan for your needs, obtain an API key, then return to **Models & Keys → Daily → Save & test**. Open Conference from the same card. The connection test reads your room list without creating a room; a live conference is a separate test.
 
 Models & Keys also provides optional Tailscale Serve and Cloudflare Tunnel with Access setup guidance. These guides help you choose private access or a protected public hostname. Opening a guide does not change your network or expose your installation.
+
+Media uses the same saved OpenAI key for image generation. An explicitly configured image-only key takes precedence; otherwise the app-saved model key is used before environment or legacy vault keys. New keys take effect on the next image request.
+
+OpenMontage in Content opens a video package planner for scripts, scene plans, captions, and production handoffs. It does not connect to a video renderer. A separate OpenMontage renderer and a working rendering integration are required to turn the plan into a video; finding local pipeline templates does not establish that connection.
