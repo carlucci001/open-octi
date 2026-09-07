@@ -5142,7 +5142,7 @@
     {
       "path": "scripts/smoke-openocti-container.mjs",
       "kind": "text",
-      "sha256": "2438f3d57db444ebd627b0f83245817ea8de4b51f86504cf3265e849ccd32152"
+      "sha256": "34c8bf7b19c30e040f83a78598e49cc425d7d3a2c5a8219e72fa450e95d2bd06"
     },
     {
       "path": "scripts/verify-data-backend.js",

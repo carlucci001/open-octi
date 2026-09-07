@@ -149,7 +149,8 @@ try {
   assert.equal(profile.businessName, 'Example Smoke Company')
   const video = request('/api/video/create-room', { method: 'POST', body: {} })
   assert.equal(video.status, 503, 'Missing video credentials must return the configuration gate')
-  assert.equal(video.body?.error, 'not_configured')
+  assert.match(video.body?.error || '', /Daily key/i, 'Missing-key response must explain the required provider')
+  assert.equal(video.body?.settings, '/settings/models#daily', 'Missing-key response must link directly to Daily setup')
   console.log('PASS: generated administrator login, setup, and keyless video gate')
 
   const accounts = json('/api/accounts').accounts
