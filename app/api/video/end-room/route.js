@@ -1,3 +1,4 @@
+import { effectiveProviderEnv } from '@/lib/openocti-keys'
 import { NextResponse } from 'next/server'
 import { requireCrmWrite } from '@/lib/permissions'
 
@@ -68,7 +69,7 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: 'Valid Daily room name required' }, { status: 400 })
     }
 
-    const apiKey = process.env.DAILY_API_KEY
+    const apiKey = effectiveProviderEnv().DAILY_API_KEY
     if (!apiKey) {
       return NextResponse.json({ ok: false, error: 'Daily is not configured' }, { status: 503 })
     }

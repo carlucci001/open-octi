@@ -12,20 +12,34 @@
 ```sh
 git clone https://github.com/carlucci001/open-octi.git openocti
 cd openocti
-cp .env.example .env
+docker compose up -d
 ```
 
-Edit only the six required values at the top of `.env`. Generate a long random `CRM_SESSION_SECRET`, choose the first-login password, and leave the remaining keyless defaults unchanged.
+For a local Docker installation, no `.env` file or preassigned password is required. Open [http://localhost:3000](http://localhost:3000), choose your username and password on **Create your admin account**, and select **Create account and get started**. You are signed in immediately. Keep this login for later visits; there is no shared default password.
 
 ```sh
-docker compose config
-docker compose up -d --build
 docker compose ps
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The first startup may take several minutes while images build and the health check settles.
+The first startup may take several minutes while images download and the health check settles. To test an unreleased checkout, use `docker compose up -d --build` instead of pulling published images. OpenOcti generates a session secret and stores it in the data volume so your login keeps working after a restart. After the first account exists, account creation is disabled and the normal sign-in page appears.
 
-The CRM and OpenClaw share the named `openocti-data` volume. Removing containers does not remove this volume. Do not run `docker compose down -v` unless you intend to erase OpenOcti data.
+After selecting **Create account and get started**, leave the page open while the workspace loads. A development preview's first dashboard load may take a minute because it compiles pages on demand. The published Docker images already contain compiled pages; their initial download and startup are separate from this development-only compilation delay.
+
+Docker binds the app to `127.0.0.1` by default. To use another local port, set `OPENOCTI_PORT=127.0.0.1:3302` and `PUBLIC_APP_URL=http://localhost:3302` in `.env` before starting.
+
+### Remote or unattended installation
+
+Before exposing OpenOcti through a public hostname or reverse proxy, copy `.env.example` to `.env`, set a unique `INITIAL_ADMIN_PASSWORD`, and set `PUBLIC_APP_URL` to your HTTPS address. Sign in as **admin** with the password you selected. Browser-based first-account creation is restricted to localhost. For remote browser setup, use an SSH tunnel to the server's localhost port. Keep the persistent data volume; do not expose an unconfigured instance. A custom `CRM_SESSION_SECRET` is optional; otherwise the app generates one.
+
+The CRM and OpenClaw share the named `openocti-data` volume. Gitea has its own `gitea-data` volume for repositories and accounts. Removing containers preserves both volumes. Do not run `docker compose down -v` unless you intend to erase the installation, including its repositories.
+
+### Repository workspace
+
+Docker Compose includes Gitea. Open **Repository** after creating your OpenOcti admin account; the app signs you into a separate Gitea identity belonging to your account. No default Gitea password or company repository is preloaded. Create or import your own repositories there. Initial Gitea startup may take a minute; use **Refresh** if the service is still starting.
+
+Gitea is reachable through the authenticated OpenOcti proxy on an isolated Docker network. Its web and SSH ports are not published to the host. The bundled workflow supports repository management in the browser. Direct Git CLI authentication is not configured by this setup. When changing the app address or port, set `PUBLIC_APP_URL` before restarting the services so Gitea generates the correct links.
+
+Plain Node installations do not start sidecar services. Configure your own Gitea service and `GITEA_INTERNAL_URL` to enable the Repository workspace there.
 
 ## Install with Node (no Docker)
 
@@ -38,7 +52,7 @@ npm ci
 cp .env.example .env
 ```
 
-Edit the six required values at the top of `.env`, using a throwaway first-login password only for temporary test installations. Then build and start OpenOcti:
+Leave `INITIAL_ADMIN_PASSWORD` and `CRM_SESSION_SECRET` blank for local browser account setup, or configure the initial password for an unattended installation as described above. Then build and start OpenOcti:
 
 ```sh
 npm run build
@@ -96,7 +110,7 @@ Point OpenOcti at that gateway in `.env` with `OPENCLAW_HOST`, `OPENCLAW_PORT`, 
 
 ## Enable agents
 
-The CRM works without provider credentials. After signing in as the owner or an administrator, open **Settings → Models & Keys**. Paste an Anthropic, OpenAI, Google Gemini, or OpenRouter key and select **Save & test**. OpenOcti encrypts the key at rest, updates the shared OpenClaw configuration, and the gateway applies the provider through its file watcher without a container restart.
+The CRM works without provider credentials. After signing in as the owner or an administrator, open **Settings → Models & Keys**. Paste an OpenAI, Anthropic, Google Gemini, OpenRouter, or OrcaRouter key and select **Save & test**. OpenOcti encrypts the key at rest and updates the shared OpenClaw configuration. The pinned gateway restarts itself automatically to load the new model registry; allow a few seconds before testing a starter agent. Octi's text setup assistant remains available during that restart. OpenAI or Gemini enables the setup voice option; other model keys receive a text-only notice with a link to add voice later.
 
 Environment variables remain an advanced alternative. Set `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `OPENROUTER_API_KEY` before starting the stack. An app-saved key takes precedence over the matching environment value.
 

@@ -3,6 +3,8 @@ FROM node:24-bookworm-slim
 RUN npm install --global openclaw@2026.6.34 && npm cache clean --force
 COPY deploy/openclaw/openocti-plugin /opt/openocti-plugin
 COPY deploy/openclaw/seed /opt/openocti-seed
+COPY knowledge/agents /opt/openocti-knowledge
+COPY deploy/openclaw/seed-knowledge.mjs /opt/openocti/deploy/openclaw/seed-knowledge.mjs
 COPY deploy/openclaw/configure-seed.mjs /opt/openocti/deploy/openclaw/configure-seed.mjs
 COPY deploy/machine-secrets.mjs /opt/openocti/deploy/machine-secrets.mjs
 COPY lib/machine-secret.js lib/edition.js /opt/openocti/lib/

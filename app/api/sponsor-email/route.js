@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { sponsorEmailHtml, newspaperOutreachEmailHtml, tdaOutreachEmailHtml } from "@/lib/sponsor-email-template";
 
 const BRAND_FROM = {
-  farrington_dev: "Farrington Development <redacted@example.invalid>",
+  farrington_dev: "Your organization <redacted@example.invalid>",
   ContentStudio: "ContentStudio <redacted@example.invalid>",
   ContentStudio_demo: "ContentStudio <redacted@example.invalid>",
   sample_business: "WNC Times <redacted@example.invalid>",
@@ -19,7 +19,7 @@ function escapeHtml(value = "") {
 }
 
 function plainTextHtml({ brandLabel, plainText }) {
-  const safeBrand = escapeHtml(brandLabel || "Farrington Development");
+  const safeBrand = escapeHtml(brandLabel || "Your organization");
   const safeBody = escapeHtml(plainText || "").replace(/\n/g, "<br />");
   return `
     <div style="font-family:Arial,sans-serif;line-height:1.55;color:#111827;max-width:680px;margin:0 auto;padding:24px;">
@@ -79,7 +79,7 @@ export async function POST(req) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: BRAND_FROM[brand] || BRAND_FROM[campaignType] || process.env.RESEND_FROM_EMAIL || "Farrington Development <redacted@example.invalid>",
+      from: BRAND_FROM[brand] || BRAND_FROM[campaignType] || process.env.RESEND_FROM_EMAIL || "Your organization <redacted@example.invalid>",
       to, subject, html, text: plainText,
       attachments: attachments.length > 0 ? attachments : undefined,
     });

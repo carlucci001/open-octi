@@ -151,7 +151,7 @@ async function runHermesApi({ agent, task, mode }) {
         messages: [
           {
             role: 'system',
-            content: 'You are running inside Farrington Command Center Harness Lab. Use the injected CRM agent prompt snapshot as the active agent identity for this one comparison task.',
+            content: 'You are running inside OpenOcti Harness Lab. Use the injected CRM agent prompt snapshot as the active agent identity for this one comparison task.',
           },
           { role: 'user', content: comparisonPrompt({ agent, task, mode }) },
         ],
@@ -229,7 +229,7 @@ async function runDeerFlowApi({ agent, task, mode }) {
         model: process.env.DEERFLOW_API_MODEL || process.env.DEER_FLOW_API_MODEL || 'deerflow-agent',
         stream: false,
         messages: [
-          { role: 'system', content: 'You are running inside Farrington Command Center Harness Lab. Use the injected CRM agent prompt snapshot as the active agent identity for this one comparison task.' },
+          { role: 'system', content: 'You are running inside OpenOcti Harness Lab. Use the injected CRM agent prompt snapshot as the active agent identity for this one comparison task.' },
           { role: 'user', content: comparisonPrompt({ agent, task, mode }) },
         ],
       }),

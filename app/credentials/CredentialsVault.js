@@ -6,6 +6,8 @@ import PageHeader, { ViewToggle } from '../components/PageHeader'
 import ViewModeToggle from '../components/ViewModeToggle'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import { useActiveRecord } from '@/lib/active-record'
+import { isOpenOcti } from '@/lib/edition'
+import Link from 'next/link'
 
 const CATS = ['All','AI Providers','Payment Processing','Hosting & Domains','Database','Cloud','Other']
 const CC = {'AI Providers':'var(--accent)','Payment Processing':'var(--green)','Hosting & Domains':'var(--peach)',Database:'var(--purple)',Cloud:'var(--teal)',Other:'var(--text-muted)'}
@@ -191,13 +193,14 @@ export default function CredentialsVault({ returnTarget = null, onReturn = null 
       <PageHeader
         icon="🔐"
         title="Credentials"
-        subtitle={`${creds.length} credentials stored`}
+        subtitle={isOpenOcti() ? `${creds.length} credentials stored · App-wide AI keys are in Models & Keys` : `${creds.length} credentials stored`}
         viewToggle={
           <ViewToggle view={tab} setView={setTab} options={[{ id: 'vault', label: 'Vault' }, { id: 'usage', label: 'Usage & Billing' }]} />
         }
         controls={tab === 'vault' ? <ViewModeToggle value={view} onChange={setView} modes={['list','card']} /> : null}
         actions={<>
           {returnAction}
+          {isOpenOcti() && <Link href="/settings/models" className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'var(--surface2)', color: 'var(--accent)', border: '1px solid var(--border)' }}>Models &amp; Keys</Link>}
           {tab === 'vault' && <>
           <button className="px-4 py-2 rounded-lg text-sm" style={{background:'var(--surface2)',color:'var(--accent)',border:'1px solid var(--border)'}} onClick={testAll}>✓ Test Visible</button>
           <button className="px-4 py-2 rounded-lg text-sm font-medium" style={{background:'var(--accent)',color:'var(--accent-text)'}} onClick={()=>setShowAdd(true)}>+ Add Credential</button>

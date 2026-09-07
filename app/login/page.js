@@ -1,11 +1,12 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { primeLoginWelcomeAudio, queueLoginWelcomeAudio } from './loginWelcomeAudio'
 import { brandAssetsFor } from '@/lib/brand-assets'
+import FirstRunAccountSetup from './FirstRunAccountSetup'
 
 const BRAND_ASSETS = brandAssetsFor()
-const EDITION_NAME = BRAND_ASSETS.openOcti ? 'OpenOcti' : 'Farrington Command Center'
+const EDITION_NAME = BRAND_ASSETS.openOcti ? 'OpenOcti' : 'OpenOcti'
 
 function LoginStarfield() {
   return (
@@ -93,6 +94,18 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [loginPhase, setLoginPhase] = useState('idle')
+  const [setup, setSetup] = useState(BRAND_ASSETS.openOcti ? null : { required: false })
+  const [setupError, setSetupError] = useState(false)
+  useEffect(() => {
+    if (!BRAND_ASSETS.openOcti) return
+    let active = true
+    fetch('/api/auth/setup', { cache: 'no-store' }).then(async response => {
+      if (!response.ok) throw new Error('Setup check failed')
+      const result = await response.json()
+      if (active) setSetup(result)
+    }).catch(() => { if (active) setSetupError(true) })
+    return () => { active = false }
+  }, [])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -149,6 +162,9 @@ export default function LoginPage() {
     e.currentTarget.style.setProperty('--login-glow-x', '50%')
     e.currentTarget.style.setProperty('--login-glow-y', '44%')
   }
+
+  if (!setup) return <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#020711', color: '#eaf0ff' }}><div role="status">{setupError ? <>Could not check this installation. <button onClick={() => window.location.reload()}>Try again</button></> : 'Opening OpenOcti…'}</div></main>
+  if (setup.required) return <FirstRunAccountSetup local={setup.local} />
 
   return (
     <div className="login-starship-screen" style={{

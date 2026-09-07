@@ -4,9 +4,9 @@ export function manifestFor(env) {
   const brand = brandAssetsFor(env)
   return {
     id: '/',
-    name: brand.openOcti ? 'OpenOcti' : 'Farrington Command Center',
+    name: brand.openOcti ? 'OpenOcti' : 'OpenOcti',
     short_name: brand.openOcti ? 'OpenOcti' : 'Command Center',
-    description: brand.openOcti ? 'Open-source AI operations workspace' : 'Domains, clients, payments, credentials — Farrington Development LLC',
+    description: brand.openOcti ? 'Open-source AI operations workspace' : 'Domains, clients, payments, credentials — Your organization',
     start_url: '/',
     scope: '/',
     ...(!brand.openOcti ? { scope_extensions: [

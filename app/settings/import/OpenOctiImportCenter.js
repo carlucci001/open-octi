@@ -10,7 +10,7 @@ import MigrationCenterWizard from './MigrationCenterWizard'
 
 const buttonStyle = { minHeight: 44, borderRadius: 9, padding: '0 14px', fontWeight: 700 }
 const LEAD_DESTINATIONS = [
-  { id: 'farrington_dev', label: 'Farrington Development' },
+  { id: 'farrington_dev', label: 'Your organization' },
   { id: 'ContentStudio', label: 'ContentStudio' },
   { id: 'sample_business', label: 'WNC Times' },
   { id: 'client_automation', label: 'Client automation product' },

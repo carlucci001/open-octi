@@ -42,7 +42,7 @@ function buildFirstMessage(agent, agentId) {
   const isReceptionist = agent.category === 'customer-facing'
     && (agent.channels || []).includes('phone')
   if (isReceptionist) {
-    const company = agentId === 'newsroom-receptionist' ? 'ContentStudio' : 'Farrington Development'
+    const company = agentId === 'newsroom-receptionist' ? 'ContentStudio' : 'Your organization'
     return `${company}, this is ${agent.name}.`
   }
   return 'Okay Carl.'  // brief pickup for Command Center voice; live sessions may override with a varied pickup.

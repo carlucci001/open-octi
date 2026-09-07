@@ -1,3 +1,4 @@
+import { effectiveProviderEnv } from '@/lib/openocti-keys'
 // Creates a Daily.co room without sending an email — used by in-app video triggers
 // (Conference Center, VideoMeetButton, etc.) that just need a URL to embed or share.
 import { NextResponse } from 'next/server'
@@ -11,7 +12,8 @@ export async function POST(request) {
   if (unavailable) return NextResponse.json(unavailable.body, { status: unavailable.status })
   try {
     const { seed, persistent } = await request.json().catch(() => ({}))
-    const apiKey = process.env.DAILY_API_KEY
+    const apiKey = effectiveProviderEnv().DAILY_API_KEY
+    if (!apiKey) return NextResponse.json({ error: 'Add and test your Daily key in Models & Keys to start a conference.', settings: '/settings/models#daily' }, { status: 503 })
 
     const slug = String(seed || 'meeting').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'meeting'
     const name = persistent ? `ff-${slug}` : `ff-${slug}-${Math.random().toString(36).slice(2, 8)}`

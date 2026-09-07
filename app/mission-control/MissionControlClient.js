@@ -275,7 +275,7 @@ export default function MissionControlClient() {
       <header className={styles.topbar}>
         <div>
           <p className={styles.eyebrow}>Operational interface · all CRM sections reachable</p>
-          <h1>Farrington Mission Control</h1>
+          <h1>OpenOcti Mission Control</h1>
         </div>
         <button className={styles.returnButton} type="button" onClick={() => openSection('dashboard')}>
           <Command size={17} />

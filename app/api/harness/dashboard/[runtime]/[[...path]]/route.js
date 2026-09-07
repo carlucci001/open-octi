@@ -43,7 +43,7 @@ function runtimeBase(id) {
 async function hermesSessionHeaders(base) {
   try {
     const configPage = await fetch(`${base}/config`, {
-      headers: { 'User-Agent': 'Farrington-Command-Center/HarnessDashboardProxy' },
+      headers: { 'User-Agent': 'OpenOcti-Command-Center/HarnessDashboardProxy' },
       cache: 'no-store',
       signal: AbortSignal.timeout(4000),
     })
@@ -72,7 +72,7 @@ async function proxy(request, { params }) {
   const response = await fetch(target, {
     method: request.method,
     headers: {
-      'User-Agent': 'Farrington-Command-Center/HarnessDashboardProxy',
+      'User-Agent': 'OpenOcti-Command-Center/HarnessDashboardProxy',
       ...extraHeaders,
     },
     cache: 'no-store',

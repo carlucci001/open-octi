@@ -180,7 +180,7 @@ function TerminalInner() {
       <PageHeader
         icon="💳"
         title="Payment Terminal"
-        subtitle="Farrington Development — Phone payments & tracking"
+        subtitle="Your organization — Phone payments & tracking"
         actions={<>
           <button className="px-3 py-2 rounded-lg text-sm font-semibold" style={{ background: 'var(--surface2)', color: 'var(--teal)', border: '1px solid var(--border)' }} onClick={() => window.open('/api/payments/export','_blank')}>⬇ Export CSV</button>
           <button className="px-3 py-2 rounded-lg text-sm font-semibold" style={{ background: 'var(--green)', color: 'var(--accent-text)' }} onClick={() => setShowForm(true)}>💳 New Payment</button>
@@ -260,7 +260,7 @@ function TerminalInner() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={() => setShowForm(false)}>
           <div className="w-full max-w-md rounded-xl p-5 animate-fade-in max-h-[90vh] overflow-auto" style={{ background: 'var(--surface)', border: '1px solid #2a2d42' }} onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--text)' }}>💳 Process Payment</h2>
-            <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Farrington Development — Secure via Stripe Elements</p>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Your organization — Secure via Stripe Elements</p>
 
             {clients.length > 0 && <div className="mb-3"><label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>Select Client</label>
               <ThemedSelect style={is} value={form.clientId} onChange={e => selectClient(e.target.value)}>

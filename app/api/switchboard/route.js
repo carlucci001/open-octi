@@ -69,7 +69,7 @@ function leaseMonitoring(lease) {
       scope: 'internal',
       consent: 'internal',
       allowed: true,
-      reason: 'In-house Farrington agent',
+      reason: 'In-house OpenOcti agent',
       noticePolicy: 'conditional',
       termsVersion: TERMS_VERSION,
     }
@@ -117,7 +117,7 @@ async function switchboardSnapshot() {
       title: agent.title || agent.role || '',
       enabled: agent.enabled !== false,
       tenantId: agent.tenantId || 'farrington-development',
-      tenantName: lease?.tenantName || (agent.tenantId === 'farrington-development' ? 'Farrington Development' : agent.tenantId || ''),
+      tenantName: lease?.tenantName || (agent.tenantId === 'farrington-development' ? 'Your organization' : agent.tenantId || ''),
       leaseId: lease?.id || agent.leaseId || null,
       leased: !!lease,
       voiceProvider: agent.voice?.provider || (voiceBinding ? 'elevenlabs' : 'unknown'),

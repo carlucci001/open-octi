@@ -62,7 +62,7 @@ export async function POST(request) {
         currency: 'usd',
         description: `${body.clientName} — ${body.description}`,
         receipt_email: body.email || undefined,
-        metadata: { client_name: body.clientName, project: body.description, client_id: body.clientId || '', source: 'Farrington Command Center' },
+        metadata: { client_name: body.clientName, project: body.description, client_id: body.clientId || '', source: 'OpenOcti' },
       })
       console.info('[payments] create_intent ready', { intentId: intent.id })
       return NextResponse.json({ clientSecret: intent.client_secret, intentId: intent.id })

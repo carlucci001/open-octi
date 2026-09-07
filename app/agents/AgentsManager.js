@@ -13,6 +13,7 @@ import { IMAGE_GENERATION_PROVIDER_OPTIONS, imageGenerationProviderOption, norma
 import { Bot, FlaskConical, Globe2, Hash, Link2, Mail, MessageSquare, Mic2, Phone, Plus, RefreshCw, Search, Send, Wrench } from 'lucide-react'
 import OpenOctiConfigurationNotice from '../components/OpenOctiConfigurationNotice'
 import { isOpenOcti } from '@/lib/edition'
+import { octiAvatarFor } from '@/lib/brand-assets'
 
 const STORAGE_KEY = 'farrington.agents.viewState.v1'
 const DEFAULT_VIEW_MODE = 'list'
@@ -142,7 +143,7 @@ function normalizeVoiceProvider(provider) {
 }
 
 function isProductionVoiceLocked(agent = {}) {
-  return ['main', 'coding'].includes(agent.id)
+  return !isOpenOcti() && ['main', 'coding'].includes(agent.id)
 }
 
 function getVoiceRuntimeStatus(agent = {}, elSyncStatus = null) {
@@ -572,7 +573,7 @@ export default function AgentsManager({ labMode = false }) {
       try {
         const capabilitiesResponse = await fetch('/api/platform-admin/v1/capabilities', { cache: 'no-store' })
         const capabilities = await capabilitiesResponse.json()
-        const modelIds = new Set(['anthropic', 'openai', 'gemini', 'openrouter'])
+        const modelIds = new Set(['anthropic', 'openai', 'gemini', 'openrouter', 'orcarouter'])
         setModelSetupNeeded(!capabilities.capabilities?.some(
           capability => modelIds.has(capability.id) && capability.status === 'configured'
         ))
@@ -2579,7 +2580,7 @@ function IdentityTab({ editing, setEditing, categories }) {
 }
 
 function Avatar({ agent, size = 56, accent, accentText, onImageError }) {
-  const url = agent.avatar?.url
+  const url = octiAvatarFor(agent.id) || agent.avatar?.url
   const [failedUrl, setFailedUrl] = useState('')
   useEffect(() => {
     if (url && failedUrl && failedUrl !== url) setFailedUrl('')

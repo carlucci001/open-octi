@@ -49,7 +49,7 @@ const ORGANIZATION_SOURCE_TOOLS = [
 ]
 
 const COMMAND_CENTER_DESTINATIONS = [
-  { id: 'farrington_dev', label: 'Farrington Development' },
+  { id: 'farrington_dev', label: 'Your organization' },
   { id: 'ContentStudio', label: 'ContentStudio' },
   { id: 'sample_business', label: 'WNC Times' },
   { id: 'client_automation', label: 'Client automation product' },

@@ -321,7 +321,7 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
     baseTemplateId: '',
     title: '',
     docType: 'agreement', // agreement | policy | addendum | order_form
-    providerName: 'Farrington Development LLC',
+    providerName: 'Your organization',
     counterpartyLabel: 'Client', // Client | Customer | Counterparty | Licensee | Subscriber | etc.
     scopeStyle: 'work', // work | services
     pricingModel: 'fixed', // fixed | hourly | subscription | usage | none
@@ -755,7 +755,7 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
     { id: 'open-source-release-addendum', label: 'Open Source Release Addendum' },
   ]
 
-  const DEFAULT_NOTICE = `> **LEGAL NOTICE (TEMPLATE - NOT LEGAL ADVICE):** This document is a starting template, not a finished legal contract. Have a licensed attorney review and customize before use. Remove any internal/template notes before sending for signature. Farrington Development LLC and any AI that filled in this template are not your lawyers.\n\n---\n\n`
+  const DEFAULT_NOTICE = `> **LEGAL NOTICE (TEMPLATE - NOT LEGAL ADVICE):** This document is a starting template, not a finished legal contract. Have a licensed attorney review and customize before use. Remove any internal/template notes before sending for signature. Your organization and any AI that filled in this template are not your lawyers.\n\n---\n\n`
 
   const setFirstHeading = (body, title) => {
     const t = String(title || '').trim()
@@ -780,7 +780,7 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
 
   const generateScratchTemplate = (w, name) => {
     const title = String(w?.title || name || (w?.docType === 'policy' ? 'Policy Template' : 'Agreement Template')).trim()
-    const providerName = String(w?.providerName || 'Farrington Development LLC').trim() || 'Farrington Development LLC'
+    const providerName = String(w?.providerName || 'Your organization').trim() || 'Your organization'
     const counterpartyLabel = String(w?.counterpartyLabel || 'Client').trim() || 'Client'
     const scopeKey = w?.scopeStyle === 'services' ? 'scope_of_services' : 'scope_of_work'
     const blocks = []
@@ -828,7 +828,7 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
         } else {
           const providerIsFarrington = /farrington\s+development/i.test(providerName)
           const providerSigner = providerIsFarrington
-            ? 'Name: Carl Farrington  \nTitle: Owner'
+            ? 'Name: Workspace owner  \nTitle: Owner'
             : 'Name: [Provider signer name]  \nTitle: [Provider signer title]'
           blocks.push(`---\n\n**PROVIDER (${providerName})**\n\nBy: _______________________________  Date: ____________  \n${providerSigner}\n\n**${clientLabel} ({{client_name}})**\n\nBy: _______________________________  Date: ____________  \nName: {{client_signer_name}}  \nTitle: {{client_signer_title}}\n`)
         }

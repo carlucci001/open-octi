@@ -12,6 +12,8 @@ if [ ! -f "$config_file" ]; then
   cp /opt/openocti-seed/openclaw.json "$config_file"
   cp -R /opt/openocti-seed/workspace "$state_dir/workspace"
 fi
+# Load the authored specialist knowledge into every selected agent, including existing installs.
+node /opt/openocti/deploy/openclaw/seed-knowledge.mjs "$state_dir" /opt/openocti-knowledge
 # Re-apply provider/model/gateway settings from the environment on every boot so that adding a key
 # to .env later "lights up" the agents without a volume reset. Set OPENOCTI_MANAGED_CONFIG=false to
 # take over openclaw.json by hand.

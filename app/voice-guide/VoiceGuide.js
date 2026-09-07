@@ -14,7 +14,7 @@ const MATILDA_SECTIONS = [
       { tool: 'whats_next',     say: '"What\'s next on my calendar?"',                          does: 'Returns the next upcoming meeting with day and time.' },
       { tool: 'whats_overdue',  say: '"What am I behind on?"',                                  does: 'Lists up to 5 overdue tasks with their due dates.' },
       { tool: 'pipeline_status', say: '"Show me the pipeline status."',                         does: 'Total open deals, total value, breakdown by pipeline.' },
-      { tool: 'account_summary', say: '"Tell me about Marjorie Farrington."',                   does: 'Verbal briefing: contact info, opportunities, projects, open tasks, last activity.' },
+      { tool: 'account_summary', say: '"Tell me about Sample Client."',                   does: 'Verbal briefing: contact info, opportunities, projects, open tasks, last activity.' },
     ],
   },
   {
@@ -23,9 +23,9 @@ const MATILDA_SECTIONS = [
     desc: 'Move around the CRM hands-free.',
     items: [
       { tool: 'navigate_to',   say: '"Take me to the dashboard." / "Open the network menu."',  does: 'Switches to any section: dashboard, accounts, leads, pipelines, contacts, projects, tasks, billing, documents, calendar, notes, domains, credentials, phone, network.' },
-      { tool: 'open_record',   say: '"Open Marjorie Farrington\'s record."',                    does: 'Finds and opens the matching account/lead/contact/domain detail panel.' },
+      { tool: 'open_record',   say: '"Open Sample Client\'s record."',                    does: 'Finds and opens the matching account/lead/contact/domain detail panel.' },
       { tool: 'find_contact',  say: '"What\'s Marge\'s phone number?"',                         does: 'Looks up email and phone without opening the record.' },
-      { tool: 'filter_leads',  say: '"Show me Farrington Development leads."',                  does: 'Opens the Leads page filtered by campaign: sponsors, newspapers, TDAs, or Farrington Development.' },
+      { tool: 'filter_leads',  say: '"Show me Your organization leads."',                  does: 'Opens the Leads page filtered by campaign: sponsors, newspapers, TDAs, or Your organization.' },
     ],
   },
   {
@@ -34,7 +34,7 @@ const MATILDA_SECTIONS = [
     desc: 'Real telephony — through your computer audio.',
     items: [
       { tool: 'dial_phone',       say: '"Dial Marge."',                                          does: 'Twilio in-browser call. Audio routes through your computer speakers and mic.' },
-      { tool: 'start_video_call', say: '"Video call Marjorie Farrington."',                      does: 'Creates a Jitsi room, emails the link to the client, opens the call panel inline.' },
+      { tool: 'start_video_call', say: '"Video call Sample Client."',                      does: 'Creates a Jitsi room, emails the link to the client, opens the call panel inline.' },
       { tool: 'kill_all_calls',   say: '"Hang up everything." / "Emergency hangup."',            does: 'Terminates every active or ringing Twilio call across the system.' },
     ],
   },
@@ -73,7 +73,7 @@ const MATILDA_SECTIONS = [
     desc: 'Booking and looking ahead.',
     items: [
       { tool: 'list_upcoming_events', say: '"What\'s on my calendar this week?"',                does: 'Lists upcoming events in a chosen window (default 7 days).' },
-      { tool: 'book_demo',            say: '"Book Justin Smith for a client call Tuesday at 2pm." / "Book a demo for Acme Tuesday at 2pm."',     does: 'Books normal appointments on Farrington Development, and only routes to ContentStudio Demos when the request is explicitly a demo.' },
+      { tool: 'book_demo',            say: '"Book Justin Smith for a client call Tuesday at 2pm." / "Book a demo for Acme Tuesday at 2pm."',     does: 'Books normal appointments on Your organization, and only routes to ContentStudio Demos when the request is explicitly a demo.' },
     ],
   },
   {
@@ -287,7 +287,7 @@ function guideSectionMatches(section, query) {
 const GENERAL_GUIDES = {
   'getting-started': {
     title: 'Getting Started',
-    intro: 'A quick orientation to the Farrington Command Center.',
+    intro: 'A quick orientation to the OpenOcti.',
     sections: [
       { heading: 'The Layout', body: 'Top header has the four global icons: AI assistant, help (this), settings, external website. Side menu lists every section. Click the AI icon any time to open the chat panel; it slides in from the right.' },
       { heading: 'Voice First', body: 'Click the audio button (in the AI panel header) or say "Hey Matilda" / "Hey Sasha" / etc. with the wake word listener on. The agent answers in their own voice through your speakers.' },
@@ -299,7 +299,7 @@ const GENERAL_GUIDES = {
     intro: 'How leads, accounts, contacts, opportunities, projects, and tasks fit together.',
     sections: [
       { heading: 'Leads → Accounts', body: 'Leads come in from inbound calls (Doreen), forms, and outreach campaigns. When a lead qualifies, "qualify" converts it into an Account + Contact + Opportunity in the chosen pipeline.' },
-      { heading: 'Pipelines & Stages', body: 'Each campaign type has its own pipeline: sponsors, newspapers, TDAs, Farrington Development, ContentStudio demos. Move opportunities through stages as deals progress.' },
+      { heading: 'Pipelines & Stages', body: 'Each campaign type has its own pipeline: sponsors, newspapers, TDAs, Your organization, ContentStudio demos. Move opportunities through stages as deals progress.' },
       { heading: 'Projects', body: 'Once a deal is signed, create a Project linked to the Account. Track budget, hours, due date, status.' },
       { heading: 'Tasks', body: 'Tasks can link to anything: account, contact, lead, opportunity, project. Voice-create them with Maggie or Matilda.' },
     ],

@@ -99,7 +99,7 @@ function agentPrompt(agent, userText, messages = []) {
     .map(m => `${m.role === 'assistant' ? agent.firstName || agent.name || 'Agent' : 'Carl'}: ${cleanText(m.content, 900)}`)
     .join('\n')
   return [
-    `You are ${agent.name || agent.firstName || 'a Farrington Command Center agent'}.`,
+    `You are ${agent.name || agent.firstName || 'a OpenOcti agent'}.`,
     agent.title ? `Title: ${agent.title}.` : '',
     agent.voiceProfile ? `Voice profile: ${agent.voiceProfile}.` : '',
     agent.description ? `Role context: ${agent.description}` : '',

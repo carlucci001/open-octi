@@ -309,7 +309,7 @@ export default function AutomationServicesPage() {
             <a href="#wizard" style={{ color: '#faf7f0', background: '#fff', borderRadius: 8, padding: '10px 14px', textDecoration: 'none', fontWeight: 900 }}>Build a test</a>
           </nav>
           <div style={{ maxWidth: 740 }}>
-            <Pill tone="blue">Powered by Farrington Command Center</Pill>
+            <Pill tone="blue">Powered by OpenOcti</Pill>
             <h1 style={{ color: '#fff', fontSize: 'clamp(44px, 7vw, 82px)', lineHeight: 0.96, margin: '18px 0 20px', maxWidth: 760 }}>Describe the outcome. We build the automation.</h1>
             <p style={{ color: '#5d564c', fontSize: 21, lineHeight: 1.45, maxWidth: 680, margin: '0 0 28px' }}>Lead sweeps, press lists, competitor reports, and content workflows that run through one operating layer: data sources, CRM records, email delivery, approvals, and credits.</p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>

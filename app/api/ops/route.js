@@ -6,6 +6,8 @@ import { readData, writeData } from '@/lib/dataStore'
 import { requireCrmRead, requireCrmWrite, requireUserManagement } from '@/lib/permissions'
 import { DEFAULT_CICD_ITEMS, mergeCicdDefaults, readCicdItems } from '@/lib/cicd-registry'
 import { startDeploy, deployStatus, recentRuns, planSteps } from '@/lib/opsDeploy'
+import { isOpenOcti } from '@/lib/edition'
+import { openOctiSystemStatus } from '@/lib/openocti-system-status'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -289,7 +291,7 @@ export async function GET(request) {
   const { error } = await requireCrmRead(request)
   if (error) return error
   const data = readOpsData()
-  return NextResponse.json({ ok: true, ...data, system: systemStatus() })
+  return NextResponse.json({ ok: true, ...data, system: isOpenOcti() ? await openOctiSystemStatus() : systemStatus() })
 }
 
 export async function POST(request) {

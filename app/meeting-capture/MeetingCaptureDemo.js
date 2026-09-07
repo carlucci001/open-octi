@@ -316,7 +316,7 @@ export default function MeetingCaptureDemo() {
         clientId: selectedClient?.id || '',
         clientName: selectedClient?.name || '',
         speakerMode: 'owner-first-two-speaker',
-        primarySpeakerName: 'Carl Farrington',
+        primarySpeakerName: 'Workspace owner',
         secondarySpeakerName: otherSpeakerName,
         ownerFirst: true,
         linkedRecordType: selectedClient ? 'account' : 'prospect',
@@ -439,7 +439,7 @@ export default function MeetingCaptureDemo() {
             <label className="block">
               <span className="block text-xs uppercase font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Speaker 1</span>
               <input
-                value="Carl Farrington"
+                value="Workspace owner"
                 readOnly
                 className="w-full rounded-lg p-3 text-sm"
                 style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text-muted)', outline: 'none' }}
@@ -500,7 +500,7 @@ export default function MeetingCaptureDemo() {
           <div className="rounded-lg p-3 mb-4 text-sm" style={{ background: 'var(--surface2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
             {savedIntelligence
               ? `Source: ${savedIntelligence.source === 'ai' ? 'AI analysis' : 'fallback analysis'}; speaker mode: ${savedIntelligence.diarizationMode || 'transcript only'}.`
-              : `Before save this panel is only a local draft. Saved analysis uses owner-first two-speaker mode: Carl Farrington, then ${otherSpeakerName}.`}
+              : `Before save this panel is only a local draft. Saved analysis uses owner-first two-speaker mode: Workspace owner, then ${otherSpeakerName}.`}
           </div>
           <SummaryBlock title="Summary" items={intelligenceSummary ? [intelligenceSummary] : []} empty="No transcript yet." />
           <SummaryBlock title="Participants" items={intelligenceParticipants} empty="Participants will appear after server analysis." />
@@ -511,7 +511,7 @@ export default function MeetingCaptureDemo() {
           <SummaryBlock title="Event Log" items={events.map(e => `${e.at} - ${e.message}`)} empty="No events yet." />
           <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
             <div className="text-xs uppercase font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Owner</div>
-            <div className="text-sm" style={{ color: 'var(--text)' }}>Carl Farrington, owner-operator. Capture agent: Maggie.</div>
+            <div className="text-sm" style={{ color: 'var(--text)' }}>Workspace owner, owner-operator. Capture agent: Maggie.</div>
           </div>
           <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
             <div className="text-xs uppercase font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Save Destination</div>

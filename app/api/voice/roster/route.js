@@ -3,6 +3,9 @@ import { readData } from '@/lib/dataStore'
 import { requireCapability } from '@/lib/permissions'
 import { PRESET_BY_ID } from '@/lib/agent-presets'
 import { normalizeVoiceProfile } from '@/lib/voiceProfile'
+import { isOpenOcti } from '@/lib/edition'
+import { listOpenOctiKeyStatus } from '@/lib/openocti-keys'
+import { OPENOCTI_VOICE_STARTERS, openOctiVoiceProfile } from '@/lib/openocti-voice-routing'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -88,6 +91,21 @@ export async function GET(request) {
   const defaultCfg = readData('voice-agent.json') || {}
   const roster = readData('voice-agent-roster.json') || {}
   const agentsFile = readData('agents.json') || { agents: {} }
+
+  if (isOpenOcti()) {
+    const providers = listOpenOctiKeyStatus()
+    const agents = OPENOCTI_VOICE_STARTERS.map(starter => {
+      const profile = openOctiVoiceProfile(providers, starter.id)
+      const local = agentsFile.agents?.[starter.id] || {}
+      return {
+        ...starter, firstName: starter.name, name: local.name || starter.name,
+        ...profileFields(profile), agentId: null, runtimeProvider: null,
+        setupMessage: profile.setupMessage || '',
+        jobDescription: local.jobDescription || '', ...avatarFields(local),
+      }
+    })
+    return NextResponse.json({ ok: true, agents, count: agents.length })
+  }
 
   const out = []
 

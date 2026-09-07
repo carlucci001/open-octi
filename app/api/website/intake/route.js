@@ -102,11 +102,11 @@ export async function POST(request) {
   const needs = Array.isArray(body.needs) ? body.needs.map(v => clean(v, 80)).filter(Boolean) : []
   const source = clean(body.source || 'fd-website', 80)
   const ref = clean(body.ref, 80)
-  const productOpportunity = clean(body.productOpportunity || 'Farrington Development Project Intake', 180)
+  const productOpportunity = clean(body.productOpportunity || 'Your organization Project Intake', 180)
   const submissionId = submissionIdFrom(request, body)
   const serviceLine = clean(
     body.serviceLine ||
-      (/command center/i.test(productOpportunity) ? 'Farrington Development - Command Center' : 'Farrington Development Services'),
+      (/command center/i.test(productOpportunity) ? 'Your organization - Command Center' : 'Your organization Services'),
     180
   )
 

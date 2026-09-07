@@ -42,7 +42,7 @@ function ensureProofAutomation() {
     output: { format: 'crm-leads', destination: 'crm-and-email' },
     approval: { required: true, approver: 'Carl' },
     delivery: { method: 'email', channels: ['email', 'crm'], recipients: [DEFAULT_RECIPIENT] },
-    campaign: { subject: 'Western NC plumber lead sweep', senderProfile: 'Farrington Development', cadence: 'manual' },
+    campaign: { subject: 'Western NC plumber lead sweep', senderProfile: 'Your organization', cadence: 'manual' },
     trigger: { type: 'manual', config: { publicProof: true } },
     steps: [
       { id: 'search', label: 'Search buying signals with Apify' },

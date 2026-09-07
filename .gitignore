@@ -146,3 +146,4 @@ vault/lead-sources/county/*-arcgis-*.md
 data/monitoring.sqlite
 data/monitoring.sqlite-wal
 data/monitoring.sqlite-shm
+*.tsbuildinfo

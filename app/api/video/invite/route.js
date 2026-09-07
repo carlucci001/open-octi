@@ -1,3 +1,4 @@
+import { effectiveProviderEnv } from '@/lib/openocti-keys'
 // Video-meeting invite — creates a Daily.co room and emails the join URL.
 // POST { to, name?, subject?, note?, when?, persistent? (bool), seed? }
 // Email is intentionally lightweight (no template chrome, no big CTA button,
@@ -17,7 +18,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 async function createDailyRoom({ seed, persistent }) {
-  const apiKey = process.env.DAILY_API_KEY
+  const apiKey = effectiveProviderEnv().DAILY_API_KEY
   if (!apiKey) throw new Error('DAILY_API_KEY not set')
   const slug = String(seed || 'meeting').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'meeting'
   const name = persistent ? `ff-${slug}` : `ff-${slug}-${Math.random().toString(36).slice(2, 8)}`
@@ -45,7 +46,11 @@ async function createDailyRoom({ seed, persistent }) {
   })
   const data = await res.json()
   if (!res.ok) {
-    if (res.status === 409) return { url: `https://${process.env.DAILY_SUBDOMAIN || 'farringtondev'}.daily.co/${name}`, name }
+    if (res.status === 409) {
+      const existing = await fetch(`https://api.daily.co/v1/rooms/${encodeURIComponent(name)}`, { headers: { Authorization: `Bearer ${apiKey}` } })
+      const room = await existing.json()
+      if (existing.ok && room.url) return { url: room.url, name }
+    }
     throw new Error(data.error || data.info || 'Daily room creation failed')
   }
   return { url: data.url, name: data.name }
@@ -100,7 +105,7 @@ export async function POST(request) {
       ? new Date(when).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
       : 'at your earliest convenience'
 
-    // Conversational subject (no "Video call with Farrington Development" template-feel).
+    // Conversational subject (no "Video call with Your organization" template-feel).
     // Short timestamp suffix prevents Gmail from threading/deduping repeated sends.
     const timeTag = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     const baseSubject = subject || `Video link from Carl · ${timeTag}`
@@ -144,7 +149,7 @@ ${when ? `<p>When: ${whenText}</p>` : ''}
 </div>`
 
     const resend = new Resend(resendKey)
-    const primaryFromAddr = process.env.FARRINGTON_FROM_EMAIL || 'Carl Farrington <redacted@example.invalid>'
+    const primaryFromAddr = process.env.FARRINGTON_FROM_EMAIL || 'Workspace owner <redacted@example.invalid>'
     const fallbackFromAddr = process.env.FARRINGTON_FALLBACK_FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'ContentStudio <redacted@example.invalid>'
     const sendPayload = {
       from: primaryFromAddr,

@@ -43,7 +43,7 @@ async function sendVideoInvite({ name, email, startIso, summary, origin, isDemo 
       body: JSON.stringify({
         to: email,
         attendeeName: name,
-        eventTitle: summary || (isDemo ? 'Farrington Development demo' : 'Farrington Development appointment'),
+        eventTitle: summary || (isDemo ? 'Your organization demo' : 'Your organization appointment'),
         eventStart: startIso,
         isDemo,
       }),

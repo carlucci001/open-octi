@@ -68,7 +68,7 @@ function formLinks(form, request) {
     ...form,
     publicUrl,
     embedUrl,
-    embedCode: `<iframe src="${embedUrl}" title="${String(form.title || 'Farrington form').replace(/"/g, '&quot;')}" style="width:100%;min-height:720px;border:0;border-radius:8px;"></iframe>`,
+    embedCode: `<iframe src="${embedUrl}" title="${String(form.title || 'OpenOcti form').replace(/"/g, '&quot;')}" style="width:100%;min-height:720px;border:0;border-radius:8px;"></iframe>`,
   }
 }
 
@@ -428,8 +428,8 @@ async function openclawText({ sessionKey, prompt }) {
 }
 
 async function expandScopeWithAI({ templateName, dictation, clientName, additionalContext }) {
-  const system = `You are drafting the Scope of Work section for a "${templateName}" between Farrington Development LLC and ${clientName}. Turn the user's plain-language dictation into formal, professional contract prose suitable for insertion into a legal document. Use clear headings, bulleted deliverables where appropriate, concrete milestones if any are implied, and avoid legalese that's not in the input. Do not invent prices, dates, or scope not present in the input. Return only the scope prose, no meta commentary, no markdown code fences.`
-  const userPrompt = `Dictation from Farrington (expand into formal scope):\n\n"""${dictation}"""${additionalContext ? `\n\nAdditional context:\n${additionalContext}` : ''}`
+  const system = `You are drafting the Scope of Work section for a "${templateName}" between Your organization and ${clientName}. Turn the user's plain-language dictation into formal, professional contract prose suitable for insertion into a legal document. Use clear headings, bulleted deliverables where appropriate, concrete milestones if any are implied, and avoid legalese that's not in the input. Do not invent prices, dates, or scope not present in the input. Return only the scope prose, no meta commentary, no markdown code fences.`
+  const userPrompt = `Dictation from OpenOcti (expand into formal scope):\n\n"""${dictation}"""${additionalContext ? `\n\nAdditional context:\n${additionalContext}` : ''}`
 
   const cred = getCred('anthropic')
   if (cred?.key) {
@@ -470,10 +470,10 @@ async function sendSignatureEmail({ to, signerName, title, signUrl }) {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return { ok: false, error: 'RESEND_API_KEY not set' }
   const openEdition = isOpenOcti()
-  const from = process.env.RESEND_FROM || (openEdition ? 'OpenOcti <noreply@openocti.com>' : 'Farrington Development <redacted@example.invalid>')
+  const from = process.env.RESEND_FROM || (openEdition ? 'OpenOcti <noreply@openocti.com>' : 'Your organization <redacted@example.invalid>')
   const fallbackFrom = process.env.RESEND_FALLBACK_FROM || from
   const replyTo = openEdition ? (process.env.OWNER_EMAIL || '') : (process.env.CARL_EMAIL || 'personal@example.invalid')
-  const senderName = openEdition ? (process.env.OPENOCTI_BUSINESS_NAME || 'Your business') : 'Carl Farrington'
+  const senderName = openEdition ? (process.env.OPENOCTI_BUSINESS_NAME || 'Your business') : 'Workspace owner'
   const bodyHtml = `
     <p>Hi ${signerName || 'there'},</p>
     <p>${senderName} has sent you <strong>${title}</strong> for electronic review and signature.</p>
@@ -512,7 +512,7 @@ function buildPdf({ title, body, signature }) {
     const logoPath = path.join(process.cwd(), 'public', ...(brand.openOcti ? ['openocti', 'logo-horizontal.png'] : ['brand', 'fd-brand-dark.png']))
     if (fs.existsSync(logoPath)) doc.image(logoPath, 50, 40, { width: 240 })
     doc.fontSize(9).font('Helvetica').fillColor('#6B6F78')
-    doc.text(brand.openOcti ? 'OpenOcti' : 'Farrington Development LLC', 50, 115)
+    doc.text(brand.openOcti ? 'OpenOcti' : 'Your organization', 50, 115)
     if (!brand.openOcti) doc.text('City, STrth Carolina')
     doc.text(brand.openOcti ? 'openocti.com' : 'company.example.com')
 
@@ -668,7 +668,7 @@ export async function POST(request) {
     }
 
     const title = String(w.title || body.title || body.name || '').trim()
-    const defaultProviderName = isOpenOcti() ? 'Your business' : 'Farrington Development LLC'
+    const defaultProviderName = isOpenOcti() ? 'Your business' : 'Your organization'
     const providerName = String(w.providerName || defaultProviderName).trim() || defaultProviderName
     const counterpartyLabel = String(w.counterpartyLabel || 'Client').trim() || 'Client'
     const scopeKey = w.scopeStyle === 'services' ? 'scope_of_services' : 'scope_of_work'
@@ -710,7 +710,7 @@ export async function POST(request) {
         else text = `# ${title}\n\n${text}`
       }
       if (!/^\s*>\s*\*\*LEGAL NOTICE/i.test(text)) {
-        const publisher = isOpenOcti() ? 'OpenOcti' : 'Farrington Development LLC'
+        const publisher = isOpenOcti() ? 'OpenOcti' : 'Your organization'
         const notice = `> **LEGAL NOTICE (TEMPLATE - NOT LEGAL ADVICE):** This document is a starting template, not a finished legal contract. Have a licensed attorney review and customize before use. Remove any internal/template notes before sending for signature. ${publisher} and any AI that filled in this template are not your lawyers.\n\n---\n\n`
         text = notice + text
       }

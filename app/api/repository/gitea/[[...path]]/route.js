@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { SESSION_COOKIE } from '@/lib/auth'
 import { requireCapability } from '@/lib/permissions'
+import { isOpenOcti } from '@/lib/edition'
+import { giteaIdentity } from '@/lib/openocti-gitea'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -425,7 +427,15 @@ async function proxy(request, context) {
   const { user, error } = await requireCapability(request, 'system:manage')
   if (error) return error
 
-  const target = targetUrl(request, context?.params)
+  const incoming = new URL(request.url)
+  if (isOpenOcti() && !['GET', 'HEAD'].includes(request.method.toUpperCase())) {
+    const origin = request.headers.get('origin')
+    const allowedOrigin = process.env.PUBLIC_APP_URL ? new URL(process.env.PUBLIC_APP_URL).origin : incoming.origin
+    if (!origin || ![incoming.origin, allowedOrigin].includes(origin)) {
+      return NextResponse.json({ error: 'Repository changes must come from this installation.' }, { status: 403 })
+    }
+  }
+  const target = targetUrl(request, await context?.params)
   const headers = new Headers()
   for (const name of ['accept', 'accept-language', 'content-type', 'user-agent', 'referer']) {
     const value = request.headers.get(name)
@@ -433,10 +443,16 @@ async function proxy(request, context) {
   }
   const cookie = filterCookie(request.headers.get('cookie') || '')
   if (cookie) headers.set('cookie', cookie)
-  headers.set('x-webauth-user', 'carl')
-  headers.set('x-webauth-email', 'redacted@example.invalid')
-  headers.set('x-webauth-fullname', user?.displayName || 'Carl Farrington')
-  headers.set('x-forwarded-proto', 'https')
+  if (isOpenOcti()) {
+    const identity = giteaIdentity(user)
+    headers.set('x-webauth-user', identity.name)
+    headers.set('x-webauth-fullname', identity.fullName)
+  } else {
+    headers.set('x-webauth-user', 'carl')
+    headers.set('x-webauth-email', 'redacted@example.invalid')
+    headers.set('x-webauth-fullname', user?.displayName || 'Workspace owner')
+  }
+  headers.set('x-forwarded-proto', process.env.PUBLIC_APP_URL ? new URL(process.env.PUBLIC_APP_URL).protocol.replace(':', '') : incoming.protocol.replace(':', ''))
   headers.set('x-forwarded-host', new URL(request.url).host)
 
   const method = request.method.toUpperCase()
@@ -450,7 +466,12 @@ async function proxy(request, context) {
     init.body = await request.arrayBuffer()
   }
 
-  const upstream = await fetch(target, init)
+  let upstream
+  try {
+    upstream = await fetch(target, { ...init, signal: AbortSignal.timeout(30000) })
+  } catch {
+    return new Response('<!doctype html><html lang="en"><body><h2>Repository is unavailable</h2><p>The Gitea service is starting or could not be reached. Use Refresh to check again.</p></body></html>', { status: 503, headers: { 'content-type': 'text/html; charset=utf-8' } })
+  }
   const theme = repositoryTheme(request)
   const outHeaders = new Headers()
   upstream.headers.forEach((value, key) => {

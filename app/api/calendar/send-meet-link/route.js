@@ -1,3 +1,4 @@
+import { effectiveProviderEnv } from '@/lib/openocti-keys'
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { wrapEmailBody } from '@/lib/emailSignature'
@@ -8,7 +9,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 async function createDailyRoom({ seed, persistent }) {
-  const apiKey = process.env.DAILY_API_KEY
+  const apiKey = effectiveProviderEnv().DAILY_API_KEY
   if (!apiKey) throw new Error('DAILY_API_KEY not set')
   const slug = String(seed || 'appointment').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'appointment'
   const name = persistent ? `ff-${slug}` : `ff-${slug}-${Math.random().toString(36).slice(2, 8)}`
@@ -30,7 +31,11 @@ async function createDailyRoom({ seed, persistent }) {
   })
   const data = await res.json()
   if (!res.ok) {
-    if (res.status === 409) return { url: `https://${process.env.DAILY_SUBDOMAIN || 'farringtondev'}.daily.co/${name}`, name }
+    if (res.status === 409) {
+      const existing = await fetch(`https://api.daily.co/v1/rooms/${encodeURIComponent(name)}`, { headers: { Authorization: `Bearer ${apiKey}` } })
+      const room = await existing.json()
+      if (existing.ok && room.url) return { url: room.url, name }
+    }
     throw new Error(data.error || data.info || 'Daily room creation failed')
   }
   return { url: data.url, name: data.name }
@@ -81,7 +86,7 @@ export async function POST(request) {
       from: from || 'ContentStudio <redacted@example.invalid>',
       to: [to],
       replyTo: 'personal@example.invalid',
-      subject: `Video link for our ${appointmentLabel} — ${eventTitle || 'Farrington Development'}`,
+      subject: `Video link for our ${appointmentLabel} — ${eventTitle || 'Your organization'}`,
       html,
     })
     if (result.error) return NextResponse.json({ error: result.error.message }, { status: 502 })

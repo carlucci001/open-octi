@@ -509,7 +509,7 @@ export default function Dashboard({ onNavigate }) {
         { label: "Sponsors",       value: campaignBuckets.sponsors,       color: CAMPAIGN_COLORS.sponsors },
         { label: "Newspapers",     value: campaignBuckets.newspaper,      color: CAMPAIGN_COLORS.newspaper },
         { label: "TDAs",           value: campaignBuckets.tda,            color: CAMPAIGN_COLORS.tda },
-        { label: BRAND_ASSETS.openOcti ? "Business Development" : "Farrington Dev", value: campaignBuckets.farrington_dev, color: CAMPAIGN_COLORS.farrington_dev },
+        { label: BRAND_ASSETS.openOcti ? "Business Development" : "Business Development", value: campaignBuckets.farrington_dev, color: CAMPAIGN_COLORS.farrington_dev },
       ].filter(s => s.value > 0);
 
       // Activity pulse — multi-series daily activity across 6 categories, last 7/14/30 days.
@@ -581,7 +581,7 @@ export default function Dashboard({ onNavigate }) {
       <PageHeader
         icon={<CommandCenterIcon />}
         title={BRAND_ASSETS.openOcti ? "OpenOcti Dashboard" : "Command Center Dashboard"}
-        subtitle={`${BRAND_ASSETS.openOcti ? "Your AI operations workspace" : "Farrington Development Command Center"} - ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`}
+        subtitle={`${BRAND_ASSETS.openOcti ? "Your AI operations workspace" : "Your organization Command Center"} - ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`}
       />
 
       <OpenOctiFirstRun />

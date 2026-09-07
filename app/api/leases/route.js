@@ -119,7 +119,7 @@ export async function DELETE(request) {
   leasesFile.lastUpdated = new Date().toISOString()
   writeData('leases.json', leasesFile)
 
-  // Flip the agent back to in-house (Farrington Development by default)
+  // Flip the agent back to in-house (Your organization by default)
   const agentsFile = readData('agents.json') || { agents: {} }
   const ag = agentsFile.agents?.[lease.agentId]
   if (ag) {

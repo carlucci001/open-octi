@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import PaymentTerminal from '../payments/PaymentTerminal'
-import InvoicesManager from '../billing/InvoicesManager'
+import InvoicesManager from './InvoicesManager'
 import OverheadManager from '../overhead/OverheadManager'
 import FinanceOverview from './FinanceOverview'
 import FinanceImportButton from './FinanceImportButton'

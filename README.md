@@ -18,17 +18,25 @@ docker compose up -d
 
 Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
 
+On a new installation, choose your own username and password on **Create your admin account**. You are signed in immediately; later visits show the normal sign-in screen. No `.env` file, preassigned password, or API key is needed for local Docker setup. The app generates and stores its session secret in the persistent data volume. Docker binds to localhost by default; see the installation guide before exposing a remote server.
+
+**Allow time for the first launch.** Downloading the Docker images and starting the containers can take several minutes. After creating your account, keep the page open while your workspace loads. In a development preview, the first dashboard load may take a minute while pages compile; later visits are faster. Published Docker images contain precompiled pages.
+
+**Your own repository workspace.** Docker Compose includes Gitea with separate persistent storage. Open **Repository** to sign in with your OpenOcti account and create or import your own repositories. No company repositories or business accounts are preloaded. See [Repository setup](docs/INSTALL.md#repository-workspace) for access and startup details.
+
 > See the [1.2.1 release notes](docs/releases/1.2.1.md) for enforced release privacy checks, and the [1.2.0 release notes](docs/releases/1.2.0.md) for connection setup and monitoring. Versioned images are published from the matching release tag; use a source build when testing an untagged checkout.
 
 ## One key lights it up
 
-The CRM, projects, documents, and local knowledge tools work without an AI provider. Add any one supported model key in Models & Keys—OpenAI, Anthropic, Google Gemini, or OpenRouter—to activate Octi and the starter staff. Voice, email, calling, and research connectors need their own provider credentials only when you enable those features. Start with [Model providers](docs/guides/model-providers.md).
+**Want voice interaction during first setup? OpenAI is recommended.** In **Settings → Models & Keys**, save an OpenAI key for Marin voice or a Google Gemini key for Kore voice. Octi selects an available voice automatically; choose **Start voice with Octi** and allow microphone access when ready. English is the default. Active voice usage is billed by the selected provider. With only an Anthropic, OpenRouter, or OrcaRouter key, the expert setup assistant remains available in text and explains how to add voice later.
+
+The CRM, projects, documents, and local knowledge tools work without an AI provider. Add any one supported model key in Models & Keys—OpenAI, Anthropic, Google Gemini, OpenRouter, or OrcaRouter—to activate text assistance. The Docker agent service restarts automatically after provider changes so starter agents load the new models; allow a few seconds. OrcaRouter is recommended for routed text tasks and uses its own key. Voice, email, calling, and research connectors need their corresponding credentials or service installation. Start with [Model providers](docs/guides/model-providers.md).
 
 ## Highlights
 
 - **Connection setup and monitoring** — Settings explains missing provider connections and offers administrator connection tests. Application, Cloudflare and Nylas checks include persistent history, optional failure/recovery alerts, and a recurring timer template. [Guide](docs/guides/MONITORING.md)
 
-- **A starter AI staff, one key to light it up** — Octi, Maggie, Craig, Sasha, Linda and Matilda ship as agent definitions; paste one OpenAI, Anthropic, Google Gemini or OpenRouter key in Models & Keys and they come alive on your own server. [Guide](docs/guides/agents.md) · [Screen](docs/screenshots/agents.jpg)
+- **A starter AI staff, one model key** — Octi, Maggie, Craig, Sasha, Linda and Matilda ship as agent definitions. Add a supported model key in Models & Keys and allow the Docker agent service to finish restarting. Voice and phone features show their separate setup requirements. [Guide](docs/guides/agents.md) · [Screen](docs/screenshots/agents.jpg)
 - **Context-aware agents on every screen** — the Operator rail follows the section and the record you have open; on a lead, one click gives you Next Calls, an email draft or a clean-data pass built from that lead. [Guide](docs/guides/operator-rail.md) · [Screen](docs/screenshots/operator-rail-lead.jpg)
 - **Command Vault** — an Obsidian-compatible Markdown knowledge base built in: multiple vault roots (one per project), wikilinks, graph view, semantic search, orphan detection and a Prompt Workshop. [Guide](docs/guides/command-vault.md) · [Screen](docs/screenshots/command-vault-graph.jpg)
 - **TruthDiff** — pick a note and see which knowledge is affected by what changed in Git: drift analysis between your docs and your code, built into the vault's Impact view. [Guide](docs/guides/truthdiff.md)

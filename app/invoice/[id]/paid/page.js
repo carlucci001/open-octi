@@ -27,7 +27,7 @@ export default function InvoicePaidPage({ params }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0B0D', color: '#F5F1EA', fontFamily: 'system-ui, sans-serif', padding: 24 }}>
       <div style={{ maxWidth: 480, width: '100%', background: '#15171C', border: '1px solid #2A2D35', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-        <img src="/brand/fd-brand-light.png" alt="Farrington Development" style={{ height: 40, marginBottom: 32 }} />
+        <img src="/brand/fd-brand-light.png" alt="Your organization" style={{ height: 40, marginBottom: 32 }} />
 
         {status === 'checking' && (
           <>
@@ -63,7 +63,7 @@ export default function InvoicePaidPage({ params }) {
           <>
             <div style={{ fontSize: 48, marginBottom: 16 }}>⚠</div>
             <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 8, color: '#ef4444' }}>Something went wrong</h1>
-            <p style={{ color: '#8B8F98' }}>{error || 'Please contact Farrington Development.'}</p>
+            <p style={{ color: '#8B8F98' }}>{error || 'Please contact Your organization.'}</p>
           </>
         )}
       </div>

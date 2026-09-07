@@ -44,7 +44,7 @@ export default function GiteaWorkspace() {
   const [ops, setOps] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [frameReady, setFrameReady] = useState(false)
+  const [frameRevision, setFrameRevision] = useState(0)
   const [theme, setTheme] = useState('codex-dark')
 
   const giteaUrl = resolveRepositoryLinks({ giteaUrl: ops?.system?.gitea?.url || '/api/repository/gitea/' }).gitea || '/api/repository/gitea/'
@@ -53,9 +53,11 @@ export default function GiteaWorkspace() {
   const embeddedUrl = `/api/repository/gitea/?fccTheme=${encodeURIComponent(repositoryFrameTheme)}&fccThemeVersion=2`
   const fullFrameUrl = embeddedUrl
   const repo = useMemo(() => (ops?.cicdItems || []).find(item => item.id === 'cicd-fcc') || (ops?.cicdItems || [])[0], [ops])
-  const repoName = repo?.repo || 'farrington-command-center'
-  const repoBranch = ops?.system?.repo?.branch || repo?.branch || 'codex/finish-cicd'
-  const repoPath = ops?.system?.repo?.path || repo?.localPath || 'production deployment copy'
+  const repoName = repo?.repo || 'OpenOcti'
+  const repoBranch = ops?.system?.repo?.branch || repo?.branch || ''
+  const repoPath = ops?.system?.repo?.path || repo?.localPath || ''
+  const publicInstall = ops?.system?.edition === 'openocti'
+  const repositoryReady = ops?.system?.gitea?.status === 'active'
 
   const load = async () => {
     setBusy(true)
@@ -72,6 +74,7 @@ export default function GiteaWorkspace() {
       }
       if (!res.ok || !json?.ok) throw new Error(json?.error || `Ops API failed (${res.status}).`)
       setOps(json)
+      setFrameRevision(value => value + 1)
     } catch (err) {
       setError(err?.message || 'Repository status could not be loaded.')
     } finally {
@@ -97,7 +100,7 @@ export default function GiteaWorkspace() {
       <PageHeader
         icon={<GitBranch size={20} />}
         title="Repository"
-        subtitle={`${repoName} on ${repoBranch} at ${repoPath}`}
+        subtitle={publicInstall ? 'Your repositories, hosted in this OpenOcti installation' : `${repoName} on ${repoBranch} at ${repoPath}`}
         actions={(
           <div className="flex flex-wrap gap-2">
             <ActionButton onClick={load}><RefreshCw size={16} /> {busy ? 'Checking' : 'Refresh'}</ActionButton>
@@ -106,8 +109,8 @@ export default function GiteaWorkspace() {
         )}
       >
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={ops?.system?.gitea?.status === 'active' ? 'green' : 'red'}>{ops?.system?.gitea?.status || 'checking'}</Badge>
-          <Badge tone={ops?.system?.crm?.status === 'active' ? 'green' : 'red'}>CRM {ops?.system?.crm?.status || 'unknown'}</Badge>
+          <Badge tone={repositoryReady ? 'green' : 'muted'}>Gitea {ops?.system?.gitea?.status || 'checking'}</Badge>
+          <Badge tone={ops?.system?.crm?.status === 'active' ? 'green' : 'muted'}>CRM {ops?.system?.crm?.status || 'checking'}{ops?.system?.crm?.runtime ? ` · ${ops.system.crm.runtime}` : ''}</Badge>
         </div>
         {error ? (
           <div className="mt-3 rounded-md px-3 py-2 text-sm" style={{ background: 'var(--red-soft)', color: 'var(--red)', border: '1px solid var(--border)' }}>
@@ -120,19 +123,18 @@ export default function GiteaWorkspace() {
         <section className="repository-frame-shell rounded-lg overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)', minHeight: 'calc(100vh - 230px)' }}>
           <div className="repository-frame-header flex items-center justify-between gap-3 px-4 py-3" style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
             <div className="min-w-0">
-              <div className="font-semibold" style={{ color: 'var(--text)' }}>Embedded repository console</div>
-              <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{giteaUrl} through Command Center SSO</div>
+              <div className="font-semibold" style={{ color: 'var(--text)' }}>Gitea</div>
+              <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{publicInstall ? 'Signed in with your OpenOcti account' : `${giteaUrl} through Command Center SSO`}</div>
             </div>
-            <Badge tone={frameReady ? 'green' : 'muted'}>{frameReady ? 'frame loaded' : 'frame pending'}</Badge>
+            <Badge tone={repositoryReady ? 'green' : 'muted'}>{repositoryReady ? 'Service connected' : 'Waiting for service'}</Badge>
           </div>
-          <iframe
+          {repositoryReady ? <iframe
             title="Repository"
-            key={embeddedUrl}
+            key={`${embeddedUrl}-${frameRevision}`}
             src={embeddedUrl}
-            onLoad={() => setFrameReady(true)}
             className="w-full"
             style={{ height: 'calc(100vh - 285px)', minHeight: 520, border: 0, background: 'var(--base)', colorScheme: repositoryFrameDark ? 'dark' : 'light' }}
-          />
+          /> : <div className="p-6 text-sm" style={{ color: 'var(--text-muted)' }}>{busy || !ops ? 'Checking repository service…' : 'Gitea is not available yet. If this is the first start, allow a minute, then use Refresh.'}</div>}
         </section>
       </div>
     </div>

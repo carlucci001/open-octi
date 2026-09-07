@@ -38,7 +38,7 @@ function hydrateProjectLinks(data) {
 }
 
 function genId() { return 'inv_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) }
-function genInvoiceNum() { return `FD-${Date.now().toString().slice(-6)}` }
+function genInvoiceNum() { return `INV-${Date.now().toString().slice(-6)}` }
 
 function loadInvoices() { return readData(DATA_FILE) || { invoices: [], lastUpdated: null } }
 function saveInvoices(data) { data.lastUpdated = new Date().toISOString(); writeData(DATA_FILE, data) }
@@ -126,17 +126,15 @@ function buildPdf(invoice, client) {
     doc.on('data', c => chunks.push(c))
     doc.on('end', () => resolve(Buffer.concat(chunks)))
 
-    const logoPath = path.join(process.cwd(), 'public', 'brand', 'fd-brand-dark.png')
+    const logoPath = path.join(process.cwd(), 'public', 'openocti', 'logo-horizontal.png')
     if (fs.existsSync(logoPath)) {
       doc.image(logoPath, 50, 40, { width: 240 })
     } else {
-      doc.fontSize(20).font('Helvetica-Bold').fillColor('#0A0B0D').text('Farrington Development', 50, 50)
+      doc.fontSize(20).font('Helvetica-Bold').fillColor('#0A0B0D').text('Your organization', 50, 50)
     }
 
     doc.fontSize(9).font('Helvetica').fillColor('#6B6F78')
-    doc.text('Farrington Development LLC', 50, 115)
-    doc.text('City, STrth Carolina')
-    doc.text('www.company.example.com')
+    doc.text('Your organization', 50, 115)
 
     doc.fontSize(28).font('Helvetica-Bold').fillColor('#0A0B0D')
     doc.text('INVOICE', 400, 50, { align: 'right' })
@@ -208,7 +206,7 @@ function buildPdf(invoice, client) {
 
     doc.fontSize(8).font('Helvetica').fillColor('#6B6F78')
     doc.text('Thank you for your business!', 50, 720, { align: 'center', width: 512 })
-    doc.text('Farrington Development LLC — City, ST', { align: 'center', width: 512 })
+    doc.text('Your organization — City, ST', { align: 'center', width: 512 })
 
     doc.end()
   })
@@ -395,14 +393,14 @@ export async function POST(request) {
       `
 
       const resend = new Resend(resendKey)
-      const fromAddr = process.env.FARRINGTON_FROM_EMAIL || process.env.RESEND_FROM || 'Farrington Development <redacted@example.invalid>'
-      const fallbackFromAddr = process.env.RESEND_FALLBACK_FROM || process.env.RESEND_FROM || 'Farrington Development <redacted@example.invalid>'
+      const fromAddr = process.env.FARRINGTON_FROM_EMAIL || process.env.RESEND_FROM || 'Your organization <redacted@example.invalid>'
+      const fallbackFromAddr = process.env.RESEND_FALLBACK_FROM || process.env.RESEND_FROM || 'Your organization <redacted@example.invalid>'
       const timeTag = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
       let result = await resend.emails.send({
         from: fromAddr,
         to: [email],
         replyTo: 'personal@example.invalid',
-        subject: `Invoice ${invoice.number} from Farrington Development · ${timeTag}`,
+        subject: `Invoice ${invoice.number} from Your organization · ${timeTag}`,
         html: wrapEmailBody(bodyHtml),
         attachments: [{ filename: `invoice-${invoice.number}.pdf`, content: pdfBuf.toString('base64') }],
       })
@@ -411,7 +409,7 @@ export async function POST(request) {
           from: fallbackFromAddr,
           to: [email],
           replyTo: 'personal@example.invalid',
-          subject: `Invoice ${invoice.number} from Farrington Development - ${timeTag}`,
+          subject: `Invoice ${invoice.number} from Your organization - ${timeTag}`,
           html: wrapEmailBody(bodyHtml),
           attachments: [{ filename: `invoice-${invoice.number}.pdf`, content: pdfBuf.toString('base64') }],
         })

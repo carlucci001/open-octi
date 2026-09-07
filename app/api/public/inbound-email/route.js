@@ -46,7 +46,7 @@ async function sendGmailCopy(message, detail) {
   try {
     const resend = new Resend(key)
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'Farrington Development <redacted@example.invalid>',
+      from: process.env.RESEND_FROM_EMAIL || 'Your organization <redacted@example.invalid>',
       to,
       replyTo: message.from || undefined,
       subject: `[${message.inboxLabel}] ${message.subject}`,

@@ -60,15 +60,15 @@ async function sendProductInquiryEmails({ buyer, company, productName, offerName
   if (!resendKey) return { ok: false, skipped: true, reason: 'RESEND_API_KEY not set' }
 
   const resend = new Resend(resendKey)
-  const from = process.env.RESEND_FROM || 'Farrington Development <redacted@example.invalid>'
-  const fallbackFrom = process.env.RESEND_FALLBACK_FROM || 'Farrington Development <redacted@example.invalid>'
+  const from = process.env.RESEND_FROM || 'Your organization <redacted@example.invalid>'
+  const fallbackFrom = process.env.RESEND_FALLBACK_FROM || 'Your organization <redacted@example.invalid>'
   const replyTo = process.env.RESEND_REPLY_TO || 'personal@example.invalid'
   const carlEmail = process.env.LEAD_NOTIFY_EMAIL || 'personal@example.invalid'
   const range = estimatedLow || estimatedHigh ? `${money(estimatedLow)}-${money(estimatedHigh)}` : 'Review required'
 
   const internalBody = `
     <h2 style="margin:0 0 8px;font-size:20px">New Command Center consult</h2>
-    <p style="margin:0 0 12px;color:#6b7084">A product consult request was captured in the Farrington Development pipeline and marked as a Command Center service inquiry.</p>
+    <p style="margin:0 0 12px;color:#6b7084">A product consult request was captured in the Your organization pipeline and marked as a Command Center service inquiry.</p>
     ${detailRows([
       ['Name', buyer.name],
       ['Company', company],
@@ -87,7 +87,7 @@ async function sendProductInquiryEmails({ buyer, company, productName, offerName
   `
   const visitorBody = `
     <p style="margin:0 0 12px">Hi ${escapeHtml(buyer.name)},</p>
-    <p style="margin:0 0 12px">We received your Farrington Command Center consult request for <strong>${escapeHtml(company)}</strong>.</p>
+    <p style="margin:0 0 12px">We received your OpenOcti consult request for <strong>${escapeHtml(company)}</strong>.</p>
     <p style="margin:0 0 12px">Selected path: <strong>${escapeHtml(offerName || 'Review needed')}</strong><br/>Estimated build: <strong>${escapeHtml(range)}</strong></p>
     <p style="margin:0">Carl will review the setup path, modules, deployment model, and fit before anything is treated as a final scope or price.</p>
   `
@@ -114,7 +114,7 @@ async function sendProductInquiryEmails({ buyer, company, productName, offerName
     sendWithFallback({
       to: [buyer.email],
       replyTo,
-      subject: 'We received your Farrington Command Center consult request',
+      subject: 'We received your OpenOcti consult request',
       html: visitor.html,
       attachments: visitor.inlineAttachments,
     }),
@@ -149,8 +149,8 @@ export async function POST(request) {
   }
 
   const qualification = body.qualification || {}
-  const productName = clean(body.productName || 'Farrington Command Center', 160)
-  const serviceLine = clean(body.serviceLine || `Farrington Development - ${productName}`, 180)
+  const productName = clean(body.productName || 'OpenOcti', 160)
+  const serviceLine = clean(body.serviceLine || `Your organization - ${productName}`, 180)
   const offerName = clean(body.offerName, 160)
   const source = clean(body.source || 'product-inquiry', 80)
   const estimatedLow = Number(body.estimatedBuildLow || 0)

@@ -35,10 +35,10 @@ export function providerRegistrations(env = process.env) {
   return providers
 }
 
-function replaceProfileTokens(value, profile) {
+export function replaceProfileTokens(value, profile) {
   let result = String(value)
-  if (profile.businessName) result = result.replaceAll('{{business_name}}', profile.businessName)
-  if (profile.ownerName) result = result.replaceAll('{{owner_name}}', profile.ownerName)
+  result = result.replaceAll('{{business_name}}', profile.businessName || 'your organization')
+  result = result.replaceAll('{{owner_name}}', profile.ownerName || 'the workspace owner')
   return result
 }
 
@@ -89,6 +89,7 @@ export function configureSeed(stateDir, env = process.env) {
   const gatewayToken = secrets.OPENCLAW_GATEWAY_TOKEN
   const apiKey = secrets.OPENCLAW_API_KEY
   config.gateway = Object.assign({}, config.gateway || {}, {
+    reload: { ...(config.gateway?.reload || {}), mode: 'restart' },
     mode: 'local',
     port: Number(env.OPENCLAW_PORT || 18789),
     bind: String(env.OPENCLAW_BIND || 'lan'),

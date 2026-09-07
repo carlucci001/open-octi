@@ -85,7 +85,7 @@ describe('external capability manifest', () => {
   })
 
   it('returns the standard fail-closed 503 shape when a capability is missing', () => {
-    expect(requireCapability('daily', { FCC_EDITION: 'openocti' })).toMatchObject({
+    expect(requireCapability('daily', { FCC_EDITION: 'commandcenter' })).toMatchObject({
       status: 503,
       body: {
         ok: false,
@@ -99,6 +99,7 @@ describe('external capability manifest', () => {
 
   it('lets OpenOcti model routes perform their encrypted key-store check', () => {
     expect(requireCapability('models', { FCC_EDITION: 'openocti' })).toBeNull()
+    expect(requireCapability('daily', { FCC_EDITION: 'openocti' })).toBeNull()
     expect(requireCapability('models', { FCC_EDITION: 'commandcenter' })).toMatchObject({
       status: 503,
       body: { capability: 'models', error: 'not_configured' },

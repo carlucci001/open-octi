@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { marked } from 'marked'
 import PageHeader from '../components/PageHeader'
 import ViewModeToggle from '../components/ViewModeToggle'
+import { isOpenOcti } from '@/lib/edition'
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false })
 const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), { ssr: false })
@@ -1256,7 +1257,7 @@ export default function NotesManager() {
   const [reindexNote, setReindexNote] = useState('')
 
   // Graph filters
-  const [graphMode, setGraphMode] = useState('semantic') // semantic | wikilink | impact
+  const [graphMode, setGraphMode] = useState(() => isOpenOcti() ? 'wikilink' : 'semantic') // semantic | wikilink | impact
   const [graphDim, setGraphDim] = useState('3d') // 3d (spinning globe) | 2d
   const [impactRange, setImpactRange] = useState('working')
   const [selectedImpactNode, setSelectedImpactNode] = useState('')
