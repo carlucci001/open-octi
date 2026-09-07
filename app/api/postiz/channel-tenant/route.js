@@ -7,12 +7,12 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { readData, writeData } from '@/lib/dataStore'
+import { POSTIZ_DEFAULT_TENANT as DEFAULT_TENANT } from '@/lib/postiz-config'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const MAP_FILE = 'postiz-channel-tenants.json'
-const DEFAULT_TENANT = 'farrington-development'
 
 export async function POST(request) {
   const { error } = await requireAdmin(request)

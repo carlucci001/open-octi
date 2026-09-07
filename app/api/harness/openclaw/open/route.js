@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import fs from 'fs'
+import { openClawDashboardLocation } from '@/lib/openclaw-dashboard'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -24,9 +25,9 @@ function readOpenClawGatewayToken() {
 export async function GET(request) {
   const { error } = await requireAdmin(request)
   if (error) return error
-  const origin = process.env.PUBLIC_TUNNEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://crm.company.example.com'
-  const target = new URL('/api/harness/dashboard/openclaw-hetzner/', origin)
   const token = readOpenClawGatewayToken()
-  if (token) target.hash = `token=${encodeURIComponent(token)}`
-  return NextResponse.redirect(target)
+  return new NextResponse(null, {
+    status: 307,
+    headers: { Location: openClawDashboardLocation(token), 'Cache-Control': 'no-store' },
+  })
 }

@@ -5,31 +5,18 @@
 // channels with their tenantId annotation (used by the admin tagging UI).
 //
 // Mapping file (kv_store: postiz-channel-tenants.json):
-//   { map: { <postizChannelId>: <tenantId> }, defaultTenantId: 'farrington-development' }
+//   { map: { <postizChannelId>: <tenantId> }, defaultTenantId: 'default' }
 // Channels with no mapping fall back to defaultTenantId (in-house).
 
 import { NextResponse } from 'next/server'
 import { requireCapability } from '@/lib/permissions'
 import { readData } from '@/lib/dataStore'
+import { getPostizConfig, POSTIZ_DEFAULT_TENANT as DEFAULT_TENANT } from '@/lib/postiz-config'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const MAP_FILE = 'postiz-channel-tenants.json'
-const DEFAULT_TENANT = 'farrington-development'
-
-function getPostizConfig() {
-  let base = (process.env.POSTIZ_API_URL || '').trim().replace(/\/$/, '')
-  if (base === 'https://postiz.company.example.com/api/public/v1') {
-    base = 'http://127.0.0.1:5005/api/public/v1'
-  }
-  const key = (process.env.POSTIZ_API_KEY || '').trim()
-  if (!base || !key) return null
-  if (!/\/api\/public\/v1$/.test(base) && !/\/public\/v1$/.test(base)) {
-    return { error: 'POSTIZ_API_URL must point to the Postiz Public API, ending in /api/public/v1 or /public/v1' }
-  }
-  return { base, key }
-}
 
 function summarizePostizBody(text, contentType) {
   const raw = String(text || '')
@@ -76,14 +63,11 @@ export async function GET(request) {
   const wantTenant = (url.searchParams.get('tenantId') || '').trim()
 
   try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 12000)
     const r = await fetch(`${cfg.base}/integrations`, {
       headers: { Authorization: cfg.key, 'User-Agent': 'fcc-campaign-studio/1' },
       cache: 'no-store',
-      signal: controller.signal,
+      signal: AbortSignal.timeout(12000),
     })
-    clearTimeout(timeout)
     const text = await r.text()
     const contentType = r.headers.get('content-type') || ''
     let body = null
@@ -96,6 +80,7 @@ export async function GET(request) {
       })
     }
 
+    if (!Array.isArray(body)) return emptyChannelResponse({ warning: 'Postiz returned an unexpected response. Check the Public API URL.' })
     const { map, accountMap, defaultTenantId } = loadMap()
     const all = (Array.isArray(body) ? body : []).map(c => ({
       id: c.id,

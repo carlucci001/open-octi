@@ -62,7 +62,7 @@
     {
       "path": "Dockerfile",
       "kind": "text",
-      "sha256": "39927075bc38308cc2e03d30bb32c764074b6d4f0706ab2cf75e62d84c51706e"
+      "sha256": "149ce0520c39b571b544ee1a87ec07d88dc6d1227a1c3c4ba06019d3d96b20ae"
     },
     {
       "path": "LICENSE",
@@ -87,7 +87,7 @@
     {
       "path": "README.md",
       "kind": "text",
-      "sha256": "e5733580cbacd86ee0a849feba3a17280fde5b0523c288c17d63e2e3f9323ca1"
+      "sha256": "67bf635b9f8ab74392b68880a9ecfaf13409c17013d6a9707b11b3987d2d59e2"
     },
     {
       "path": "SECURITY.md",
@@ -102,7 +102,7 @@
     {
       "path": "VERSION.json",
       "kind": "text",
-      "sha256": "06de50a9f100ce162b42c4a35b0a2ad7cc65adb0a3eac933a0a6d2532d783ecf"
+      "sha256": "279a8c288dba2824f8968d2667ef8e9f9106d54e2be7500981922a72a6503eaf"
     },
     {
       "path": "__tests__/featureInventory.test.js",
@@ -697,7 +697,7 @@
     {
       "path": "app/api/harness/dashboard/[runtime]/[[...path]]/route.js",
       "kind": "text",
-      "sha256": "86082e7b822d8ee53985063359cdf45febe11b8812b2ebc9e7bad1bda3c32adf"
+      "sha256": "5d928006c6c3790cfa773b1ec7fe4ae9fc8a6d1a5eb79379dfd1d351c59ccec4"
     },
     {
       "path": "app/api/harness/deerflow/open/route.js",
@@ -707,7 +707,7 @@
     {
       "path": "app/api/harness/openclaw/open/route.js",
       "kind": "text",
-      "sha256": "d1a1237352cea17a514007f93ef6ff7caf88159d6f3e1371c339c52d91396a95"
+      "sha256": "777b0c8381fa8eb842fdcebbeb151bf1a7772b614df45610dbf760c4a4ca3d9b"
     },
     {
       "path": "app/api/harness/runtimes/route.js",
@@ -1137,17 +1137,17 @@
     {
       "path": "app/api/postiz/channel-tenant/route.js",
       "kind": "text",
-      "sha256": "2b77f7b2fe3e01a6bdebc9d289d2800a6eadf52bc880fa271f47175692ecbf8b"
+      "sha256": "d587dcc26ed34596fe48c8899e511768c8fb158c9497b093cad02a7325106861"
     },
     {
       "path": "app/api/postiz/channels/route.js",
       "kind": "text",
-      "sha256": "3b5ecc4b71582b8d7d9e0a283932787e6f6ae2f692e9dad4b95a3bc74c474240"
+      "sha256": "e89677eaad480ddc4957d92cf7bc1205eaba1c0c04b0216a52bf5519b0928fab"
     },
     {
       "path": "app/api/postiz/publish/route.js",
       "kind": "text",
-      "sha256": "91ba4dcc993321968834da4fed711a92238349b77a77e6a2b61ae7a6db1f0c66"
+      "sha256": "d178846c977dc29569c14e7936952c4a9fae60cdcb3dc5ce578967152d84cc85"
     },
     {
       "path": "app/api/press/campaigns/[id]/route.js",
@@ -2222,7 +2222,7 @@
     {
       "path": "app/page.js",
       "kind": "text",
-      "sha256": "f4e3d15c1ebf0677740145f6cd78938fd84604c619c99be3cf7331c51c46d415"
+      "sha256": "0db6cc43ae64971bc44a3e46406895f2e65b98a95d94b08b6cae2e03fd3c73d2"
     },
     {
       "path": "app/payments/PaymentTerminal.js",
@@ -2417,7 +2417,7 @@
     {
       "path": "app/social/SocialPublishing.js",
       "kind": "text",
-      "sha256": "85e7413d5b0ef5c932ccadbc5fb5a8e161bd3759b76745517ceb746830e679a9"
+      "sha256": "c8f413fdee71c7d085586040e97d46b4194fc43381d85ff8e213a3a7b9c4254c"
     },
     {
       "path": "app/sponsors/SponsorCRM.js",
@@ -2887,7 +2887,7 @@
     {
       "path": "deploy/start-app.mjs",
       "kind": "text",
-      "sha256": "11b2a600694fe908ca59620ae61b16b1e4d488bd591abcec4db69059fc16b52f"
+      "sha256": "875bc604edbb8a6670985695e0c4d028090a3e1e35537c5f2c6bd0938de8d1b4"
     },
     {
       "path": "deploy/systemd/openocti-monitoring.service",
@@ -3607,12 +3607,12 @@
     {
       "path": "lib/integration-directory.js",
       "kind": "text",
-      "sha256": "2c42600ac5cec4ee2072c3e60cb07bc61e7892fc46d5eee99140c847676dd198"
+      "sha256": "dfae3c1e50beef4053c73675c696ed820754c3853d142e02db954f5e68f86917"
     },
     {
       "path": "lib/integration-probes.js",
       "kind": "text",
-      "sha256": "cebe3ec6f0f63027dc70f4cbb24127b1c2d94f37eea9a47cd478edcab770c047"
+      "sha256": "328a028688b6856a0e0b6e46131ef44cd2de0f64520d107c51cdb422e100e118"
     },
     {
       "path": "lib/integration-test-status.js",
@@ -4082,7 +4082,7 @@
     {
       "path": "lib/postiz-publish.js",
       "kind": "text",
-      "sha256": "ffafacd3284d473fef4b3ba08236389b7924db6182d876a62741172153921893"
+      "sha256": "d21de73298f41771e6fca4c1fa8cd2de951ccb352c748723d2e6eed09bc12c92"
     },
     {
       "path": "lib/press/acquisition-pr2.js",
@@ -4522,12 +4522,12 @@
     {
       "path": "package-lock.json",
       "kind": "text",
-      "sha256": "5eb55b43c251c9b9e1025cea8339c5808b3f857f459ed3f9bd40ae9c975b774b"
+      "sha256": "baee4030b59a483f5075780ac7d054710ab315eb11f0888d6b14900c2307ac34"
     },
     {
       "path": "package.json",
       "kind": "text",
-      "sha256": "99ae7975ba97ae14c51805d57df63efbc7d8d6c7be20400154662bdebacbee4f"
+      "sha256": "d2a9c4170e5a0f1f6e254670e7965d5779c8fee0f93472efd8044baf8c594678"
     },
     {
       "path": "postcss.config.js",
@@ -6294,6 +6294,52 @@
       "path": "__tests__/harnessReleaseAvailability.test.js",
       "kind": "text",
       "sha256": "a71f1ee2cd169116610dfeefb55d3e5d902b6eacaa8a7c3fcf13bf2116225951"
+    }
+  ,
+    {
+      "path": "lib/openclaw-dashboard.js",
+      "kind": "text",
+      "sha256": "e912c06c79db2e7a0ca2c32a82e8843257139d00fcd0d88e2c8db64068c2efd1"
+    },
+    {
+      "path": "deploy/openclaw-dashboard-proxy.mjs",
+      "kind": "text",
+      "sha256": "8368b0989382f74b89d263f399aac6ca75d7fda05452f155317cd31f6e93a610"
+    },
+    {
+      "path": "deploy/openocti-server.mjs",
+      "kind": "text",
+      "sha256": "1a097df57f1055bee1fe3cda8b4c6e0ec91bc9b63ec7f2d1fa77e0d46102d906"
+    },
+    {
+      "path": "app/api/harness/openclaw/authorize/route.js",
+      "kind": "text",
+      "sha256": "a4b68421cb70711e11bb797efe03a92c80b6a01563bb3dd65495ea827e43dd40"
+    },
+    {
+      "path": "__tests__/openclawDashboard.test.js",
+      "kind": "text",
+      "sha256": "3b05c54d6979d81a5d98dd3ba1b61697aecd074ccf30d18b5be340e9b938f9d8"
+    },
+    {
+      "path": "lib/postiz-config.js",
+      "kind": "text",
+      "sha256": "4ded77ab6d1b8295e2506fc2311381dc3675dc3274c1f61ae7cf9c00b2c27354"
+    },
+    {
+      "path": "__tests__/postizConnection.test.js",
+      "kind": "text",
+      "sha256": "c0d384c9786cd686e695ce39255c9830002013d7a52174c3eeafec459703d297"
+    },
+    {
+      "path": "docs/guides/postiz-setup.md",
+      "kind": "text",
+      "sha256": "5898215c8c6d756eff15a2be40288955b53249b998ad3554afe15a2f2f50c84b"
+    },
+    {
+      "path": "docs/releases/1.2.4.md",
+      "kind": "text",
+      "sha256": "b2c72032f58a22eb6ddf6f9f6dc10aa86e82ecee625d8458c5f44343c3b3aa76"
     }
   ]
 }

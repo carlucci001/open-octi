@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
 import nextEnv from '@next/env'
 import { isOpenOcti } from '../lib/edition.js'
 import { ensureMachineSecrets, machineSecretsPath } from './machine-secrets.mjs'
@@ -25,7 +26,9 @@ const require = createRequire(import.meta.url)
 const args = process.argv.slice(2)
 const [command, ...commandArgs] = args[0] === '--command'
   ? args.slice(1)
-  : [process.execPath, require.resolve('next/dist/bin/next'), 'start', ...args]
+  : isOpenOcti()
+    ? [process.execPath, fileURLToPath(new URL('./openocti-server.mjs', import.meta.url)), ...args]
+    : [process.execPath, require.resolve('next/dist/bin/next'), 'start', ...args]
 const child = spawn(command, commandArgs, { stdio: 'inherit', env: process.env })
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal))
 child.on('error', () => { console.error('Could not start the application process'); process.exit(1) })
