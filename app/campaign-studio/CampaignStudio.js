@@ -1,7 +1,7 @@
 'use client'
 import ThemedSelect from '../components/ThemedSelect'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { CalendarClock, Check, Image as Images, Megaphone, Pencil, Play, RotateCcw, Send, Sparkles, Trash2, Wand2 } from 'lucide-react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { CalendarClock, Check, ChevronDown, Image as Images, Megaphone, Pencil, Play, RotateCcw, Send, Sparkles, Trash2, Wand2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import ViewModeToggle from '../components/ViewModeToggle'
 import BulkActionsMenu from '../components/BulkActionsMenu'
@@ -387,6 +387,16 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
     })
   }, [campaigns, campaignSearch, campaignStatusFilter])
   const { page: campaignPage, setPage: setCampaignPage, pageSize: campaignPageSize, setPageSize: setCampaignPageSize, paginated: pagedCampaigns } = usePagination(visibleCampaigns, 25)
+  const revealCampaign = (id) => {
+    let index = visibleCampaigns.findIndex(campaign => campaign.id === id)
+    if (index < 0) {
+      setCampaignSearch('')
+      setCampaignStatusFilter('all')
+      index = campaigns.findIndex(campaign => campaign.id === id)
+    }
+    setCampaignPage(Math.floor(Math.max(0, index) / campaignPageSize) + 1)
+    setActiveId(id)
+  }
   const filteredPosts = useMemo(() => {
     const posts = active?.posts || []
     return postFilter === 'all' ? posts : posts.filter(p => p.status === postFilter)
@@ -1057,15 +1067,14 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
           campaigns={campaigns}
           config={socialOperatorConfig}
           onCampaignSaved={campaign => upsertCampaign(campaign)}
-          onOpenCampaign={campaignId => { setActiveId(campaignId); setWorkspace('campaigns') }}
+          onOpenCampaign={campaignId => { revealCampaign(campaignId); setWorkspace('campaigns') }}
         />
       ) : workspace === 'planner' ? (
         <SocialPublishing embedded onNavigate={onNavigate} onOpenCampaigns={() => setWorkspace('campaigns')} />
       ) : (
       <>
       {showGenerator && generatorCard}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: 16, alignItems: 'start' }}>
-        <aside style={{ display: 'grid', gap: 16 }}>
+      <div style={{ minWidth: 0 }}>
           <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginBottom: 10 }}>
               <div>
@@ -1088,7 +1097,7 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: 10, marginBottom: 12 }}>
               <Field label="Campaign name">
-                <ThemedSelect value={activeId} onChange={e => setActiveId(e.target.value)} style={selectStyle()}>
+                <ThemedSelect value={activeId} onChange={e => revealCampaign(e.target.value)} style={selectStyle()}>
                   <option value="">Select a campaign</option>
                   {campaigns.map(campaign => <option key={campaign.id} value={campaign.id}>{campaignMonthLabel(campaign)} - {campaign.name}</option>)}
                 </ThemedSelect>
@@ -1125,33 +1134,38 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
                 />
               </div>
             </div>
-            <div style={{ display: campaignView === 'card' ? 'grid' : 'block', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: campaignView === 'card' ? 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))' : 'minmax(0, 1fr)', gap: 10, alignItems: 'start' }}>
               {loading && <Pill>Loading</Pill>}
               {!loading && campaigns.length === 0 && <Pill tone="warn">No campaigns yet</Pill>}
               {!loading && campaigns.length > 0 && visibleCampaigns.length === 0 && <Pill tone="warn">No campaigns match your search</Pill>}
               {pagedCampaigns.map(campaign => (
+                <Fragment key={campaign.id}>
                 <div
-                  key={campaign.id}
+                  id={`campaign-trigger-${campaign.id}`}
+                  className={`campaign-row campaign-row--${campaignView}`}
                   role="button"
                   tabIndex={0}
+                  aria-label={campaign.name}
                   aria-expanded={active?.id === campaign.id}
-                  onClick={() => setActiveId(campaign.id)}
+                  aria-controls={active?.id === campaign.id ? `campaign-drawer-${campaign.id}` : undefined}
+                  onClick={() => setActiveId(current => current === campaign.id ? '' : campaign.id)}
                   onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault()
-                      setActiveId(campaign.id)
+                      setActiveId(current => current === campaign.id ? '' : campaign.id)
                     }
                   }}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: campaignView === 'card' ? '1fr' : 'auto minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(160px, 1fr) auto',
+                    gridColumn: active?.id === campaign.id ? '1 / -1' : undefined,
+                    minWidth: 0,
                     gap: 10,
                     alignItems: 'center',
                     borderRadius: 8,
                     border: `1px solid ${active?.id === campaign.id ? 'var(--accent)' : 'var(--border)'}`,
                     background: active?.id === campaign.id ? 'var(--accent-soft)' : 'var(--surface2)',
                     padding: 12,
-                    marginBottom: campaignView === 'card' ? 0 : 8,
                     color: 'var(--text)',
                     cursor: 'pointer',
                   }}
@@ -1183,35 +1197,23 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                     <ActionButton onClick={() => { setActiveId(campaign.id); setRenameDraft(campaign.name); setRenaming(true) }}><Pencil size={14} /> Rename</ActionButton>
                     <ActionButton onClick={() => { setActiveId(campaign.id); setConfirmDelete(true) }}><Trash2 size={14} /> Delete</ActionButton>
+                    <ChevronDown size={16} aria-hidden="true" style={{ alignSelf: 'center', transform: active?.id === campaign.id ? 'rotate(180deg)' : undefined }} />
                   </div>
                 </div>
-              ))}
-            </div>
-            <Paginator total={visibleCampaigns.length} page={campaignPage} pageSize={campaignPageSize} onPage={setCampaignPage} onPageSize={setCampaignPageSize} label="campaigns" />
-          </section>
-        </aside>
-
-        <main style={active ? {
+                {/* Keep the drawer beside its trigger in DOM order, before the next campaign. */}
+                {active?.id === campaign.id && (
+        <section id={`campaign-drawer-${campaign.id}`} aria-label={`${campaign.name} details`} className="campaign-detail-drawer" style={{
           display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          gridColumn: '1 / -1',
           gap: 12,
           minWidth: 0,
           alignContent: 'start',
-          maxHeight: 'calc(100vh - 150px)',
-          overflowY: 'auto',
           background: 'var(--surface)',
-          border: '1px solid var(--border)',
+          border: '1px solid var(--accent)',
           borderRadius: 8,
           padding: 12,
-        } : { display: 'none' }}>
-          {!active ? (
-            <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 24 }}>
-              <Pill tone={campaigns.length ? 'neutral' : 'warn'}>{campaigns.length ? 'Select a campaign to open its queue' : 'No campaigns yet'}</Pill>
-              <div style={{ marginTop: 14 }}>
-                <ActionButton onClick={openGenerator}><Wand2 size={14} /> New Campaign</ActionButton>
-              </div>
-            </section>
-          ) : (
-            <>
+        }}>
               <section style={{ order: -2, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start', flexWrap: 'wrap' }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
@@ -1225,7 +1227,7 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
                       <h2 style={{ color: 'var(--text)', fontSize: 18, fontWeight: 900 }}>{active.name}</h2>
                     )}
                     <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>{active.objective} for {active.audience} in {active.market}</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                    <div className="campaign-detail-summary" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
                       <Pill tone="active">{active.autopilot?.destination || 'No destination set'}</Pill>
                       <Pill>{active.tenantId || 'farrington-development'}</Pill>
                       <Pill tone={campaignPublisher.connected ? 'active' : 'warn'}>
@@ -1263,7 +1265,7 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
                 </div>
                 <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 800 }}>Image engine</span>
-                  <ThemedSelect value={active.creationEndpoint} onChange={e => patchCampaign({ creationEndpoint: e.target.value })} style={{ ...selectStyle(), width: 280 }}>
+                  <ThemedSelect value={active.creationEndpoint} onChange={e => patchCampaign({ creationEndpoint: e.target.value })} style={{ ...selectStyle(), width: 'min(100%, 280px)' }}>
                     {endpoints.map(ep => <option key={ep.id} value={ep.id}>{ep.label}</option>)}
                   </ThemedSelect>
                   {activeEndpoint?.modelLabel && (
@@ -1365,7 +1367,7 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
                             openPost(post)
                           }
                         }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 6, background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer' }}
+                        style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 6, background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer' }}
                       >
                         <input
                           type="checkbox"
@@ -1782,13 +1784,30 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
                   </article>
                 ))}
               </section>
-            </>
-          )}
-        </main>
+        </section>
+                )}
+                </Fragment>
+              ))}
+            </div>
+            <Paginator total={visibleCampaigns.length} page={campaignPage} pageSize={campaignPageSize} onPage={setCampaignPage} onPageSize={setCampaignPageSize} label="campaigns" />
+          </section>
       </div>
       </>
       )}
       <style jsx global>{`
+        .campaign-row--list {
+          grid-template-columns: auto minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+        }
+        .campaign-row--card { grid-template-columns: minmax(0, 1fr); }
+        .campaign-detail-drawer { animation: campaign-drawer-slide 180ms ease-out; }
+        .campaign-detail-summary > span { max-width: 100%; white-space: normal !important; overflow-wrap: anywhere; }
+        @media (max-width: 767px) {
+          .campaign-row--list { grid-template-columns: auto minmax(0, 1fr); }
+          .campaign-row--list > :nth-child(n + 3) { grid-column: 2; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .campaign-detail-drawer, .campaign-post-drawer { animation: none !important; }
+        }
         @keyframes campaign-twirl {
           to { transform: rotate(360deg); }
         }
