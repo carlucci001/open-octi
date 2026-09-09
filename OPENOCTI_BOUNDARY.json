@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "62d87d864c142e139ac7840e8a1486575a35c362",
+  "sourceCommit": "6369f4fa04838a9e699cb4f46f8762fdbf4cb919",
   "approvedPublicCommit": "d488f91548f57fd2f7c2198fc077a5828e47441e",
   "normalization": "utf8-lf-text/raw-binary",
   "files": [
@@ -103,6 +103,11 @@
       "path": "VERSION.json",
       "kind": "text",
       "sha256": "279a8c288dba2824f8968d2667ef8e9f9106d54e2be7500981922a72a6503eaf"
+    },
+    {
+      "path": "__tests__/CampaignStudioDrawer.test.jsx",
+      "kind": "text",
+      "sha256": "3df58e92bf398ccf9356d62fba297137c547a33d79b966e4a32b295212174d39"
     },
     {
       "path": "__tests__/featureInventory.test.js",
@@ -1632,7 +1637,7 @@
     {
       "path": "app/campaign-studio/CampaignStudio.js",
       "kind": "text",
-      "sha256": "9d221850fee75d63b17db044bbe7f4c8e390309e92e4db9210c6ef2f27a9203f"
+      "sha256": "84b5119922cff573a657c6d0b0bbcd17867a9a2838bbdde805907f25ac7ace21"
     },
     {
       "path": "app/campaign-studio/SocialOperatorPanel.jsx",
@@ -4522,12 +4527,12 @@
     {
       "path": "package-lock.json",
       "kind": "text",
-      "sha256": "baee4030b59a483f5075780ac7d054710ab315eb11f0888d6b14900c2307ac34"
+      "sha256": "b6d8e1d352eeef3842f252ea8ae0ec2647f00126ed77ed167ad7238673a8f522"
     },
     {
       "path": "package.json",
       "kind": "text",
-      "sha256": "d2a9c4170e5a0f1f6e254670e7965d5779c8fee0f93472efd8044baf8c594678"
+      "sha256": "6c843fa8f93510f101696a45f937904f6e4ad922d73b5152cfb3bd29ff15acef"
     },
     {
       "path": "postcss.config.js",
@@ -5052,7 +5057,7 @@
     {
       "path": "public/sw.js",
       "kind": "text",
-      "sha256": "56e8329c924c233b12759518f9ad5b10953aea2a09585cb5e75a8925e6c32ea3"
+      "sha256": "d6022cb2ff77af40d3c536585ebd9edabed173be4b96d6851488807beca25de1"
     },
     {
       "path": "scripts/build-doc-templates.js",
