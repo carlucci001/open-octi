@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { ExternalLink, RefreshCw } from 'lucide-react'
 import { useCapabilities } from '@/lib/client-capabilities'
 import { integrationDirectoryEntry } from '@/lib/integration-directory'
+import Link from 'next/link'
+import { isOpenOcti } from '@/lib/edition'
 
 export default function IntegrationsSettings() {
   const { capabilities, loading, refresh } = useCapabilities()
@@ -36,7 +38,8 @@ export default function IntegrationsSettings() {
     <section aria-labelledby="integrations-title">
       <div className="mb-5">
         <h2 id="integrations-title" className="text-xl font-semibold">Integrations</h2>
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>Configuration comes from this installation’s saved keys and server environment. Use Models & Keys for AI providers and Stripe for payments; other integrations list their required server settings below.</p>
+        {isOpenOcti() && <div className="flex flex-wrap gap-4"><Link href="/settings/postiz" className="underline inline-flex items-center" style={{ minHeight: 48 }}>Postiz setup</Link><Link href="/help" className="underline inline-flex items-center" style={{ minHeight: 48 }}>Getting started and Ask Octi</Link></div>}
+        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>{isOpenOcti() ? 'Configuration comes from this installation’s saved keys and server environment. Use Models & Keys for AI providers, Stripe for payments, and Postiz for publishing.' : 'Configuration is read from the server environment. Credential values are never displayed or stored here.'}</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-testid="integration-grid">
         {capabilities.map(capability => {

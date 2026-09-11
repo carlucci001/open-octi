@@ -127,7 +127,7 @@ export default function EmergencyHangup() {
   const [pollDegraded, setPollDegraded] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const [inactiveRoute] = useState(() => (
-    typeof window !== 'undefined' && /^(\/portal|\/login|\/sign\/|\/forms\/)/.test(window.location.pathname)
+    typeof window !== 'undefined' && /^(\/portal|\/login|\/help(?:\/|$)|\/sign\/|\/forms\/)/.test(window.location.pathname)
   ))
   const connectionCleanups = useRef(new Map())
 

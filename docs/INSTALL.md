@@ -2,22 +2,28 @@
 
 ## Requirements
 
-- Docker Engine with Docker Compose v2 (or Docker Desktop), **or** Node.js 24 or newer with npm
+- Docker Engine with Docker Compose v2.24 or newer (or Docker Desktop), **or** Node.js 24 or newer with npm
 - Git
-- A few GB of available RAM and several GB of free disk space
-- Port 3000 available, or configure another port as described below
+- Budget 8 GB RAM and 15 GB free disk for the combined local Docker installation
+- Ports 3000 and 4007 available, or configure other ports in the getting-started guide
 
 ## Install with Docker
+
+For the supported Postiz stack and first-run help, follow the [getting-started guide](guides/getting-started.md). Basic help is also available at `/help` before sign-in or model setup.
 
 ```sh
 git clone https://github.com/carlucci001/open-octi.git openocti
 cd openocti
-docker compose up -d
+node scripts/setup-openocti-postiz.mjs
 ```
 
-For a local Docker installation, no `.env` file or preassigned password is required. Open [http://localhost:3000](http://localhost:3000), choose your username and password on **Create your admin account**, and select **Create account and get started**. You are signed in immediately. Keep this login for later visits; there is no shared default password.
+The setup script creates this installation's Postiz secrets in `.env`. If Node is unavailable on the Docker host, the getting-started guide includes a temporary-container command. Open the local application and create your administrator account. For a remote installation, configure your own `INITIAL_ADMIN_PASSWORD` before exposing the service.
+
+For a local installation, choose your username and password on **Create your admin account**. You are signed in immediately. Keep this login for later visits; there is no shared default password.
 
 ```sh
+docker compose config --quiet
+docker compose up -d
 docker compose ps
 ```
 
@@ -39,6 +45,7 @@ Docker Compose includes Gitea. Open **Repository** after creating your OpenOcti 
 
 Gitea is reachable through the authenticated OpenOcti proxy on an isolated Docker network. Its web and SSH ports are not published to the host. The bundled workflow supports repository management in the browser. Direct Git CLI authentication is not configured by this setup. When changing the app address or port, set `PUBLIC_APP_URL` before restarting the services so Gitea generates the correct links.
 
+The CRM and OpenClaw share the named `openocti-data` volume. Postiz and its dependencies have separate persistent volumes. Removing containers does not remove these volumes. See the getting-started guide for a consistent backup of every volume and configuration file before an update. `docker compose down -v` deletes the installation's data.
 Plain Node installations do not start sidecar services. Configure your own Gitea service and `GITEA_INTERNAL_URL` to enable the Repository workspace there.
 
 ## Install with Node (no Docker)
@@ -52,7 +59,7 @@ npm ci
 cp .env.example .env
 ```
 
-Leave `INITIAL_ADMIN_PASSWORD` and `CRM_SESSION_SECRET` blank for local browser account setup, or configure the initial password for an unattended installation as described above. Then build and start OpenOcti:
+Set `CRM_DATA_DIR` to a writable absolute directory for this installation. Leave `INITIAL_ADMIN_PASSWORD` and `CRM_SESSION_SECRET` blank for local browser account setup, or configure the initial password for an unattended installation as described above. Then build and start OpenOcti:
 
 ```sh
 npm run build

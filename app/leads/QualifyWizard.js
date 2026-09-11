@@ -1,6 +1,8 @@
 'use client'
 import ThemedSelect from '../components/ThemedSelect'
 import { useState, useEffect, useMemo } from 'react'
+import ClientAccountSetup from '../accounts/ClientAccountSetup'
+import { isOpenOcti } from '@/lib/edition'
 
 function api(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()) }
 
@@ -11,7 +13,7 @@ export default function QualifyWizard({ lead, pipelines, onComplete, onClose }) 
   const [matches, setMatches] = useState([])
   const [existingContact, setExistingContact] = useState(null)
   const [chosenAccountId, setChosenAccountId] = useState(null) // null = create new
-  const [pipelineId, setPipelineId] = useState(lead.suggestedPipelineId || pipelines.find(p => p.id === 'farrington_dev')?.id || pipelines[0]?.id || '')
+  const [pipelineId, setPipelineId] = useState(pipelines.find(p => p.id === lead.suggestedPipelineId)?.id || pipelines.find(p => p.id === 'farrington_dev')?.id || pipelines[0]?.id || '')
   const [stageId, setStageId] = useState('')
   const [value, setValue] = useState('')
   const [expectedClose, setExpectedClose] = useState('')
@@ -22,6 +24,8 @@ export default function QualifyWizard({ lead, pipelines, onComplete, onClose }) 
   const [leadGenProvider, setLeadGenProvider] = useState('auto')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [converted, setConverted] = useState(null)
+  const [clientSetup, setClientSetup] = useState(false)
 
   // Run dedupe check when opened
   useEffect(() => {
@@ -38,13 +42,16 @@ export default function QualifyWizard({ lead, pipelines, onComplete, onClose }) 
   const pipeline = useMemo(() => pipelines.find(p => p.id === pipelineId), [pipelines, pipelineId])
 
   useEffect(() => {
+    if (!pipeline && pipelines.length) { setPipelineId(pipelines[0].id); return }
     if (pipeline && !pipeline.stages.some(s => s.id === stageId)) {
       setStageId(pipeline.stages[0]?.id || '')
     }
-  }, [pipeline, stageId])
+  }, [pipeline, pipelines, stageId])
 
   const finalize = async () => {
+    if (loading || converted) return
     setLoading(true); setError(null)
+    try {
     const r = await api('/api/leads', {
       action: 'qualify',
       leadId: lead.id,
@@ -72,9 +79,22 @@ export default function QualifyWizard({ lead, pipelines, onComplete, onClose }) 
         instructions: leadRequirementsPrompt || lead.notes || '',
       })
     }
-    setLoading(false)
-    onComplete?.(r)
+    setConverted(r)
+    } catch (failure) { setError(failure.message || 'Could not convert the lead. Retry to recover the existing conversion.') }
+    finally { setLoading(false) }
   }
+
+  if (clientSetup && converted) return <ClientAccountSetup accountId={converted.account.id} accountName={converted.account.name} opportunityId={converted.opportunity.id}
+    onClose={() => { setClientSetup(false); onComplete?.(converted) }} onChanged={() => {}} />
+
+  if (converted) return <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,.6)' }}>
+    <section role="dialog" aria-modal="true" aria-labelledby="lead-converted-title" className="w-full max-w-xl rounded-xl p-6" style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+      <h2 id="lead-converted-title" className="text-lg font-semibold">Prospect added to the pipeline</h2>
+      <p className="text-sm mt-2">{converted.account.name} is linked to its contact and opportunity. The pipeline stage stays under your control.</p>
+      <div className="rounded-lg p-4 my-4" style={{ background: 'var(--accent-soft)' }}><strong className="text-sm">{isOpenOcti() ? 'Next: client account' : 'Next: client account & portal access'}</strong><p className="text-sm mt-2">{isOpenOcti() ? 'Convert the prospect to a client now, or keep working it in the pipeline and convert it later.' : 'You can give complimentary access for a promotion or enable a pay-as-you-go account now. You can also keep working the prospect and set up access later from Pipelines.'}</p></div>
+      <div className="flex flex-wrap gap-2 justify-end"><button type="button" className="px-3 min-h-11 rounded-lg text-sm" style={{ border: '1px solid var(--border)' }} onClick={() => onComplete?.(converted)}>Keep in pipeline</button><button type="button" className="px-4 min-h-11 rounded-lg text-sm font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-text)' }} onClick={() => setClientSetup(true)}>{isOpenOcti() ? 'Set up client account' : 'Set up client or comp account'}</button></div>
+    </section>
+  </div>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }} onClick={onClose}>
@@ -84,7 +104,7 @@ export default function QualifyWizard({ lead, pipelines, onComplete, onClose }) 
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>· Step {step} of 3</span>
         </div>
         <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-          Converting <strong style={{ color: 'var(--text)' }}>{lead.name || '(no name)'}</strong> at <strong style={{ color: 'var(--text)' }}>{lead.businessName || '(no company)'}</strong> into a Prospect + Contact + Opportunity. Promote the prospect from the sales pipeline when it becomes a real client account.
+          Converting <strong style={{ color: 'var(--text)' }}>{lead.name || '(no name)'}</strong> at <strong style={{ color: 'var(--text)' }}>{lead.businessName || '(no company)'}</strong> into a Prospect + Contact + Opportunity. {isOpenOcti() ? 'Next, create a client account or keep working the prospect in the pipeline.' : 'Next, choose complimentary or pay-as-you-go client access, or keep working the prospect in the pipeline.'}
         </p>
 
         {error && <div className="mb-3 px-3 py-2 rounded-lg text-xs" style={{ background: 'var(--red-soft)', color: 'var(--red)', border: '1px solid var(--red)' }}>⚠ {error}</div>}

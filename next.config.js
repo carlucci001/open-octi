@@ -6,6 +6,13 @@ const isProd = process.env.NODE_ENV === 'production'
 const isOpenOcti = String(process.env.FCC_EDITION || '').trim().toLowerCase() === 'openocti'
 const openOctiStub = path.resolve(__dirname, 'lib/openocti/closed-module-stub.cjs')
 const closedModuleRequests = [
+  './lib/support/customer',
+  './lib/instrumentation-node',
+  './support.js',
+  './support/customer',
+  './SupportAccessSettings',
+  '@/lib/support/gateway',
+  '@/app/api/platforms/support/route',
   '@/lib/deep-research',
   '@/lib/deerflow-studio',
   '@/lib/deerflow-studio-voice',
@@ -37,6 +44,8 @@ const closedModuleRequests = [
   '@/lib/platforms/surfaceSelection',
   '@/lib/SearchTools3-client',
   '@/lib/SearchTools3-engagements',
+  '@/lib/octiccCatalog',
+  '@/lib/SearchTools3-engagements',
   '@/lib/VideoHub/channel',
   '@/lib/VideoHub/client',
   '@/lib/VideoHub/sync',
@@ -65,6 +74,7 @@ const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   env: {
+    NEXT_PUBLIC_APP_VERSION: isOpenOcti ? require('./package.json').version : '2.1',
     NEXT_PUBLIC_FCC_BUILD_NUMBER: BUILD_NUMBER,
     NEXT_PUBLIC_FCC_BUILD_COMMIT: BUILD_COMMIT,
     NEXT_PUBLIC_FCC_BUILT_AT: BUILT_AT,
@@ -83,6 +93,7 @@ const nextConfig = {
     tsconfigPath: isProd ? 'tsconfig.build.json' : 'tsconfig.json',
   },
   experimental: {
+    instrumentationHook: true,
     serverComponentsExternalPackages: ['pdfkit', 'better-sqlite3', '@xenova/transformers', 'onnxruntime-node'],
   },
   async headers() {

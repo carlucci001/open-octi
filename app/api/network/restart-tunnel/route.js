@@ -12,7 +12,7 @@ export async function POST(request) {
   try {
     // Kill stale cloudflared then re-trigger the boot task which re-establishes the tunnel.
     await run('powershell -NoProfile -Command "Get-Process cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force"', { timeout: 5000 }).catch(() => {})
-    await run('powershell -NoProfile -Command "Start-ScheduledTask -TaskName \\"Farrington Command Boot\\""', { timeout: 5000 })
+    await run('powershell -NoProfile -Command "Start-ScheduledTask -TaskName \\"OpenOcti Command Boot\\""', { timeout: 5000 })
     return NextResponse.json({ ok: true, message: 'Tunnel restart triggered. Give it ~10 seconds.' })
   } catch (e) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })

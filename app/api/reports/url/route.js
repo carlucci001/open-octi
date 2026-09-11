@@ -3,6 +3,7 @@ import { requireCrmWrite } from '@/lib/permissions'
 import { readData } from '@/lib/dataStore'
 import { runUrlReport, UrlReportError, URL_REPORT_TYPES } from '@/lib/url-report-engine'
 import { registerSearchTools3Completion } from '@/lib/SearchTools3-engagements'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,7 +31,7 @@ export async function POST(request) {
       createdBy: user?.id || user?.email || 'crm',
     })
     try {
-      registerSearchTools3Completion({
+      if (!isOpenOcti()) registerSearchTools3Completion({
         documentId: result.documentId,
         accountId: account.id,
         summary: result.summary,

@@ -4,7 +4,7 @@ export default function FrontEndPage() {
   return (
     <main style={{ minHeight: '100vh', margin: 0, background: '#faf7f0' }}>
       <iframe
-        src="/cc-front/Farrington.html"
+        src="/cc-front/OpenOcti.html"
         title="Front-end workspace"
         style={{
           display: 'block',

@@ -8,19 +8,20 @@
 
 OpenOcti is a self-hosted business operations workspace: CRM, projects, documents, communications, automations, knowledge, and a configurable AI staff in one local-first application.
 
-[openocti.com](https://openocti.com) · Managed edition: [Octi CC](https://octicc.com)
+[openocti.com](https://openocti.com) · Planned commercial edition: [Octi CC](https://octicc.com)
 
-## Install in three lines
+## Install with Docker
 
 ```bash
 git clone https://github.com/carlucci001/open-octi.git openocti
 cd openocti
+node scripts/setup-openocti-postiz.mjs
 docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
+Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The setup command needs Node.js 24 or newer; the [getting-started guide](docs/guides/getting-started.md) includes a temporary-container command for Docker hosts without Node. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
 
-On a new installation, choose your own username and password on **Create your admin account**. You are signed in immediately; later visits show the normal sign-in screen. No `.env` file, preassigned password, or API key is needed for local Docker setup. The app generates and stores its session secret in the persistent data volume. Docker binds to localhost by default; see the installation guide before exposing a remote server.
+On a new installation, choose your own username and password on **Create your admin account**. You are signed in immediately; later visits show the normal sign-in screen. The setup command creates this installation's Postiz secrets in `.env`; no preassigned account password or AI key is needed. The app generates and stores its session secret in the persistent data volume. Docker binds to localhost by default; see the installation guide before exposing a remote server.
 
 **Allow time for the first launch.** Downloading the Docker images and starting the containers can take several minutes. After creating your account, keep the page open while your workspace loads. In a development preview, the first dashboard load may take a minute while pages compile; later visits are faster. Published Docker images contain precompiled pages.
 
@@ -62,8 +63,8 @@ The CRM, projects, documents, and local knowledge tools work without an AI provi
 
 ## Everything inside
 
-- **Sell:** dashboard, leads, Press Desk, pipelines, accounts, support, contacts, and Finance for invoices and overhead.
-- **Build:** agents, automations, Builder (roadmap card in this edition), campaigns, local product definitions, repository status, Switchboard, and Labs. Ship Desk release monitoring is not packaged. Build Board requires a separately configured Hermes dashboard and Kanban service; Docker does not install Hermes.
+- **Sell:** dashboard, leads, pipelines, accounts, support, contacts, and Finance for invoices and overhead.
+- **Build:** agents, automations, Press Desk, Builder (roadmap card in this edition), campaigns, local product definitions, repository status, Switchboard, and Labs. Ship Desk release monitoring is not packaged. Build Board requires a separately configured Hermes dashboard and Kanban service; Docker does not install Hermes.
 
 Stripe setup is always available to the installation owner under **System → Admin → Stripe**. See the [billing setup guide](docs/guides/stripe-setup.md) for the connected payment flows and the steps still performed in Stripe Dashboard. This build does not automatically provision Stripe catalogs or reconcile subscription webhooks.
 - **Projects:** projects, tasks, documents, content, media, Command Vault, communications, calendar, transcription, and activity feed.
@@ -76,6 +77,8 @@ Money Console portfolio revenue monitoring is not packaged in this edition. Use 
 The six starter staff agents and eight prepared specialist templates include replaceable default headshots. Octi uses the mascot. Portraits work offline without keys; a prepared template's portrait does not mean its optional runtime is connected.
 
 Harness Lab includes OpenClaw and shows which other runtimes need configuration. Hermes is planned for a future release. [Star OpenOcti on GitHub](https://github.com/carlucci001/open-octi) to support the next harness integrations. See the [1.2.3 release notes](docs/releases/1.2.3.md) for Gitea, Daily conferencing, agent improvements, and current limits.
+
+The [1.3.0 update](docs/releases/1.3.0.md) adds the bundled Postiz service stack and first-run help. **Ask Octi** opens searchable instructions and recovery guidance before an AI key is configured. Follow the [getting-started guide](docs/guides/getting-started.md) and [Postiz setup guide](docs/guides/postiz-setup.md), connect your own social accounts, and verify your image and caption on the destination platform. A plain Node installation needs separately managed Postiz services.
 
 | Agent | Verified role |
 | --- | --- |
@@ -92,7 +95,7 @@ Agents remain disabled until their required model, voice, channel, and tool conn
 
 **OpenOcti (free, AGPL)** gives you the self-hosted application, local SQLite data, public modules, starter staff, source updates, and community support.
 
-**Octi CC (managed)** adds hosted operations, managed upgrades and backups, private client portal and concierge workflows, managed billing and payments, private research and platform integrations, and service monitoring. OpenOcti does not silently call those managed services.
+**Octi CC** is a planned commercial edition; only its marketing website is currently available. OpenOcti runs independently and does not include access to private business services, accounts, or funded provider usage.
 
 ## Guides
 
@@ -131,22 +134,28 @@ OpenOcti is licensed under [GNU AGPL v3](LICENSE). Developed by **OpenOcti contr
 
 ## Requirements
 
-- Docker Engine with Docker Compose v2 (or Docker Desktop), **or** Node.js 24 or newer with npm
+- Docker Engine with Docker Compose v2.24 or newer (or Docker Desktop), **or** Node.js 24 or newer with npm
 - Git
-- A few GB of available RAM and several GB of free disk space
-- Port 3000 available, or configure another port as described below
+- Budget 8 GB RAM and 15 GB free disk for the combined local Docker installation
+- Ports 3000 and 4007 available, or configure other ports in the getting-started guide
 
 ## Install with Docker
+
+For the supported Postiz stack and first-run help, follow the [getting-started guide](guides/getting-started.md). Basic help is also available at `/help` before sign-in or model setup.
 
 ```sh
 git clone https://github.com/carlucci001/open-octi.git openocti
 cd openocti
-docker compose up -d
+node scripts/setup-openocti-postiz.mjs
 ```
 
-For a local Docker installation, no `.env` file or preassigned password is required. Open [http://localhost:3000](http://localhost:3000), choose your username and password on **Create your admin account**, and select **Create account and get started**. You are signed in immediately. Keep this login for later visits; there is no shared default password.
+The setup script creates this installation's Postiz secrets in `.env`. If Node is unavailable on the Docker host, the getting-started guide includes a temporary-container command. Open the local application and create your administrator account. For a remote installation, configure your own `INITIAL_ADMIN_PASSWORD` before exposing the service.
+
+For a local installation, choose your username and password on **Create your admin account**. You are signed in immediately. Keep this login for later visits; there is no shared default password.
 
 ```sh
+docker compose config --quiet
+docker compose up -d
 docker compose ps
 ```
 
@@ -168,6 +177,7 @@ Docker Compose includes Gitea. Open **Repository** after creating your OpenOcti 
 
 Gitea is reachable through the authenticated OpenOcti proxy on an isolated Docker network. Its web and SSH ports are not published to the host. The bundled workflow supports repository management in the browser. Direct Git CLI authentication is not configured by this setup. When changing the app address or port, set `PUBLIC_APP_URL` before restarting the services so Gitea generates the correct links.
 
+The CRM and OpenClaw share the named `openocti-data` volume. Postiz and its dependencies have separate persistent volumes. Removing containers does not remove these volumes. See the getting-started guide for a consistent backup of every volume and configuration file before an update. `docker compose down -v` deletes the installation's data.
 Plain Node installations do not start sidecar services. Configure your own Gitea service and `GITEA_INTERNAL_URL` to enable the Repository workspace there.
 
 ## Install with Node (no Docker)
@@ -181,7 +191,7 @@ npm ci
 cp .env.example .env
 ```
 
-Leave `INITIAL_ADMIN_PASSWORD` and `CRM_SESSION_SECRET` blank for local browser account setup, or configure the initial password for an unattended installation as described above. Then build and start OpenOcti:
+Set `CRM_DATA_DIR` to a writable absolute directory for this installation. Leave `INITIAL_ADMIN_PASSWORD` and `CRM_SESSION_SECRET` blank for local browser account setup, or configure the initial password for an unattended installation as described above. Then build and start OpenOcti:
 
 ```sh
 npm run build
@@ -505,6 +515,197 @@ Select **Turn on Gesture Mode**, allow camera access, and wait for the tracking 
 
 Tracking may switch itself off when permission is denied, no camera exists, or another application owns the camera. Accuracy depends on lighting, framing, and browser performance.
 
+# Source: docs/guides/getting-started.md
+
+# Getting started with OpenOcti and Postiz
+
+This guide ships with the installed version. In OpenOcti, open **Ask Octi** or **/help** at any time. Built-in help and this file do not require a model key. Installation checks and conversational answers require administrator sign-in. Reviewed topics are remembered in this browser; a checkmark means you read the topic, not that a service or post was verified.
+
+## Before installing
+
+Use Docker Engine with Compose v2.24 or newer (or Docker Desktop), Git, and available disk and memory for OpenOcti plus the Postiz services. Reserve at least 8 GB RAM and 15 GB free disk for the combined development installation. Ports 3000 (OpenOcti) and 4007 (Postiz) must be available; use OPENOCTI_PORT and POSTIZ_PORT to change them. For plain Node, use Node.js 24 or newer.
+
+## Docker installation
+
+From the downloaded OpenOcti directory, run:
+
+~~~sh
+node scripts/setup-openocti-postiz.mjs
+docker compose config --quiet
+docker compose up -d
+docker compose ps
+~~~
+
+If Node is not installed on the host, run the first command inside a temporary Node container instead:
+
+~~~sh
+docker run --rm -v "${PWD}:/workspace" -w /workspace node:24-bookworm-slim node scripts/setup-openocti-postiz.mjs
+~~~
+
+The setup command creates three unique Postiz secrets in .env without displaying them. Re-running it preserves existing secrets. Protect and back up this file. Your social provider settings belong in a separate, optional postiz.env file read only by Postiz. Do not put private records or another installation's credentials in either file.
+
+OpenOcti, OpenClaw, Postiz, Postiz PostgreSQL, Redis, Temporal, Temporal PostgreSQL, and Temporal Elasticsearch start by default. The application can show setup help while Postiz is unavailable. Research services remain opt-in. The first download/start may take several minutes.
+
+Open http://localhost:3000 for OpenOcti and http://localhost:4007 for Postiz. Create your own administrator and Postiz accounts. If you configured an initial OpenOcti administrator password, use it at first sign-in.
+
+For another port or a public host, set PUBLIC_APP_URL to the OpenOcti browser address and POSTIZ_PUBLIC_URL to the Postiz browser address without a trailing slash. For POSTIZ_PORT=4017, also set POSTIZ_PUBLIC_URL=http://localhost:4017. Keep the Postiz internal API address at http://postiz:5000/api/public/v1. The dashboard binds to loopback by default; use your reverse proxy for public HTTPS and the provider's exact callback URL. Set POSTIZ_DISABLE_REGISTRATION=true after creating the accounts you need, then recreate the service with docker compose up -d postiz.
+
+## Plain Node installation
+
+Install the application using docs/INSTALL.md. Postiz is a separate service even when OpenOcti runs with Node. Either run this package's Postiz stack with docker compose up -d postiz (after generating secrets), follow the upstream Postiz installation guide on your own server, or use your own hosted Postiz account. For a Node app on the same host, use http://localhost:4007/api/public/v1 in Postiz settings. For hosted Postiz, use https://api.postiz.com/public/v1 and https://platform.postiz.com as the dashboard URL.
+
+## Setup walkthrough
+### Install and sign in
+
+1. Install Node.js 24 or newer for a plain Node installation, or Docker with Compose for the packaged installation.
+2. For Docker, run node scripts/setup-openocti-postiz.mjs, then docker compose up -d. The setup command creates installation secrets without displaying them.
+3. Open your OpenOcti address and complete the first administrator setup. Keep your administrator password in your password manager.
+
+**Expected result:** You can sign in to your own OpenOcti workspace.
+
+**In-app screen:** /login
+
+### Name your workspace
+
+1. Sign in as an administrator.
+2. Use the Getting started panel to save your business and owner names.
+
+**Expected result:** Your own workspace name appears in OpenOcti.
+
+**In-app screen:** /
+
+### Add a model when you are ready
+
+1. Open Models & Keys and choose a supported provider.
+2. Save your own provider key in its dedicated password field and run the connection check.
+3. Return here to try a question. A saved key verifies configuration; a successful answer verifies model execution.
+
+**Expected result:** Conversational help becomes available. Built-in help remains usable if the model fails.
+
+**In-app screen:** /settings/models
+
+### Start Postiz and create your account
+
+1. The supported Docker installation includes Postiz, PostgreSQL, Redis, Temporal, and Temporal storage. Allow several minutes for the first start.
+2. Open Postiz from Postiz settings. Create an account on your own installation; its sign-in is separate from OpenOcti.
+3. For plain Node installations, install the Postiz service stack separately or use your own hosted Postiz subscription.
+
+**Expected result:** Your Postiz dashboard opens and you can sign in. No social account is connected yet.
+
+**In-app screen:** /settings/postiz
+
+### Connect OpenOcti to Postiz
+
+1. In your Postiz dashboard, find the Public API key in settings.
+2. In OpenOcti Postiz settings, enter the complete Public API URL and paste the key in the secure API key field. For the bundled Docker stack the internal address is http://postiz:5000/api/public/v1.
+3. Use the browser-facing Postiz address for Dashboard URL, usually http://localhost:4007 locally. Save, then recheck. Never paste a key into chat.
+
+**Expected result:** The API check succeeds and reports a channel count. Zero channels means the connection works but a social account still needs connecting.
+
+**In-app screen:** /settings/postiz
+
+### Connect a social account
+
+1. Open your Postiz dashboard and choose the social provider you want to connect.
+2. Follow that provider’s setup instructions. Some require your own developer application, matching callback URL, approved permissions, and a public HTTPS address.
+3. Authorize an account you control, then return to OpenOcti and recheck. Installing Postiz alone does not connect Facebook.
+
+**Expected result:** At least one enabled channel is reported. Publishing has not been tested yet.
+
+**In-app screen:** /settings/postiz
+
+### Review, schedule, and verify a post
+
+1. Choose an authorized test channel in Social Publishing. Write a caption and upload an image you are allowed to publish; image generation is optional.
+2. Review the channel, caption, image, date, time, and time zone before submitting.
+3. Schedule the test post and inspect its status in Postiz. A scheduled post is not yet published.
+4. After the scheduled time, open the destination social platform and verify the caption and image there.
+
+**Expected result:** The post is visible on the destination platform. Only that final check confirms successful publishing.
+
+**In-app screen:** /?tab=social
+
+### A service is unavailable
+
+1. Run docker compose ps and check whether Postiz and its dependencies are healthy.
+2. Check docker compose logs --tail 80 postiz and the unhealthy dependency locally. Logs may contain sensitive information; do not paste them into chat.
+3. For Docker-to-Docker connections use postiz:5000, not localhost. For a plain Node app use the reachable host address.
+4. After correcting configuration, run docker compose up -d and recheck. Do not delete volumes to fix a connection error.
+
+**Expected result:** The service responds; the separate API-key and channel checks can then run.
+
+**In-app screen:** /settings/postiz
+
+### An API key or address is rejected
+
+1. Verify the URL ends in /api/public/v1 for self-hosted Postiz, or /public/v1 for the hosted API.
+2. A login page or HTML response usually means the address is the dashboard rather than the Public API.
+3. Replace the key in the secure settings field with a key from this same Postiz installation. Save and recheck.
+
+**Expected result:** The connection check returns a valid channel list, even if it is empty.
+
+**In-app screen:** /settings/postiz
+
+### An image upload fails
+
+1. Check the image format and size against your destination provider’s current limits.
+2. Check that the Postiz uploads volume is writable and has free space.
+3. If Postiz fetches an image by URL, that URL must be reachable from Postiz. localhost inside a container refers to that container.
+4. Retry the image upload before scheduling the post.
+
+**Expected result:** The image appears in the reviewed post. Uploading an image does not confirm publication.
+
+**In-app screen:** /?tab=social
+
+### A scheduled post does not publish
+
+1. Open the failed post in Postiz and read its provider error.
+2. Check that the connected account is enabled, its authorization is current, and the content meets the platform’s restrictions.
+3. Verify Temporal and its storage are healthy if posts remain pending.
+4. Check the destination platform before retrying to avoid a duplicate post. Reauthorize the social account when required.
+
+**Expected result:** The retry succeeds and you verify the post on the destination platform.
+
+**In-app screen:** /?tab=social
+
+### Octi cannot answer with a model
+
+1. Use the built-in topics here while the model is unavailable.
+2. Check the provider key in Models & Keys and your provider account’s model access and usage limits.
+3. Try again after resolving the provider error. OpenOcti does not borrow another installation’s credentials or funded usage.
+
+**Expected result:** A supported model answers a question; basic help stays available throughout.
+
+**In-app screen:** /settings/models
+
+## Provider accounts and callback URLs
+
+Installing Postiz does not authorize Facebook or any other social account. Use the provider's official developer console and the exact callback URL displayed by your Postiz version. Supply your own app ID and secret through postiz.env where required, then run docker compose up -d postiz. Follow Postiz's provider guide at https://docs.postiz.com/self-host/providers/overview and the provider's current permissions, review, account-type, and HTTPS requirements. Verify each image URL is reachable from Postiz; a container's localhost is not the host machine.
+
+## Update, restart, backup, and recovery
+
+Before an update, back up the OpenOcti data volume, Postiz config/uploads/PostgreSQL/Redis volumes, Temporal PostgreSQL/Elasticsearch volumes, .env, and postiz.env. For a consistent volume backup, stop this installation's services first, snapshot every named volume with your Docker host's volume backup facility, then start the same installation. Alternatively, use PostgreSQL dumps and the corresponding supported backups for the other services. Backups contain credentials and social tokens; keep them private.
+
+Use the approved new OpenOcti release directory and preserve its Compose project name so it reuses the same volumes. Review the bundled upstream migration notes, then run docker compose pull followed by docker compose up -d. Verify docker compose ps, both sign-ins, API connectivity, and an authorized test post. Changing the Compose project name creates different volumes and can look like lost data.
+
+Do not remove volumes to repair a connection. docker compose down keeps volumes; adding -v deletes them. For rollback after a database migration, restore the matching pre-update volumes and configuration together with the previous pinned images. Merely downgrading an image may not reverse a database migration.
+
+## How Ask Octi works
+
+Built-in help comes from this package's versioned instructions. Conversational setup help sends those instructions, your question, and sanitized Postiz state to a supported provider configured in this installation. It has no CRM action tools and cannot publish a post. A provider failure leaves the built-in guide available. The older OpenClaw runtime name resolves through this installation's OPENCLAW_HOST/PORT; setup help does not require that gateway or a private hosted service.
+
+For upstream service help, see https://docs.postiz.com/self-host/installation/docker-compose and deploy/postiz/UPSTREAM.md. For an application issue, use https://github.com/carlucci001/open-octi/issues and describe the failing step without posting keys, cookies, private records, or raw logs.
+
+## Screens from this implementation
+
+![postiz keyless help](../screenshots/postiz-keyless-help.png)
+
+![postiz first admin](../screenshots/postiz-first-admin.png)
+
+![postiz settings](../screenshots/postiz-settings.png)
+
+![postiz help mobile](../screenshots/postiz-help-mobile.png)
+
 # Source: docs/guides/import-center.md
 
 # Import contacts and CRM data
@@ -658,6 +859,18 @@ Open Ops Lab, choose a lane, and add a record with its local path, commands, hea
 ## Limits and safety
 
 A saved project record is not a deployment, and an unavailable service is reported rather than simulated. Some provider entries are planning or experimental lanes until their runtime is installed. Voice samples do not change routing; a separate explicit live assignment is required.
+
+# Source: docs/guides/postiz-setup.md
+
+# Postiz setup
+
+Start with the bundled [getting-started guide](getting-started.md). It includes Docker and plain Node installation paths, account setup, secure connection settings, provider authorization, a publishing test, and recovery steps.
+
+In OpenOcti, open **Ask Octi** or `/help` for searchable guidance without an AI key. Administrators can open `/settings/postiz` to save their installation's API URL, dashboard URL, and encrypted Public API key.
+
+For the bundled Docker services, the internal API URL is `http://postiz:5000/api/public/v1`. The browser dashboard is normally `http://localhost:4007`. For hosted Postiz, the API is `https://api.postiz.com/public/v1` and the dashboard is `https://platform.postiz.com`.
+
+A successful channel check verifies API connectivity. A scheduling receipt verifies that Postiz accepted a post. Verify the actual image and caption on the destination platform before confirming a successful publishing test.
 
 # Source: docs/guides/public-release-boundary.md
 

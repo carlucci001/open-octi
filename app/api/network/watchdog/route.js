@@ -7,7 +7,7 @@ const run = promisify(exec)
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const TASK_NAME = 'Farrington Tunnel Watchdog'
+const TASK_NAME = 'OpenOcti Tunnel Watchdog'
 const INSTALL_SCRIPT = 'c:\\dev\\farrington-command-center\\scripts\\install-watchdog-task.ps1'
 
 async function taskState() {

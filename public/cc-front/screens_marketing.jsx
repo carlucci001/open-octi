@@ -87,7 +87,7 @@ function Landing({ navigate, theme, setTheme }) {
             <span style={{ color: "var(--accent)" }}>We automate it.</span>
           </h1>
           <p className="fade-up muted" style={{ fontSize: 19, lineHeight: 1.5, marginTop: 24, maxWidth: 480 }}>
-            Farrington turns plain-English requests into running automations — leads, reports, outreach, content — delivered while you run your business.
+            OpenOcti turns plain-English requests into running automations — leads, reports, outreach, content — delivered while you run your business.
           </p>
           <div className="fade-up row gap-12" style={{ marginTop: 32 }}>
             <button className="btn btn-primary btn-lg" onClick={() => navigate("signup")}>Request a walkthrough <Icon name="arrow" size={18} /></button>
@@ -238,7 +238,7 @@ function Landing({ navigate, theme, setTheme }) {
           <div className="row gap-24" style={{ fontSize: 13.5, color: "var(--ink-3)" }}>
             <span>How it works</span><span>Use cases</span><span>Pricing</span><span>Privacy</span>
           </div>
-          <div style={{ fontSize: 13, color: "var(--faint)" }} className="mono">© 2026 Farrington</div>
+          <div style={{ fontSize: 13, color: "var(--faint)" }} className="mono">© 2026 OpenOcti</div>
         </div>
       </footer>
     </div>
@@ -251,7 +251,7 @@ function Signup({ navigate }) {
   return (
     <AuthShell navigate={navigate} side={
       <div>
-        <div className="eyebrow" style={{ color: "var(--accent)", marginBottom: 18 }}>Talk with Farrington</div>
+        <div className="eyebrow" style={{ color: "var(--accent)", marginBottom: 18 }}>Talk with OpenOcti</div>
         <h2 style={{ fontSize: 34, lineHeight: 1.1 }}>See the workflows<br/>with a guided<br/>walkthrough.</h2>
         <p style={{ fontSize: 16, color: "rgba(250,247,240,.7)", marginTop: 20, lineHeight: 1.5 }}>Submitting a request creates a CRM lead for follow-up. It never creates a portal, account, lease, billing record, credits, or service.</p>
         <div className="col gap-14" style={{ marginTop: 36 }}>
@@ -280,7 +280,7 @@ function AuthShell({ navigate, side, children }) {
       <div style={{ background: "var(--ink)", padding: "48px 56px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
         <a onClick={() => navigate("landing")} style={{ cursor: "pointer", color: "var(--cream)" }}><Wordmark /></a>
         <div style={{ color: "var(--cream)" }}>{side}</div>
-        <div className="mono" style={{ fontSize: 12, color: "rgba(250,247,240,.4)" }}>© 2026 Farrington</div>
+        <div className="mono" style={{ fontSize: 12, color: "rgba(250,247,240,.4)" }}>© 2026 OpenOcti</div>
       </div>
       <div style={{ display: "grid", placeItems: "center", padding: "48px" }}>
         <div style={{ width: "100%", maxWidth: 420 }}>{children}</div>

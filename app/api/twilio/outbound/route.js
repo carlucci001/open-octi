@@ -21,7 +21,7 @@ async function handle(request) {
   const authError = await verifyTwilioWebhook(request)
   if (authError) return authError
   const url = new URL(request.url)
-  const baseUrl = getTunnelBaseUrl() || `${url.protocol}//${url.host}`
+  const baseUrl = process.env.PUBLIC_APP_URL?.trim().replace(/\/$/, '') || getTunnelBaseUrl() || `${url.protocol}//${url.host}`
   let conf = url.searchParams.get('conf')
 
   if (!conf && request.method === 'POST') {

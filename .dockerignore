@@ -5,13 +5,13 @@
 .tmp
 node_modules
 .next
-*.tsbuildinfo
 out
 output
 remotion
 data
 .env
 .env.*
+*.env
 !.env.example
 **/.env
 **/.env.local

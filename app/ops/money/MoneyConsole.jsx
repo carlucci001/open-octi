@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CircleDollarSign, MailPlus, PauseCircle, RefreshCw, Save } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { FinanceCsvExportButton } from '../../finance/FinanceImportButton'
+import { PlatformActionConfirmDialog } from '../../platforms/PlatformAdminWorkspace'
 
 function money(value, currency = 'USD') {
   if (value === 'unknown') return 'unknown'

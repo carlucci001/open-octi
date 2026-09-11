@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { clearSessionCookie, verifySession, SESSION_COOKIE } from '@/lib/authEdge'
-import { isClosedSurface } from '@/lib/edition'
+import { isClosedSurface, isOpenOcti } from '@/lib/edition'
 import { capabilityForPath, requireCapability } from '@/lib/feature-manifest'
 
 // Paths that bypass auth.
@@ -70,6 +70,12 @@ const PUBLIC_PREFIXES = [
 ]
 
 const PUBLIC_EXACT = [
+  '/help',
+  '/help/getting-started.md',
+  '/help/images/postiz-keyless-help.png',
+  '/help/images/postiz-first-admin.png',
+  '/help/images/postiz-settings.png',
+  '/help/images/postiz-help-mobile.png',
   '/api/build-info',
   // Builder exchanges a short-lived signed owner handoff here before it has a
   // CRM session cookie. The route validates and consumes the one-time code.
@@ -99,11 +105,14 @@ const PUBLIC_EXACT = [
   '/api/calendar/book',
   '/api/website/intake',
   '/api/licenses/verify',
+  '/api/support-gateway',
+  '/api/downloads/octi-cc',
 ]
 
 function isPublic(pathname) {
   if (PUBLIC_EXACT.includes(pathname)) return true
   if (/^\/api\/products\/[^/]+$/.test(pathname)) return true
+  if (/^\/api\/storefronts\/[^/]+$/.test(pathname)) return true
   return PUBLIC_PREFIXES.some(p => pathname === p || pathname.startsWith(p))
 }
 
@@ -142,7 +151,9 @@ export async function middleware(request) {
   const publicPath = isPublic(pathname)
   if (publicPath && pathname.startsWith('/api/')) {
     const capabilityId = capabilityForPath(pathname)
-    const unavailable = capabilityId ? requireCapability(capabilityId) : null
+    // Postiz routes resolve encrypted installation settings in Node after auth.
+    // Edge middleware cannot read that store; each route keeps its permission check.
+    const unavailable = capabilityId && !(isOpenOcti() && capabilityId === 'postiz') ? requireCapability(capabilityId) : null
     if (unavailable) return NextResponse.json(unavailable.body, { status: unavailable.status })
   }
   if (publicPath) return NextResponse.next()

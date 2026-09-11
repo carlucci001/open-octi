@@ -66,7 +66,7 @@ export default function IntegrationGate({ capability, title, description, childr
                   <div className="mt-1 flex flex-wrap gap-2">{groups.map((group, index) => <code key={`${item.id}-${index}`} className="rounded px-2 py-1 text-xs" style={{ background: 'var(--bg)' }}>{group.join(' or ')}</code>)}</div></>}
               <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>{directory.freeTier}</p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
-                <a href={directory.signupUrl} target={directory.signupUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer" className="text-sm font-semibold underline">Get credentials</a>
+                {isOpenOcti() && item.id === 'postiz' ? <Link href="/settings/postiz" className="text-sm font-semibold underline">Open Postiz setup</Link> : <a href={directory.signupUrl} target={directory.signupUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer" className="text-sm font-semibold underline">Get credentials</a>}
                 {isOpenOcti() && item.id === 'daily' && <Link href="/settings/models#daily" className="text-sm font-semibold underline">Enter Daily key</Link>}
                 <button type="button" onClick={() => test(item.id)} disabled={testing === item.id} className="rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-60" style={{ minHeight: 44, border: '1px solid var(--border)' }}>
                   <span className="inline-flex items-center gap-2"><RefreshCw size={15} className={testing === item.id ? 'animate-spin' : ''} />{testing === item.id ? 'Testing…' : 'Test connection'}</span>

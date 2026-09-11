@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
-  <title id="title">Farrington Command Center product cover</title>
+  <title id="title">OpenOcti product cover</title>
   <desc id="desc">A polished command center dashboard graphic with colorful operations panels and network lines.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -39,7 +39,7 @@
   </g>
   <path d="M324 241 H566 M636 241 H878 M601 276 L389 397 M913 276 L856 397 M401 425 H801" stroke="url(#accent)" stroke-width="7" stroke-linecap="round" opacity=".74"/>
   <g fill="#e5e7eb" font-family="Inter,Segoe UI,Arial,sans-serif">
-    <text x="154" y="94" font-size="32" font-weight="800">Farrington Command Center</text>
+    <text x="154" y="94" font-size="32" font-weight="800">OpenOcti</text>
     <text x="154" y="126" font-size="16" fill="#93c5fd">CRM • agents • products • licenses • deployment operations</text>
     <text x="184" y="295" font-size="18" font-weight="700">CRM Core</text>
     <text x="497" y="295" font-size="18" font-weight="700">AI Staff</text>

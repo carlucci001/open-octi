@@ -91,7 +91,7 @@ export default function OpenOctiFirstRun() {
   return (
     <section className="rounded-xl p-5 mb-6" style={{ background: '#001040', border: '1px solid #30c0f0', color: '#fff' }}>
       <div className="flex items-start justify-between gap-3">
-        <div><h2 className="text-lg font-semibold">Welcome to OpenOcti</h2><p className="text-sm mt-1" style={{ color: '#8ba0c4' }}>Four quick steps, then your workspace is ready.</p></div>
+        <div><h2 className="text-lg font-semibold">Welcome to OpenOcti</h2><p className="text-sm mt-1" style={{ color: '#8ba0c4' }}>Start with your workspace, then configure the services you need.</p><Link href="/help" className="inline-flex items-center underline" style={{ minHeight: 48 }}>Setup guide and Ask Octi · no AI key needed</Link></div>
         <div className="flex items-center gap-1">
           {completed > 0 && <button type="button" onClick={() => setExpanded(false)} title="Collapse checklist" className="p-2 rounded-lg"><ChevronUp size={18} /></button>}
           <button type="button" onClick={() => patchProgress('dismiss')} title="Dismiss checklist" className="p-2 rounded-lg"><X size={18} /></button>

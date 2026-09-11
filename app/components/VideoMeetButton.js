@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
-import IntegrationGate from './IntegrationGate'
+import { useRef, useState } from 'react'
+import Link from 'next/link'
+import { useCapabilities } from '@/lib/client-capabilities'
 
 // Reusable video-meet button. Place anywhere you have a recipient email.
 // Props:
@@ -8,11 +9,11 @@ import IntegrationGate from './IntegrationGate'
 //   linkedTo ({ accountId?, contactId?, opportunityId?, leadId? }) — for activity logging,
 //   compact (bool) — smaller style,
 //   label (string) — override the button label
-export default function VideoMeetButton(props) {
-  return <IntegrationGate capability={['daily', 'resend']} title="video invitations"><VideoMeetButtonContent {...props} /></IntegrationGate>
-}
-
-function VideoMeetButtonContent({ to, name, seed, linkedTo, compact = false, label, instant = false, stopPropagation = false, className = '', style = {} }) {
+export default function VideoMeetButton({ to, name, seed, linkedTo, compact = false, label, instant = false, stopPropagation = false, className = '', style = {} }) {
+  const { capabilities, loading } = useCapabilities()
+  const configured = ['daily', 'resend'].every(id => capabilities.some(item => item.id === id && item.status === 'configured'))
+  const buttonRef = useRef(null)
+  const [setupOpen, setSetupOpen] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
     to: to || '',
@@ -27,6 +28,11 @@ function VideoMeetButtonContent({ to, name, seed, linkedTo, compact = false, lab
 
   const start = async (event) => {
     if (stopPropagation) event?.stopPropagation()
+    if (loading) return
+    if (!configured) {
+      setSetupOpen(true)
+      return
+    }
     if (instant) {
       await startInstant()
       return
@@ -117,12 +123,20 @@ function VideoMeetButtonContent({ to, name, seed, linkedTo, compact = false, lab
     ? { background: 'var(--surface2)', color: 'var(--purple)', border: '1px solid var(--border)', padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer' }
     : { background: 'var(--purple-soft)', color: 'var(--purple)', border: '1px solid var(--purple)', padding: '8px 14px', fontSize: 13, borderRadius: 8, fontWeight: 600, cursor: 'pointer' }
   const hasIconLabel = label != null && typeof label !== 'string' && typeof label !== 'number'
+  const closeSetup = () => {
+    setSetupOpen(false)
+    buttonRef.current?.focus()
+  }
+  const tooltip = loading ? 'Checking video setup…' : !configured ? 'Set up video invitations' : instant ? 'Open a room now and email the join link' : 'Send a video-call link via email'
 
   return (
     <>
       <button
+        ref={buttonRef}
+        type="button"
         onClick={start}
-        disabled={sending}
+        disabled={sending || loading}
+        aria-label={`Video invitation${name || to ? ` for ${name || to}` : ''}`}
         className={className}
         style={{
           ...btnStyle,
@@ -138,12 +152,25 @@ function VideoMeetButtonContent({ to, name, seed, linkedTo, compact = false, lab
           opacity: sending ? 0.65 : 1,
           cursor: sending ? 'wait' : 'pointer',
         }}
-        data-tooltip={instant ? 'Open a room now and email the join link' : 'Send a video-call link via email'}
+        data-tooltip={tooltip}
       >
         {hasIconLabel
           ? <span className="inline-flex h-full w-full items-center justify-center leading-none">{label}</span>
           : <>🎥 {label || (compact ? 'Video' : 'Video Call')}</>}
       </button>
+
+      {setupOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={event => { event.stopPropagation(); closeSetup() }} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); closeSetup() } }}>
+          <div role="dialog" aria-modal="true" aria-label="Set up video invitations" className="w-full max-w-md rounded-xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }} onClick={event => event.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--text)' }}>Set up video invitations</h2>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Video invitations aren’t connected yet. Open Integrations to finish setup, then return here to send a video-call link.</p>
+            <div className="flex items-center justify-end gap-3">
+              <Link href="/?tab=settings&settings=integrations" onClick={closeSetup} className="text-sm font-semibold underline" style={{ color: 'var(--purple)' }}>Open Integrations</Link>
+              <button type="button" autoFocus onClick={closeSetup} className="px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--surface2)', color: 'var(--text)' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {instant && result && (
         <span className="text-[10px]" style={{ color: result.ok ? 'var(--green)' : 'var(--red)' }}>

@@ -1,11 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 const inputStyle = { width: '100%', boxSizing: 'border-box', padding: '12px 14px', marginTop: 6, borderRadius: 8, border: '1px solid #42506b', background: '#101a2e', color: '#fff', fontSize: 16 }
 
 export default function FirstRunAccountSetup({ local }) {
-  const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [opening, setOpening] = useState(false)
   const [error, setError] = useState('')
@@ -20,13 +19,15 @@ export default function FirstRunAccountSetup({ local }) {
       if (!response.ok || !result.ok) throw new Error(result.error || 'Account setup failed. Please try again.')
       setOpening(true)
       try { localStorage.setItem('fcc-tab', 'dashboard') } catch {}
-      router.replace('/')
-      router.refresh()
+      // Start a fresh request with the new session cookie; a prefetched login
+      // redirect can otherwise leave the client router on the setup screen.
+      window.location.replace('/')
     } catch (error) { setError(error.message); setBusy(false) }
   }
   return <main style={{ minHeight: '100vh', background: '#020711', color: '#eaf0ff', display: 'grid', placeItems: 'center', padding: 24, boxSizing: 'border-box' }}>
     <section style={{ width: '100%', maxWidth: 440, padding: 30, boxSizing: 'border-box', border: '1px solid #31415e', borderRadius: 20, background: '#0b1323' }}>
       <p style={{ color: '#85d8ff', margin: '0 0 12px' }}>Welcome to OpenOcti</p>
+      <Link href="/help" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 48, color: '#85d8ff' }}>Setup help · no AI key needed</Link>
       <h1 style={{ fontSize: 28, margin: '0 0 12px' }}>Create your admin account</h1>
       <p style={{ color: '#b6c4db', lineHeight: 1.5 }}>Choose your own login for this installation. You will use it whenever you return. No API key is needed to get started.</p>
       <p style={{ color: '#b6c4db', fontSize: 14, lineHeight: 1.5 }}>{process.env.NODE_ENV === 'development' ? 'Development preview: the first dashboard load may take a minute while pages compile. Later visits are faster.' : 'First launch may take a minute or more while your workspace gets ready. Keep this page open.'}</p>

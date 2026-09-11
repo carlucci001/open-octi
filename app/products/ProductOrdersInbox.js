@@ -328,6 +328,7 @@ export default function ProductOrdersInbox({ onToast }) {
                     <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" style={statusTone(order.status)}>{statusLabel(order.status)}</span>
                     <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: 'var(--surface2)', color: 'var(--text-muted)' }}>{productFamily(order)}</span>
                     {order.fulfillmentStatus === 'queued' && <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: 'rgba(59,130,246,0.14)', color: 'var(--accent)' }}>Onboarding queued</span>}
+                    {order.provisioningRequired && <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: 'var(--surface2)', color: 'var(--amber)' }}>Provision {order.paidAt ? '— ready for follow-up' : '— awaiting payment'}</span>}
                   </div>
                   <h3 className="text-lg font-bold truncate" style={{ color: 'var(--text)' }}>{order.buyer?.company || order.buyer?.name || 'Unknown buyer'}</h3>
                   <div className="text-sm truncate" style={{ color: 'var(--text-muted)' }}>{order.buyer?.name || 'No contact'} · {order.buyer?.email || 'No email'}</div>
@@ -345,6 +346,12 @@ export default function ProductOrdersInbox({ onToast }) {
                   {order.estimatedBuildLow || order.estimatedBuildHigh ? ` · Estimate ${money(order.estimatedBuildLow)}-${money(order.estimatedBuildHigh)}` : ''}
                 </div>
                 {order.notes && <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{order.notes}</div>}
+                {order.deploymentChoice && <div className="text-xs grid gap-1" style={{ color: 'var(--text-muted)' }}>
+                  <span>Deployment: {order.deploymentChoice}</span>
+                  <span>Hosting: {order.hostingAddOn ? `${order.hostingAddOn.name} (${money(order.hostingAddOn.price)}/${order.hostingAddOn.billingInterval || 'one-time'})` : 'None'}</span>
+                  <span>Support: {order.supportPlan ? `${order.supportPlan.name} (${money(order.supportPlan.monthlyFee)}/month)` : 'None'}</span>
+                  <span>Digital delivery consent: {order.consent?.accepted ? `Accepted ${dateLabel(order.consent.at)}` : 'Not accepted'}</span>
+                </div>}
                 {['financing_requested', 'terms_requested'].includes(order.status) && (
                   <div className="text-xs font-semibold" style={{ color: 'var(--amber)' }}>Follow-up request only - no payment collected, lender submission, or service activation.</div>
                 )}
