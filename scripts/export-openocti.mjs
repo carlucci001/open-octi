@@ -49,6 +49,15 @@ export const OPENOCTI_HOST_ONLY_ENV_KEYS = new Set([
   'FCC_SOURCE_REMOTE',
   'FCC_STUDIO_DIR',
   'FCC_SW_VERSION',
+  'FCC_SUPPORT_CONTROL_PLANE',
+  'FCC_SUPPORT_TEST_ORIGIN',
+  'FCC_SUPPORT_RELEASE_ROOT',
+  'FCC_SUPPORT_RELEASE_CATALOG',
+  'FCC_SUPPORT_RELEASE_PUBLIC_KEY',
+  'FCC_SUPPORT_SUPERVISOR',
+  'OC2_EVIDENCE_DIR',
+  'OCTI_CC_RELEASES_DIR',
+  'OCTI_CC_DOWNLOAD_BASE_URL',
   'NEXT_DIST_DIR',
   'NEXT_PHASE',
   'NEXT_PUBLIC_APP_VERSION',
@@ -140,6 +149,40 @@ export function neutralizeOpenOctiReferences(value) {
     result = result.replace(pattern, replacement)
   }
   return result
+}
+
+// Runtime branding belongs to the exported edition. Keep private defaults in
+// the shared source and retain legal attribution in license/copyright text.
+export function sanitizeOpenOctiText(value, { runtime = false } = {}) {
+  let content = String(value || '')
+  for (const [pattern, replacement] of SCRUB_REPLACEMENTS) content = content.replace(pattern, replacement)
+  content = content.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, email => {
+    if (/@(example\.(?:com|org|net|invalid|test)|openocti\.com)$/i.test(email)) return email
+    return /@(gmail|hotmail|yahoo|aol|outlook|icloud|live|msn)\./i.test(email)
+      ? 'personal@example.invalid'
+      : 'redacted@example.invalid'
+  })
+  if (runtime) {
+    const branding = [
+      [new RegExp(['Farrington', ' Development(?: LLC)?'].join(''), 'gi'), 'Your organization'],
+      [new RegExp(['Carl', ' Farrington'].join(''), 'gi'), 'Workspace owner'],
+      [new RegExp(['Farrington', ' Command Center'].join(''), 'g'), 'OpenOcti'],
+      [new RegExp(['Farrington', ' Dev\\b'].join(''), 'g'), 'Business Development'],
+      [new RegExp(['\\bFarrington', '\\b'].join(''), 'g'), 'OpenOcti'],
+    ]
+    content = content.split('\n').map(line => {
+      if (/copyright|licensed under|@license|@author/i.test(line)) return line
+      for (const [pattern, replacement] of branding) line = line.replace(pattern, replacement)
+      return line
+    }).join('\n')
+  }
+  return content
+}
+
+export function sanitizeOpenOctiFile(value, relativePath) {
+  // Tests and release scanners intentionally contain private-brand matchers.
+  // Rebranding those matchers changes what they verify instead of the product.
+  return sanitizeOpenOctiText(value, { runtime: /^(app|lib|public)\//.test(relativePath.replaceAll('\\', '/')) })
 }
 
 const FORBIDDEN_EXPORT_PATTERNS = [
@@ -358,11 +401,13 @@ export function writeOpenOctiEnvExample(output, sourceFile = path.join(SOURCE_RO
 
   const lines = [
     '# OpenOcti environment',
-    '# Copy this file to .env, then replace the six required values below.',
+    '# Optional: copy to .env only when customizing your installation.',
     '# Never commit .env or real credentials.',
     '',
-    '# Required - replace all six values',
-    ...OPENOCTI_REQUIRED_ENV_KEYS.map(key => `${key}=${entries.get(key)}`),
+    '# Local first run: leave these blank. OpenOcti generates a persistent session',
+    '# secret and asks you to create your admin account in the browser.',
+    '# Remote/headless install: set INITIAL_ADMIN_PASSWORD, then sign in as admin.',
+    ...OPENOCTI_REQUIRED_ENV_KEYS.map(key => `${key}=${['CRM_SESSION_SECRET', 'INITIAL_ADMIN_PASSWORD'].includes(key) ? '' : entries.get(key)}`),
     '',
     '# OpenOcti defaults - leave unchanged',
     ...OPENOCTI_DEFAULT_ENV_KEYS.map(key => `${key}=${entries.get(key)}`),
@@ -457,20 +502,9 @@ function scrubKnownInfrastructure(output) {
   let replacements = 0
   for (const file of listFiles(output)) {
     if (!isTextFile(file)) continue
-    let content = fs.readFileSync(file, 'utf8')
-    const original = content
-    for (const [pattern, replacement] of SCRUB_REPLACEMENTS) {
-      content = content.replace(pattern, replacement)
-    }
-    content = content.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, (email) => {
-      if (/@(example\.(?:com|org|net|invalid|test)|openocti\.com)$/i.test(email)) return email
-      replacements += 1
-      // Preserve the behavior under test without retaining the address: a
-      // personal mailbox must remain distinguishable from a company mailbox.
-      return /@(gmail|hotmail|yahoo|aol|outlook|icloud|live|msn)\./i.test(email)
-        ? 'personal@example.invalid'
-        : 'redacted@example.invalid'
-    })
+    const original = fs.readFileSync(file, 'utf8')
+    const relative = path.relative(output, file).replaceAll('\\', '/')
+    const content = sanitizeOpenOctiFile(original, relative)
     if (content !== original) {
       replacements += 1
       fs.writeFileSync(file, content)

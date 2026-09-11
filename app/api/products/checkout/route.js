@@ -15,7 +15,10 @@ export async function POST(request) {
   try {
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_MARKETING_URL || 'https://company.example.com'
     const returnPath = String(body.returnPath || '/products.html').startsWith('/') ? String(body.returnPath || '/products.html') : '/products.html'
-    const result = await createProductCheckoutSession({ body, origin, returnPath })
+    const result = await createProductCheckoutSession({ body, origin, returnPath, requestContext: {
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '',
+      userAgent: request.headers.get('user-agent') || '',
+    } })
     return NextResponse.json(result, { headers: checkoutCorsHeaders() })
   } catch (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: error.status || 500, headers: checkoutCorsHeaders() })

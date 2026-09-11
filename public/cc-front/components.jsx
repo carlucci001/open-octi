@@ -46,7 +46,7 @@ function Wordmark({ size = 21, mono }) {
     <span className="wordmark" style={{ fontSize: size }}>
       <img
         src="/brand/fd-brand-dark-transparent.png"
-        alt="Farrington Development"
+        alt="Your organization"
         style={{
           display: "block",
           width: mono ? size * 1.7 : size * 10,

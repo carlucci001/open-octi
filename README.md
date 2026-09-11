@@ -6,19 +6,20 @@
 
 OpenOcti is a self-hosted business operations workspace: CRM, projects, documents, communications, automations, knowledge, and a configurable AI staff in one local-first application.
 
-[openocti.com](https://openocti.com) · Managed edition: [Octi CC](https://octicc.com)
+[openocti.com](https://openocti.com) · Planned commercial edition: [Octi CC](https://octicc.com)
 
-## Install in three lines
+## Install with Docker
 
 ```bash
 git clone https://github.com/carlucci001/open-octi.git openocti
 cd openocti
+node scripts/setup-openocti-postiz.mjs
 docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
+Open [http://localhost:3000](http://localhost:3000) when the containers are healthy. The setup command needs Node.js 24 or newer; the [getting-started guide](docs/guides/getting-started.md) includes a temporary-container command for Docker hosts without Node. The default command pulls the prebuilt `latest` images. Build the current checkout instead with `docker compose up -d --build`. See [Install with Node](docs/INSTALL.md) for development without Docker.
 
-On a new installation, choose your own username and password on **Create your admin account**. You are signed in immediately; later visits show the normal sign-in screen. No `.env` file, preassigned password, or API key is needed for local Docker setup. The app generates and stores its session secret in the persistent data volume. Docker binds to localhost by default; see the installation guide before exposing a remote server.
+On a new installation, choose your own username and password on **Create your admin account**. You are signed in immediately; later visits show the normal sign-in screen. The setup command creates this installation's Postiz secrets in `.env`; no preassigned account password or AI key is needed. The app generates and stores its session secret in the persistent data volume. Docker binds to localhost by default; see the installation guide before exposing a remote server.
 
 **Allow time for the first launch.** Downloading the Docker images and starting the containers can take several minutes. After creating your account, keep the page open while your workspace loads. In a development preview, the first dashboard load may take a minute while pages compile; later visits are faster. Published Docker images contain precompiled pages.
 
@@ -60,8 +61,8 @@ The CRM, projects, documents, and local knowledge tools work without an AI provi
 
 ## Everything inside
 
-- **Sell:** dashboard, leads, Press Desk, pipelines, accounts, support, contacts, and Finance for invoices and overhead.
-- **Build:** agents, automations, Builder (roadmap card in this edition), campaigns, local product definitions, repository status, Switchboard, and Labs. Ship Desk release monitoring is not packaged. Build Board requires a separately configured Hermes dashboard and Kanban service; Docker does not install Hermes.
+- **Sell:** dashboard, leads, pipelines, accounts, support, contacts, and Finance for invoices and overhead.
+- **Build:** agents, automations, Press Desk, Builder (roadmap card in this edition), campaigns, local product definitions, repository status, Switchboard, and Labs. Ship Desk release monitoring is not packaged. Build Board requires a separately configured Hermes dashboard and Kanban service; Docker does not install Hermes.
 
 Stripe setup is always available to the installation owner under **System → Admin → Stripe**. See the [billing setup guide](docs/guides/stripe-setup.md) for the connected payment flows and the steps still performed in Stripe Dashboard. This build does not automatically provision Stripe catalogs or reconcile subscription webhooks.
 - **Projects:** projects, tasks, documents, content, media, Command Vault, communications, calendar, transcription, and activity feed.
@@ -75,7 +76,7 @@ The six starter staff agents and eight prepared specialist templates include rep
 
 Harness Lab includes OpenClaw and shows which other runtimes need configuration. Hermes is planned for a future release. [Star OpenOcti on GitHub](https://github.com/carlucci001/open-octi) to support the next harness integrations. See the [1.2.3 release notes](docs/releases/1.2.3.md) for Gitea, Daily conferencing, agent improvements, and current limits.
 
-The [1.2.4 update](docs/releases/1.2.4.md) repairs the OpenClaw dashboard connection and Postiz connection checks. Postiz requires a separate installation or hosted account; it is not included in the standard Docker stack. Follow the [Postiz setup guide](docs/guides/postiz-setup.md) before publishing.
+The [1.3.0 update](docs/releases/1.3.0.md) adds the bundled Postiz service stack and first-run help. **Ask Octi** opens searchable instructions and recovery guidance before an AI key is configured. Follow the [getting-started guide](docs/guides/getting-started.md) and [Postiz setup guide](docs/guides/postiz-setup.md), connect your own social accounts, and verify your image and caption on the destination platform. A plain Node installation needs separately managed Postiz services.
 
 | Agent | Verified role |
 | --- | --- |
@@ -92,7 +93,7 @@ Agents remain disabled until their required model, voice, channel, and tool conn
 
 **OpenOcti (free, AGPL)** gives you the self-hosted application, local SQLite data, public modules, starter staff, source updates, and community support.
 
-**Octi CC (managed)** adds hosted operations, managed upgrades and backups, private client portal and concierge workflows, managed billing and payments, private research and platform integrations, and service monitoring. OpenOcti does not silently call those managed services.
+**Octi CC** is a planned commercial edition; only its marketing website is currently available. OpenOcti runs independently and does not include access to private business services, accounts, or funded provider usage.
 
 ## Guides
 

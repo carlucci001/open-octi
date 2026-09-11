@@ -13,9 +13,10 @@ function corsHeaders() {
   }
 }
 
-export async function GET(_request, { params }) {
+export async function GET(request, { params }) {
   const slug = String(params?.slug || '').trim()
-  const product = getPublicProducts().find(p => p.slug === slug || p.id === slug)
+  const storefront = new URL(request.url).searchParams.get('storefront') || undefined
+  const product = getPublicProducts(storefront).find(p => p.slug === slug || p.id === slug)
   if (!product) {
     return NextResponse.json({ ok: false, error: 'Product not found' }, { status: 404, headers: corsHeaders() })
   }

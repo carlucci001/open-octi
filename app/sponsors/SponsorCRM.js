@@ -474,7 +474,7 @@ function isFarringtonDevelopmentLead(lead) {
   return lead?.campaign === 'farrington_dev'
     || lead?.suggestedPipelineId === 'farrington_dev'
     || ['fd-website', 'command-center-consult', 'product-inquiry'].includes(lead?.source)
-    || /farrington development|command center/i.test(`${lead?.serviceLine || ''} ${lead?.productOpportunity || ''}`)
+    || /Your organization|command center/i.test(`${lead?.serviceLine || ''} ${lead?.productOpportunity || ''}`)
 }
 
 const pipelineForLead = (lead) => {

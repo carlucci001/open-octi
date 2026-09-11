@@ -15,6 +15,7 @@ import { isOpenOcti } from '@/lib/edition'
 import OpenOctiModelsSettings from './OpenOctiModelsSettings'
 import IntegrationsSettings from './IntegrationsSettings'
 import MonitoringSettings from './MonitoringSettings'
+import SupportAccessSettings from './SupportAccessSettings'
 import StripeSettings from './StripeSettings'
 
 const OPENOCTI = isOpenOcti()
@@ -24,6 +25,7 @@ const SUB_TABS = [
   ...(OPENOCTI ? [{ id: 'stripe', label: 'Stripe' }] : []),
   { id: 'integrations', label: 'Integrations' },
   { id: 'monitoring', label: 'Monitoring' },
+  ...(!OPENOCTI ? [{ id: 'support-access', label: 'Support Access' }] : []),
   { id: 'components', label: 'Screens' },
   { id: 'control-services', label: OPENOCTI ? 'Services' : 'Control Services' },
   { id: 'users', label: 'Users' },
@@ -37,7 +39,7 @@ const SUB_TABS = [
 export default function SettingsManager({ initialSub = 'control-services' }) {
   const [sub, setSub] = useState(initialSub)
   const [me, setMe] = useState(null)
-  const visibleTabs = SUB_TABS.filter(t => !['ai-keys', 'security-log', 'stripe'].includes(t.id) || me?.role === 'owner')
+  const visibleTabs = SUB_TABS.filter(t => !['ai-keys', 'security-log', 'support-access', 'stripe'].includes(t.id) || me?.role === 'owner')
 
   const change = (id) => {
     setSub(id)
@@ -113,6 +115,7 @@ export default function SettingsManager({ initialSub = 'control-services' }) {
       {sub === 'components' && <ComponentSettingsHub />}
       {sub === 'integrations' && <IntegrationsSettings />}
       {sub === 'monitoring' && <MonitoringSettings />}
+      {!OPENOCTI && sub === 'support-access' && me?.role === 'owner' && <SupportAccessSettings />}
       {sub === 'stripe' && OPENOCTI && me?.role === 'owner' && <StripeSettings />}
       {sub === 'models' && me && ['owner', 'admin'].includes(me.role) && <OpenOctiModelsSettings />}
       {sub === 'voice' && <VoiceSettings />}

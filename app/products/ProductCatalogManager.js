@@ -11,6 +11,8 @@ import CreditGrantManager from './CreditGrantManager'
 import StripeCatalogSyncPanel from './StripeCatalogSyncPanel'
 import SubscriptionPlanManager from './SubscriptionPlanManager'
 import { brandAssetsFor } from '@/lib/brand-assets'
+import { duplicateCatalogProduct } from '@/lib/productCatalogEditing'
+import { StorefrontFields, CopyItemControl, PackageCommerceFields, ModuleCommerceFields, AddOnCommerceFields, SalesPolicyFields } from './ProductCommerceFields'
 
 const FIELD = {
   background: 'var(--surface2)',
@@ -736,20 +738,28 @@ export default function ProductCatalogManager() {
   }
 
   function duplicateProduct(product) {
-    const copy = {
-      ...clone(product),
-      id: `${product.id}-copy`,
-      slug: `${product.slug || product.id}-copy`,
-      name: `${product.name} Copy`,
-      status: 'draft',
-      featured: false,
-    }
+    const name = window.prompt('Name for the duplicate product', `${product.name} Copy`)
+    if (!name?.trim()) return
+    const copy = duplicateCatalogProduct(product, name, catalog.products)
     setSelectedId('')
     setDraft(copy)
     setNewDraftOpen(true)
     setEditorOpen(true)
     switchSection('catalog')
     flash('Copy opened in the product modal. Press Create Product when ready.')
+  }
+
+  async function copyItem(kind, itemId, targetProductId) {
+    try {
+      const response = await fetch('/api/products/manage', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'copy-item', sourceProduct: normalizeForSave(draft), kind, itemId, targetProductId }),
+      })
+      const data = await response.json()
+      if (!data.ok) throw new Error(data.error || 'Copy failed')
+      setCatalog(data.catalog)
+      flash('Item copied. Review its storefronts and prices in the other product.')
+    } catch (error) { flash(error.message) }
   }
 
   function startNewLicense() {
@@ -990,9 +1000,11 @@ export default function ProductCatalogManager() {
       )}
 
       {editorOpen && draft && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5" style={{ background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(5px)' }} onClick={() => setEditorOpen(false)}>
+        <div role="dialog" aria-modal="true" aria-label="Product editor" className="fixed inset-0 flex items-center justify-center p-3 sm:p-5" style={{ zIndex: 100, background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(5px)' }} onClick={() => setEditorOpen(false)}>
           <div className="w-full max-w-6xl max-h-[calc(100vh-24px)] overflow-hidden" onClick={e => e.stopPropagation()}>
           <ProductEditor
+            products={catalog.products.filter(product => product.id !== draft.id)}
+            copyItem={copyItem}
             draft={draft}
             editorRef={editorRef}
             newDraftOpen={newDraftOpen}
@@ -1143,7 +1155,7 @@ function ProductCard({ product, selected, bulkSelected, onToggleBulk, onEdit, on
         <PackageSummary packages={product.packages || []} />
         <div className="flex gap-2 mt-4">
           <button onClick={onEdit} className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold flex-1" style={{ background: 'var(--accent)', color: 'var(--accent-text)' }}><Edit3 size={14} /> Edit</button>
-          <IconButton onClick={e => { e.stopPropagation(); onClone() }} title="Clone"><Copy size={15} /></IconButton>
+          <IconButton onClick={e => { e.stopPropagation(); onClone() }} title="Duplicate product"><Copy size={15} /></IconButton>
           <IconButton onClick={e => { e.stopPropagation(); onDelete() }} title="Delete"><Trash2 size={15} /></IconButton>
         </div>
       </div>
@@ -1166,7 +1178,7 @@ function ProductListRow({ product, selected, bulkSelected, onToggleBulk, onEdit,
       <div className="text-sm" style={{ color: 'var(--text)' }}>{lowestPrice(product) ? `${money(lowestPrice(product))}-${money(highestPrice(product))}` : 'No price'}</div>
       <div className="flex gap-2 xl:justify-end">
         <IconButton onClick={onEdit} title="Edit"><Edit3 size={15} /></IconButton>
-        <IconButton onClick={e => { e.stopPropagation(); onClone() }} title="Clone"><Copy size={15} /></IconButton>
+        <IconButton onClick={e => { e.stopPropagation(); onClone() }} title="Duplicate product"><Copy size={15} /></IconButton>
         <IconButton onClick={e => { e.stopPropagation(); onDelete() }} title="Delete"><Trash2 size={15} /></IconButton>
       </div>
     </div>
@@ -1264,6 +1276,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage }) {
 }
 
 function ProductEditor({
+  products, copyItem,
   editorRef,
   newDraftOpen = false,
   draft, updateField, updatePackage, addPackage, removePackage,
@@ -1281,7 +1294,7 @@ function ProductEditor({
       </aside>
     )
   }
-  const isNew = !draft.id
+  const isNew = newDraftOpen || !draft.id
   const categoryOptions = Array.from(new Set([draft.category, ...PRODUCT_CATEGORY_OPTIONS].filter(Boolean)))
   return (
     <aside id="product-builder" ref={editorRef} className="rounded-xl p-4 max-h-[calc(100vh-24px)] overflow-auto" style={{ background: 'var(--surface)', border: isNew ? '2px solid var(--accent)' : '1px solid var(--border)', boxShadow: isNew ? '0 0 0 4px rgba(59,130,246,0.12)' : '0 18px 60px rgba(0,0,0,0.35)' }}>
@@ -1310,6 +1323,7 @@ function ProductEditor({
       </div>
 
       <div className="grid gap-4">
+        <StorefrontFields value={draft.storefronts} onChange={v => updateField('storefronts', v)} />
         <EditorSection title="Identity">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <TextInput id="product-name-input" autoFocus={isNew} label="Name" value={draft.name} onChange={v => updateField('name', v)} placeholder="Command Center Pro, ContentStudio Starter..." />
@@ -1345,6 +1359,10 @@ function ProductEditor({
           <TextInput label="Headline" value={draft.headline} onChange={v => updateField('headline', v)} />
           <TextInput label="Summary" textarea rows={4} value={draft.summary} onChange={v => updateField('summary', v)} />
           <TextInput label="Suite card copy" textarea rows={3} value={draft.suiteCopy} onChange={v => updateField('suiteCopy', v)} />
+        </EditorSection>
+
+        <EditorSection title="Sales Policy">
+          <SalesPolicyFields policy={draft.salesPolicy} onChange={v => updateField('salesPolicy', v)} />
         </EditorSection>
 
         <EditorSection title="Version Control" action={<button onClick={addVersion} style={smallBtn}><Plus size={14} /> Release</button>}>
@@ -1430,6 +1448,8 @@ function ProductEditor({
                 </div>
 
                 <TextInput label="Included modules" value={(pkg.modules || []).join(', ')} onChange={v => updatePackage(index, 'modules', v.split(',').map(slugify).filter(Boolean))} />
+                <PackageCommerceFields pkg={pkg} addOns={draft.addOns || []} onChange={(key, value) => updatePackage(index, key, value)} />
+                <CopyItemControl products={products} onCopy={target => copyItem('packages', pkg.id, target)} />
                 <TextInput label="Copy" textarea rows={2} value={pkg.copy} onChange={v => updatePackage(index, 'copy', v)} />
                 <label className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold" style={{ color: 'var(--text)', border: '1px solid var(--border)', background: 'var(--surface)' }}>
                   <input type="checkbox" checked={Boolean(pkg.quoteRequired)} onChange={e => updatePackage(index, 'quoteRequired', e.target.checked)} />
@@ -1450,6 +1470,8 @@ function ProductEditor({
                 <button onClick={() => removeModule(index)} style={{ ...dangerBtn, alignSelf: 'end', minHeight: 44 }}><Trash2 size={14} /></button>
               </div>
               <TextInput label="Copy" value={mod.copy} onChange={v => updateModule(index, 'copy', v)} />
+              <ModuleCommerceFields mod={mod} onChange={(key, value) => updateModule(index, key, value)} />
+              <CopyItemControl products={products} onCopy={target => copyItem('modules', mod.id, target)} />
             </div>
           ))}
         </EditorSection>
@@ -1465,6 +1487,8 @@ function ProductEditor({
                 <button onClick={() => removeAddOn(index)} style={{ ...dangerBtn, alignSelf: 'end', minHeight: 44 }}><Trash2 size={14} /></button>
               </div>
               <TextInput label="Copy" value={addOn.copy} onChange={v => updateAddOn(index, 'copy', v)} />
+              <AddOnCommerceFields addOn={addOn} packages={draft.packages || []} onChange={(key, value) => updateAddOn(index, key, value)} />
+              <CopyItemControl products={products} onCopy={target => copyItem('addOns', addOn.id, target)} />
             </div>
           ))}
         </EditorSection>
@@ -1495,6 +1519,7 @@ function ProductEditor({
                 <TextInput label="Monthly fee" value={plan.monthlyFee} onChange={v => updateSupportPlan(index, 'monthlyFee', v)} />
               </div>
               <TextInput label="Response time" value={plan.responseTime} onChange={v => updateSupportPlan(index, 'responseTime', v)} />
+              <StorefrontFields value={plan.storefronts} onChange={v => updateSupportPlan(index, 'storefronts', v)} />
               <TextInput label="Scope" textarea rows={2} value={plan.copy} onChange={v => updateSupportPlan(index, 'copy', v)} />
               <button onClick={() => removeSupportPlan(index)} style={dangerBtn}><Trash2 size={14} /> Remove support</button>
             </div>

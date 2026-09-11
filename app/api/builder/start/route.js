@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 const BUILDER_HEALTH_URL = 'http://localhost:5173/api/health'
 const BUILDER_ROOT = 'C:\\dev\\farrington-builder'
-const BUILDER_LAUNCHER = 'C:\\dev\\farrington-builder\\Start-Farrington-Builder.ps1'
+const BUILDER_LAUNCHER = 'C:\\dev\\farrington-builder\\Start-OpenOcti-Builder.ps1'
 
 async function builderIsLive() {
   const controller = new AbortController()

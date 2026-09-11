@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+vi.mock('../lib/edition', () => ({ isOpenOcti: () => true }))
+vi.mock('../lib/openocti-postiz-settings', () => ({ readOpenOctiPostizSettings: () => null }))
 vi.mock('../lib/openocti-keys', () => ({ OPENOCTI_MODEL_PROVIDERS: [], validateOpenOctiProviderKey: vi.fn() }))
 vi.mock('../lib/stripe-configuration', () => ({ stripeConfigurationEnv: env => env }))
 vi.mock('../lib/dataStore', () => ({ readData: vi.fn(() => null) }))
@@ -43,13 +45,15 @@ describe('Postiz Public API connection', () => {
   it('allows the fresh-install tenant returned by channel listing to publish to that same channel', async () => {
     vi.stubEnv('POSTIZ_API_URL', env.POSTIZ_API_URL)
     vi.stubEnv('POSTIZ_API_KEY', env.POSTIZ_API_KEY)
-    const fetch = vi.fn(async (_url, init) => new Response(JSON.stringify(init.method === 'POST' ? [{ id: 'scheduled-test' }] : [{ id: 'channel-1', name: 'Test channel' }]), { status: 200, headers: { 'content-type': 'application/json' } }))
+    const fetch = vi.fn(async (_url, init) => new Response(JSON.stringify(init.method === 'POST' ? [{ id: 'scheduled-test' }] : [{ id: 'channel-1', name: 'Test channel', identifier: 'facebook' }]), { status: 200, headers: { 'content-type': 'application/json' } }))
     vi.stubGlobal('fetch', fetch)
     const listed = await (await listChannels(new Request('http://localhost/api/postiz/channels'))).json()
     expect(listed.channels[0].tenantId).toBe('default')
     const result = await publishPostizPost({ content: 'Mocked test only', channels: ['channel-1'], tenantId: listed.channels[0].tenantId, brandId: 'default', tenantAssignments: {}, config: getPostizConfig(env) })
     expect(result).toMatchObject({ ok: true, postId: 'scheduled-test' })
-    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(3)
+    const submitted = JSON.parse(fetch.mock.calls.find(([url]) => url.endsWith('/posts'))[1].body)
+    expect(submitted.posts[0].settings).toEqual({ __type: 'facebook' })
   })
   it('still rejects a channel assigned to another tenant before a publishing request', async () => {
     const fetch = vi.fn()

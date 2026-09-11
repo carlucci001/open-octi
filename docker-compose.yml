@@ -19,6 +19,10 @@ services:
       OPENCLAW_GATEWAY_TOKEN: "${OPENCLAW_GATEWAY_TOKEN:-}"
       OPENCLAW_API_KEY: "${OPENCLAW_API_KEY:-}"
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+      OPENOCTI_INSTALL_TYPE: docker
+      OPENOCTI_POSTIZ_STACK: bundled
+      POSTIZ_API_URL: ${POSTIZ_API_URL:-http://postiz:5000/api/public/v1}
+      NEXT_PUBLIC_POSTIZ_URL: ${POSTIZ_PUBLIC_URL:-http://localhost:4007}
       GITEA_INTERNAL_URL: http://gitea:3000
     ports:
       - "${OPENOCTI_PORT:-127.0.0.1:3000}:3000"
@@ -55,6 +59,136 @@ services:
       - "18789"
     restart: unless-stopped
 
+  # Adapted from gitroomhq/postiz-docker-compose for Postiz 2.23.0.
+  # Internal storage services have no published host ports. Keep all volumes on update.
+  postiz:
+    image: ghcr.io/gitroomhq/postiz-app:v2.23.0@sha256:785f97312f66a347fb96cdccc4ded5a33ced69a672c89a9adc8054e7d6a21dc5
+    command: ['sh', '/opt/openocti/postiz/start.sh']
+    env_file:
+      - path: postiz.env
+        required: false
+    environment:
+      MAIN_URL: ${POSTIZ_PUBLIC_URL:-http://localhost:4007}
+      FRONTEND_URL: ${POSTIZ_PUBLIC_URL:-http://localhost:4007}
+      NEXT_PUBLIC_BACKEND_URL: ${POSTIZ_PUBLIC_URL:-http://localhost:4007}/api
+      JWT_SECRET: ${POSTIZ_JWT_SECRET:?Run node scripts/setup-openocti-postiz.mjs first}
+      DATABASE_URL: postgresql://postiz:${POSTIZ_DB_PASSWORD:?Run the Postiz setup script}@postiz-postgres:5432/postiz
+      REDIS_URL: redis://postiz-redis:6379
+      BACKEND_INTERNAL_URL: http://localhost:3000
+      TEMPORAL_ADDRESS: temporal:7233
+      IS_GENERAL: 'true'
+      DISABLE_REGISTRATION: ${POSTIZ_DISABLE_REGISTRATION:-false}
+      RUN_CRON: 'true'
+      STORAGE_PROVIDER: local
+      UPLOAD_DIRECTORY: /uploads
+      NEXT_PUBLIC_UPLOAD_DIRECTORY: /uploads
+    ports:
+      - '${POSTIZ_BIND_ADDRESS:-127.0.0.1}:${POSTIZ_PORT:-4007}:5000'
+    volumes:
+      - postiz-config:/config
+      - postiz-uploads:/uploads
+      - ./deploy/postiz/start.sh:/opt/openocti/postiz/start.sh:ro
+      - ./deploy/postiz/ecosystem.config.cjs:/opt/openocti/postiz/ecosystem.config.cjs:ro
+    depends_on:
+      postiz-postgres:
+        condition: service_healthy
+      postiz-redis:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'node', '-e', "const r=require('http').get('http://localhost:5000/api/public/v1/integrations',s=>process.exit([200,401,403].includes(s.statusCode)?0:1));r.on('error',()=>process.exit(1));r.setTimeout(4000,()=>{r.destroy();process.exit(1)})"]
+      interval: 15s
+      timeout: 6s
+      retries: 12
+      start_period: 180s
+    restart: unless-stopped
+
+  postiz-postgres:
+    image: postgres:17-alpine@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
+    environment:
+      POSTGRES_USER: postiz
+      POSTGRES_DB: postiz
+      POSTGRES_PASSWORD: ${POSTIZ_DB_PASSWORD:?Run the Postiz setup script}
+    volumes:
+      - postiz-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postiz -d postiz']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  postiz-redis:
+    image: redis:7.2@sha256:74566c6910d13ae61e7ce73ebd3127438a1fe805b309b097c323142719ec8a5b
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - postiz-redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  temporal-postgres:
+    image: postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: ${POSTIZ_TEMPORAL_DB_PASSWORD:?Run the Postiz setup script}
+    volumes:
+      - postiz-temporal-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U temporal']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  temporal-elasticsearch:
+    image: elasticsearch:7.17.27@sha256:9a6443f55243f6acbfeb4a112d15eb3b9aac74bf25e0e39fa19b3ddd3a6879d0
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms256m -Xmx256m
+      xpack.security.enabled: 'false'
+    volumes:
+      - postiz-temporal-search:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s" > /dev/null']
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+    restart: unless-stopped
+
+  temporal:
+    image: temporalio/auto-setup:1.28.1@sha256:607d68caa111338d754771efb876c92dfcdae06d056e4530bb31cd0f37406e6a
+    environment:
+      DB: postgres12
+      DB_PORT: '5432'
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: ${POSTIZ_TEMPORAL_DB_PASSWORD:?Run the Postiz setup script}
+      POSTGRES_SEEDS: temporal-postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/openocti.yaml
+      ENABLE_ES: 'true'
+      ES_SEEDS: temporal-elasticsearch
+      ES_VERSION: v7
+      TEMPORAL_NAMESPACE: default
+    volumes:
+      - ./deploy/postiz/temporal.yaml:/etc/temporal/config/dynamicconfig/openocti.yaml:ro
+    depends_on:
+      temporal-postgres:
+        condition: service_healthy
+      temporal-elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'temporal', 'operator', 'cluster', 'health', '--address', 'temporal:7233']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    restart: unless-stopped
+
   gitea:
     image: docker.gitea.com/gitea:1.27.3@sha256:87a67ee09d3ae0d1df5fda5dcda3e2a1f9236a45b0a59025d6e00e46adc43bef
     environment:
@@ -89,6 +223,12 @@ services:
 
 volumes:
   openocti-data:
+  postiz-config:
+  postiz-uploads:
+  postiz-postgres:
+  postiz-redis:
+  postiz-temporal-postgres:
+  postiz-temporal-search:
   gitea-data:
 
 # Only the authenticated app proxy can reach Gitea; no host ports are published.

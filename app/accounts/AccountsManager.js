@@ -1,4 +1,5 @@
 'use client'
+import { EnablePortalButton } from './ClientAccountSetup'
 import ThemedSelect from '../components/ThemedSelect'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import ComponentSettings, { useComponentSettings } from '../components/ComponentSettings'
@@ -496,8 +497,8 @@ function isOwnerAdminAccount(account = {}) {
     account.isOwner ||
     account.type === 'owner' ||
     account.type === 'internal-owner' ||
-    name === 'carl farrington' ||
-    (account.hidden && name.includes('carl farrington'))
+    name === 'Workspace owner' ||
+    (account.hidden && name.includes('Workspace owner'))
   )
 }
 function resolveAccountSubTab(raw) {
@@ -684,9 +685,7 @@ function AccountDetail({ account, onBack, onEdit, onRefresh }) {
               Portal: {portalEnabled ? (portalComplimentary ? 'complimentary' : 'active') : 'disabled'}
             </span>
           )}
-          {!portalEnabled && (
-            <EnablePortalButton account={account} onEnabled={load} />
-          )}
+          <EnablePortalButton account={account} onEnabled={load} />
           {portalEnabled && <AccountPortalPreviewButton account={account} />}
           {portalEnabled && <DisablePortalButton account={account} onDisabled={load} />}
           <ClientEmailButton account={account} primaryContact={primaryContact} onSent={load} />
@@ -1432,216 +1431,7 @@ function VideoCallButton({ account }) {
 
 // Admin approval action: grants portal access, with optional complimentary,
 // promotional credit, and concierge voice settings. Idempotent server-side.
-export function EnablePortalButton({ account, onEnabled }) {
-  const [configuring, setConfiguring] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [partialOutcome, setPartialOutcome] = useState('')
-  const [complimentary, setComplimentary] = useState(false)
-  const [complimentaryDuration, setComplimentaryDuration] = useState('30_days')
-  const [complimentaryExpiresAt, setComplimentaryExpiresAt] = useState('')
-  const [complimentaryReason, setComplimentaryReason] = useState('30-day concierge introduction')
-  const [grantCredits, setGrantCredits] = useState(false)
-  const [credits, setCredits] = useState(10000)
-  const [creditExpiration, setCreditExpiration] = useState('30_days')
-  const [creditExpiresAt, setCreditExpiresAt] = useState('')
-  const [creditReason, setCreditReason] = useState('30-day concierge trial')
-  const [voiceEnabled, setVoiceEnabled] = useState(false)
-  const [dailyVoiceMinutes, setDailyVoiceMinutes] = useState(15)
-  const [maxSessionMinutes, setMaxSessionMinutes] = useState(10)
-  const [idleTimeoutSeconds, setIdleTimeoutSeconds] = useState(90)
-
-  const enable = async event => {
-    event.preventDefault()
-    if (busy) return
-    setError('')
-    if (complimentary && complimentaryReason.trim().length < 3) {
-      setError('Enter a reason for complimentary status.')
-      return
-    }
-    if (complimentary && complimentaryDuration === 'custom' && !complimentaryExpiresAt) {
-      setError('Choose a complimentary expiration date.')
-      return
-    }
-    if (grantCredits && (!Number.isSafeInteger(Number(credits)) || Number(credits) < 1)) {
-      setError('Enter a whole promotional credit amount greater than zero.')
-      return
-    }
-    if (grantCredits && creditReason.trim().length < 3) {
-      setError('Enter a reason for the promotional credit audit trail.')
-      return
-    }
-    if (grantCredits && creditExpiration === 'custom' && !creditExpiresAt) {
-      setError('Choose a promotional credit expiration date.')
-      return
-    }
-    const choices = [
-      'portal access',
-      complimentary ? `complimentary status (${complimentaryDuration === '30_days' ? '30 days' : complimentaryDuration === 'never' ? 'no expiration' : complimentaryExpiresAt})` : null,
-      grantCredits ? `${Number(credits).toLocaleString()} promotional credits` : null,
-      voiceEnabled ? `${dailyVoiceMinutes} premium voice minutes per day` : null,
-    ].filter(Boolean).join(', ')
-    if (!window.confirm(`Enable ${choices} for ${account.name}?`)) return
-    setBusy(true)
-    try {
-      const requestId = globalThis.crypto?.randomUUID?.()
-        || `portal-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-      const r = await fetch('/api/accounts/enable-portal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accountId: account.id,
-          complimentary,
-          ...(complimentary ? {
-            complimentaryDuration,
-            complimentaryReason: complimentaryReason.trim(),
-            ...(complimentaryDuration === 'custom' ? { complimentaryExpiresAt } : {}),
-          } : {}),
-          promotionalCreditGrant: {
-            enabled: grantCredits,
-            ...(grantCredits ? {
-              credits: Number(credits),
-              expiration: creditExpiration,
-              ...(creditExpiration === 'custom' ? { expiresAt: creditExpiresAt } : {}),
-              reason: creditReason.trim(),
-              requestId,
-            } : {}),
-          },
-          conciergeVoice: {
-            enabled: voiceEnabled,
-            ...(voiceEnabled ? {
-              dailySeconds: Number(dailyVoiceMinutes) * 60,
-              maxSessionSeconds: Number(maxSessionMinutes) * 60,
-              idleTimeoutSeconds: Number(idleTimeoutSeconds),
-              warningThresholds: [50, 75, 90, 100],
-            } : {}),
-          },
-        }),
-      })
-      const j = await r.json()
-      if (!r.ok || !j.ok) throw new Error(j.error || 'Could not enable portal')
-      if (j.creditGrantFailed) {
-        setPartialOutcome(j.creditGrantMessage || 'Portal access was enabled, but promotional credits were not issued. Review the credit ledger before retrying.')
-        return
-      }
-      setConfiguring(false)
-      if (typeof onEnabled === 'function') onEnabled()
-    } catch (e) {
-      setError(e.message || 'Could not enable portal')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (partialOutcome) {
-    return (
-      <div role="status" className="w-full md:w-[28rem] rounded-xl p-4 grid gap-3" style={{ background: 'var(--amber-dim)', color: 'var(--amber)', border: '1px solid var(--border)' }}>
-        <div>
-          <strong className="text-sm">Portal enabled; credit grant needs review</strong>
-          <p className="text-xs mt-1">{partialOutcome}</p>
-        </div>
-        <button type="button" onClick={() => onEnabled?.()} className="justify-self-end px-4 min-h-12 rounded-lg text-sm font-semibold" style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
-          Refresh account
-        </button>
-      </div>
-    )
-  }
-
-  if (!configuring) {
-    return (
-      <button
-        type="button"
-        onClick={() => setConfiguring(true)}
-        className="px-3 min-h-12 rounded-lg text-sm inline-flex items-center gap-1.5"
-        style={{ background: 'var(--accent)', color: 'var(--accent-text)', border: '1px solid var(--border)' }}
-        aria-label={`Configure portal access for ${account.name}`}
-      >
-        Enable portal
-      </button>
-    )
-  }
-
-  return (
-    <form onSubmit={enable} className="w-full md:w-[28rem] rounded-xl p-4 grid gap-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }} aria-label={`Portal access options for ${account.name}`}>
-      <div>
-        <strong className="text-sm">Enable client portal</strong>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Portal access is independent. Add complimentary benefits only when you choose them.</p>
-      </div>
-
-      {error && <div role="alert" className="rounded-lg px-3 py-2 text-xs" style={{ background: 'var(--red-dim)', color: 'var(--red)' }}>{error}</div>}
-
-      <label className="flex items-start gap-3 min-h-12">
-        <input type="checkbox" checked={complimentary} onChange={event => setComplimentary(event.target.checked)} className="mt-1" />
-        <span><strong className="text-sm block">Complimentary account</strong><span className="text-xs" style={{ color: 'var(--text-muted)' }}>Optional owner/admin benefit.</span></span>
-      </label>
-      {complimentary && (
-        <div className="grid sm:grid-cols-2 gap-2 pl-6">
-          <label className="grid gap-1 text-xs">Duration
-            <select value={complimentaryDuration} onChange={event => setComplimentaryDuration(event.target.value)} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-              <option value="30_days">30 days</option>
-              <option value="custom">Custom date</option>
-              <option value="never">No expiration</option>
-            </select>
-          </label>
-          {complimentaryDuration === 'custom' && <label className="grid gap-1 text-xs">Expires
-            <input type="date" value={complimentaryExpiresAt} onChange={event => setComplimentaryExpiresAt(event.target.value)} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }} />
-          </label>}
-          <label className="grid gap-1 text-xs sm:col-span-2">Authorization reason
-            <input value={complimentaryReason} maxLength={300} onChange={event => setComplimentaryReason(event.target.value)} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }} />
-          </label>
-        </div>
-      )}
-
-      <label className="flex items-start gap-3 min-h-12">
-        <input type="checkbox" checked={grantCredits} onChange={event => setGrantCredits(event.target.checked)} className="mt-1" />
-        <span><strong className="text-sm block">Grant promotional credits</strong><span className="text-xs" style={{ color: 'var(--text-muted)' }}>Separate from portal and comp status.</span></span>
-      </label>
-      {grantCredits && (
-        <div className="grid sm:grid-cols-2 gap-2 pl-6">
-          <label className="grid gap-1 text-xs">Credits
-            <input type="number" min="1" max="1000000" step="1" value={credits} onChange={event => setCredits(Number(event.target.value))} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }} />
-          </label>
-          <label className="grid gap-1 text-xs">Expiration
-            <select value={creditExpiration} onChange={event => setCreditExpiration(event.target.value)} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-              <option value="30_days">30 days</option>
-              <option value="custom">Custom date</option>
-              <option value="never">Never</option>
-            </select>
-          </label>
-          {creditExpiration === 'custom' && <label className="grid gap-1 text-xs sm:col-span-2">Credit expiration date
-            <input type="date" value={creditExpiresAt} onChange={event => setCreditExpiresAt(event.target.value)} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }} />
-          </label>}
-          <label className="grid gap-1 text-xs sm:col-span-2">Grant reason
-            <input value={creditReason} maxLength={300} onChange={event => setCreditReason(event.target.value)} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }} />
-          </label>
-        </div>
-      )}
-
-      <label className="flex items-start gap-3 min-h-12">
-        <input type="checkbox" checked={voiceEnabled} onChange={event => setVoiceEnabled(event.target.checked)} className="mt-1" />
-        <span><strong className="text-sm block">Include premium Cheryl voice allowance</strong><span className="text-xs" style={{ color: 'var(--text-muted)' }}>Usage-limited and independent from credits.</span></span>
-      </label>
-      {voiceEnabled && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pl-6">
-          <label className="grid gap-1 text-xs">Daily minutes
-            <input type="number" min="1" step="1" value={dailyVoiceMinutes} onChange={event => setDailyVoiceMinutes(Number(event.target.value))} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }} />
-          </label>
-          <label className="grid gap-1 text-xs">Session minutes
-            <input type="number" min="1" step="1" value={maxSessionMinutes} onChange={event => setMaxSessionMinutes(Number(event.target.value))} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }} />
-          </label>
-          <label className="grid gap-1 text-xs">Idle seconds
-            <input type="number" min="1" step="1" value={idleTimeoutSeconds} onChange={event => setIdleTimeoutSeconds(Number(event.target.value))} className="rounded-lg px-3 min-h-12" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }} />
-          </label>
-        </div>
-      )}
-
-      <div className="flex justify-end gap-2 pt-1">
-        <button type="button" onClick={() => { setConfiguring(false); setError('') }} disabled={busy} className="px-3 min-h-12 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}>Cancel</button>
-        <button type="submit" disabled={busy} aria-busy={busy} className="px-4 min-h-12 rounded-lg text-sm font-semibold disabled:opacity-60" style={{ background: 'var(--accent)', color: 'var(--accent-text)' }}>{busy ? 'Enabling…' : 'Enable portal'}</button>
-      </div>
-    </form>
-  )
-}
+export { EnablePortalButton } from './ClientAccountSetup'
 
 function DisablePortalButton({ account, onDisabled }) {
   const [busy, setBusy] = useState(false)
@@ -1869,6 +1659,13 @@ export default function AccountsManager({ onNavigate }) {
   const [sortDir, setSortDir] = useState('desc')
   const [view, setView] = useState('list')
   const [selected, setSelected] = useState(null)
+  useEffect(() => {
+    try {
+      const id = sessionStorage.getItem('fcc.accounts.openId')
+      const account = accounts.find(item => item.id === id && item.type === 'client')
+      if (account) { sessionStorage.removeItem('fcc.accounts.openId'); setSelected(account) }
+    } catch {}
+  }, [accounts])
   const [editing, setEditing] = useState(null)
   const [adding, setAdding] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set())

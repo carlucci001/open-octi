@@ -40,7 +40,7 @@ function parseOpenclawTools() {
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(/name:\s*["']([a-zA-Z0-9_]+)["']/)
     if (!m) continue
-    if (m[1] === 'Farrington CC — Unified Command Center Tools') continue // top-level plugin name, not a tool
+    if (m[1] === 'OpenOcti CC — Unified Command Center Tools') continue // top-level plugin name, not a tool
     let description = ''
     for (let j = i + 1; j < Math.min(i + 30, lines.length); j++) {
       const dm = lines[j].match(/description:\s*["']([^"']+)["']/)

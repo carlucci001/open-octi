@@ -13,6 +13,7 @@
 import { NextResponse } from 'next/server'
 import { requireCapability } from '@/lib/permissions'
 import { POSTIZ_DEFAULT_TENANT } from '@/lib/postiz-config'
+import { recordPostizSetupSchedule } from '@/lib/openocti-postiz-progress'
 import {
   SocialOperatorError,
   prepareSocialOperatorHandoff,
@@ -232,6 +233,9 @@ export async function POST(request) {
   } = receipt
 
   let operatorDeliveryRecorded = false
+  // A scheduling receipt is not evidence of publication on the social platform.
+  // A help-progress write failure must never turn an accepted post into a retry.
+  try { recordPostizSetupSchedule(receipt, cfg) } catch { console.warn('[postiz] Setup progress could not be recorded') }
   let recordWarning = null
   if (operatorReference) {
     try {

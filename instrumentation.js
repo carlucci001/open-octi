@@ -1,17 +1,8 @@
 export async function register() {
-  if (process.env.NEXT_RUNTIME && process.env.NEXT_RUNTIME !== 'nodejs') return
-  if (process.env.NODE_ENV === 'test' || process.env.VITEST) return
-  if (process.env.NEXT_PHASE === 'phase-production-build') return
-
-  const isProduction = process.env.NODE_ENV === 'production'
-
-  if (isProduction) {
-    const { startCampaignPublishScheduler } = await import('./lib/campaign-publish-scheduler')
-    startCampaignPublishScheduler()
-  }
-
-  if (process.env.AUTOMATION_SCHEDULER === 'on' || isProduction) {
-    const { startAutomationScheduler } = await import('./lib/automation-scheduler')
-    startAutomationScheduler()
+  // This exact runtime branch lets Next eliminate Node-only imports from the
+  // Edge instrumentation bundle (including SQLite and the existing schedulers).
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { registerNodeServices } = await import('./lib/instrumentation-node')
+    await registerNodeServices()
   }
 }

@@ -4121,7 +4121,7 @@ function VoiceButton({ activeContext, activeSection }) {
             sponsors: 'sponsors', sponsor: 'sponsors',
             newspapers: 'newspaper_outreach', newspaper: 'newspaper_outreach', 'newspaper outreach': 'newspaper_outreach', np: 'newspaper_outreach',
             tdas: 'tda_outreach', tda: 'tda_outreach', 'tda outreach': 'tda_outreach', 'state tda': 'tda_outreach', 'state tdas': 'tda_outreach', tourism: 'tda_outreach',
-            farrington: 'farrington_dev', 'farrington dev': 'farrington_dev', 'farrington development': 'farrington_dev', dev: 'farrington_dev',
+            farrington: 'farrington_dev', 'farrington dev': 'farrington_dev', 'Your organization': 'farrington_dev', dev: 'farrington_dev',
           }
           const key = (campaign || '').toLowerCase().trim()
           const target = map[key]

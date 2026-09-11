@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { google } from 'googleapis'
+import * as google from 'googleapis/build/src/apis/calendar/index.js'
 import { readData } from '@/lib/dataStore'
 import { requireCrmWrite } from '@/lib/permissions'
 import { calendarEventIdForApi } from '@/lib/gcal'

@@ -236,6 +236,13 @@ export async function POST(request) {
     const lead = findById('leads', body.leadId)
     if (!lead) return NextResponse.json({ error: 'lead not found' }, { status: 404 })
     if (!userCanAccessLead(user, lead, loadLeadLists())) return NextResponse.json({ error: 'lead not found' }, { status: 404 })
+    if (lead.status === 'converted') {
+      const account = findById('accounts', lead.convertedToAccountId)
+      const opportunity = findById('opportunities', lead.convertedToOpportunityId)
+      const contact = findById('contacts', lead.convertedToContactId)
+      if (!account || !opportunity) return NextResponse.json({ error: 'This lead was already converted, but its linked records need review. Open the existing account or pipeline before converting again.' }, { status: 409 })
+      return NextResponse.json({ ok: true, alreadyConverted: true, account, contact, opportunity, leadId: lead.id })
+    }
     if (!body.pipelineId || !body.stageId) {
       return NextResponse.json({ error: 'pipelineId and stageId required' }, { status: 400 })
     }
@@ -249,6 +256,9 @@ export async function POST(request) {
         name: accountNameFromLead(lead.businessName || lead.name),
         type: 'prospect',
         stage: 'active',
+        email: String(lead.email || '').trim().toLowerCase(),
+        phone: lead.phone || '',
+        contactName: lead.name || '',
         priority: 'medium',
         // Carry the prospect's website onto the account — Accounts has had a
         // website field all along; leads finally do too.
@@ -272,6 +282,10 @@ export async function POST(request) {
       })
     } else if (!contact.accountId) {
       contact = update('contacts', contact.id, { accountId: account.id })
+    }
+
+    if (!account.primaryContactId && contact.accountId === account.id) {
+      account = update('accounts', account.id, { primaryContactId: contact.id })
     }
 
     const opportunity = create('opportunities', {

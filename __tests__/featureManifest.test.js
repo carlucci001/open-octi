@@ -56,6 +56,34 @@ describe('external capability manifest', () => {
     expect(serialized).not.toContain(env.VERCEL_TOKEN)
   })
 
+  it('recognizes the existing Command Center site-note connection without an endpoint override', () => {
+    const env = { FCC_EDITION: 'commandcenter', SITE_NOTE_SECRET: 'private-test-secret' }
+    const manifest = buildFeatureManifest(env)
+
+    expect(manifest.configured).toContain('site-note')
+    expect(capabilityStatus('site-note', env)).toMatchObject({ status: 'configured', missing: [] })
+    expect(requireCapability('site-note', env)).toBeNull()
+    expect(JSON.stringify(manifest)).not.toContain(env.SITE_NOTE_SECRET)
+    expect(capabilityStatus('site-note', { FCC_EDITION: 'commandcenter' }).missing).toEqual(['SITE_NOTE_SECRET'])
+  })
+
+  it('requires an independent endpoint and secret for OpenOcti site notes', () => {
+    const env = { FCC_EDITION: 'openocti', SITE_NOTE_SECRET: 'installation-test-secret' }
+
+    expect(capabilityStatus('site-note', env)).toMatchObject({
+      status: 'not_configured',
+      missing: ['SITE_NOTE_ENDPOINT'],
+    })
+    expect(requireCapability('site-note', env)).toMatchObject({
+      status: 503,
+      body: { capability: 'site-note', error: 'not_configured' },
+    })
+    expect(capabilityStatus('site-note', { ...env, SITE_NOTE_ENDPOINT: 'https://notes.example.test' }).status).toBe('configured')
+    expect(capabilityStatus('site-note', {
+      FCC_EDITION: 'openocti', SITE_NOTE_ENDPOINT: 'https://notes.example.test',
+    }).missing).toEqual(['SITE_NOTE_SECRET'])
+  })
+
   it('maps every declared requirement to a real settings anchor', () => {
     const manifest = buildFeatureManifest({ CRM_SESSION_SECRET: 'test-only', FCC_EDITION: 'openocti' })
     for (const capability of manifest.capabilities) {
@@ -64,6 +92,8 @@ describe('external capability manifest', () => {
         expect(link, `${capability.id}:${need}`).toBeTruthy()
         if (['STRIPE_SECRET_KEY', 'NEXT_PUBLIC_STRIPE_PK'].includes(need)) {
           expect(link.href).toBe('/?tab=settings&settings=stripe')
+        } else if (['POSTIZ_API_URL', 'POSTIZ_API_KEY', 'NEXT_PUBLIC_POSTIZ_URL'].includes(need)) {
+          expect(link.href).toBe('/settings/postiz')
         } else {
           expect(link.href, `${capability.id}:${need}`).toMatch(/^\/settings(?:\/models)?#[-a-z0-9]+$/)
         }

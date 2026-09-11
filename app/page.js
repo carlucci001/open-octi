@@ -66,7 +66,7 @@ import { canUseTab } from '@/lib/roles'
 import { Activity, Bot, Boxes, BrainCircuit, Cable, CircleDollarSign, Database, FlaskConical, Hammer, KeyRound, LifeBuoy, Megaphone, Mic2, Newspaper, Package, PhoneCall, Radio, Server, Settings2, ShieldAlert, Wrench } from 'lucide-react'
 
 const APP_BUILD_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 10) || '2026.06.11-api-lab-mobile'
-const PRODUCT_VERSION = isOpenOcti() ? '1.2.4' : '2.1'
+const PRODUCT_VERSION = isOpenOcti() ? (process.env.NEXT_PUBLIC_APP_VERSION || '0.0.0-dev') : '2.1'
 // Build stamp baked in by next.config.js at build time. Shown in the sidebar
 // footer so the running build is confirmable at a glance — no deploy logs.
 const BUILD_NUMBER = process.env.NEXT_PUBLIC_FCC_BUILD_NUMBER || ''
@@ -626,8 +626,8 @@ const WS_GLYPH = {
   system: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path strokeLinejoin="round" d="M5 4h14v6H5zM5 14h14v6H5z" /><path strokeLinecap="round" d="M8 7h.01M8 17h.01M12 7h5M12 17h5" /></svg>,
 }
 const WORKSPACES = [
-  { id: 'sell', label: 'Sell', ids: ['dashboard', 'leads', 'press-desk', 'pipelines', 'accounts', 'support', 'contacts', 'finance'] },
-  { id: 'build', label: 'Build', ids: ['agents', 'platforms', 'automations', 'builder', 'campaign-studio', 'social', 'products', 'repository', 'ship-desk', 'build-board', 'switchboard', 'labs'] },
+  { id: 'sell', label: 'Sell', ids: ['dashboard', 'leads', 'pipelines', 'accounts', 'support', 'contacts', 'finance'] },
+  { id: 'build', label: 'Build', ids: ['agents', 'platforms', 'automations', 'press-desk', 'builder', 'campaign-studio', 'social', 'products', 'repository', 'ship-desk', 'build-board', 'switchboard', 'labs'] },
   { id: 'projects', label: 'Projects', ids: ['projects', 'tasks', 'documents', 'research', 'content-lab', 'media', 'notes', 'phone', 'conference', 'calendar', 'meeting-capture', 'feed'] },
   { id: 'system', label: 'System', ids: ['incident-inbox', 'money-console', 'network', 'domains', 'credentials', 'migrate', ...(OPENOCTI ? ['settings'] : ['control-services'])] },
 ].map(workspace => ({
@@ -665,9 +665,7 @@ const VALID_TABS = new Set([
 
 const FINANCE_SUBS = new Set(['overview', 'overhead', 'payments', 'invoices', 'privacy', 'api-spend'])
 const FULL_BLEED_TABS = new Set(['notes', 'repository', 'media', 'content-lab', 'social'])
-// OpenOcti uses the existing header dropdown for agent and command controls.
-// Old browser preferences must not restore the duplicate legacy surfaces.
-const SHOW_OPERATOR_PROMPT_BAR = !OPENOCTI
+const SHOW_OPERATOR_PROMPT_BAR = false
 const HIDE_OPERATOR_RIGHT_RAIL = true
 
 // Map old tab IDs to new ones so localStorage doesn't break

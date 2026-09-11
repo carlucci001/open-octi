@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CalendarDays } from 'lucide-react'
 import PageHeader, { ViewToggle } from '../components/PageHeader'
 import IntegrationGate from '../components/IntegrationGate'
+import { isOpenOcti } from '@/lib/edition'
 
 const VIEWS = [
   { id: 'planner', label: 'Planner' },
@@ -185,10 +186,10 @@ function SocialPublishingContent({ embedded = false, onNavigate, onOpenCampaigns
                 <span style={avatarStyle}>P</span>
                 <span style={{ minWidth: 0 }}>
                   <strong style={rowTitleStyle}>Postiz engine</strong>
-                  <small style={rowMetaStyle}>Requires a separately installed or hosted Postiz server and connected social accounts.</small>
+                  <small style={rowMetaStyle}>{isOpenOcti() ? 'Included with Docker; configure its API key and connect your own social accounts.' : 'Local sidecar through Command Center API'}</small>
                 </span>
               </div>
-              <button type="button" onClick={() => navigate('credentials')} style={secondaryButtonStyle}>Credentials</button>
+              <button type="button" onClick={() => isOpenOcti() ? window.location.assign('/settings/postiz') : navigate('credentials')} style={secondaryButtonStyle}>{isOpenOcti() ? 'Postiz settings' : 'Credentials'}</button>
             </div>
           )}
         </div>

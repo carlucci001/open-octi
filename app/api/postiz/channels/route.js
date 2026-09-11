@@ -67,6 +67,7 @@ export async function GET(request) {
       headers: { Authorization: cfg.key, 'User-Agent': 'fcc-campaign-studio/1' },
       cache: 'no-store',
       signal: AbortSignal.timeout(12000),
+      redirect: 'error',
     })
     const text = await r.text()
     const contentType = r.headers.get('content-type') || ''

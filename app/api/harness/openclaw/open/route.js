@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import fs from 'fs'
 import { openClawDashboardLocation } from '@/lib/openclaw-dashboard'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -26,8 +27,9 @@ export async function GET(request) {
   const { error } = await requireAdmin(request)
   if (error) return error
   const token = readOpenClawGatewayToken()
-  return new NextResponse(null, {
-    status: 307,
-    headers: { Location: openClawDashboardLocation(token), 'Cache-Control': 'no-store' },
-  })
+  if (isOpenOcti()) return new NextResponse(null, { status: 307, headers: { Location: openClawDashboardLocation(token), 'Cache-Control': 'no-store' } })
+  const origin = process.env.PUBLIC_TUNNEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://crm.company.example.com'
+  const target = new URL('/api/harness/dashboard/openclaw-hetzner/', origin)
+  if (token) target.hash = `token=${encodeURIComponent(token)}`
+  return NextResponse.redirect(target)
 }

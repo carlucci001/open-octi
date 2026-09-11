@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "6369f4fa04838a9e699cb4f46f8762fdbf4cb919",
+  "sourceCommit": "a531f5b22d308dc892ae784d30955eb3bd2b12de",
   "approvedPublicCommit": "d488f91548f57fd2f7c2198fc077a5828e47441e",
   "normalization": "utf8-lf-text/raw-binary",
   "files": [
     {
       "path": ".dockerignore",
       "kind": "text",
-      "sha256": "1b781b9367033c9ed27de507fc6099f99df09937ee9fecba05e6995486b212b0"
+      "sha256": "4c293f7b5223be95aeaf18228a145507c92ae1717ba29464688088c87fb08b9a"
     },
     {
       "path": ".env.example",
       "kind": "text",
-      "sha256": "2998cd8b5b2f4300703cf15bf68e266430928e2a8ee08c538c48dff3d2088039"
+      "sha256": "811be4717a92c6595c1867d376976de9afd54e3a367c3f5cb772d4bbcdb5a580"
     },
     {
       "path": ".gitattributes",
@@ -62,7 +62,7 @@
     {
       "path": "Dockerfile",
       "kind": "text",
-      "sha256": "149ce0520c39b571b544ee1a87ec07d88dc6d1227a1c3c4ba06019d3d96b20ae"
+      "sha256": "713d45eb7a0a313201ed4a8075b201c41a2f5eb63bb9dd3ce371b89be53ba944"
     },
     {
       "path": "LICENSE",
@@ -77,17 +77,17 @@
     {
       "path": "OPENOCTI_FILELIST.txt",
       "kind": "text",
-      "sha256": "3f4317e2e82b1dd509e08f97495fe652a5e489f7397e70818c688440877a5e35"
+      "sha256": "03af72c32fb3282252b98cce61f29155fe983d00cbc13d9cd546ebb470b7587b"
     },
     {
       "path": "OPENOCTI_MANIFEST.json",
       "kind": "text",
-      "sha256": "291fc379aa43cf911ed6606ac8cec6433bac246409b477d31c051643f3814091"
+      "sha256": "48c2f558eff31a861b9b64ec253f0e20a449764a04a10a493b07cc61f41cee75"
     },
     {
       "path": "README.md",
       "kind": "text",
-      "sha256": "67bf635b9f8ab74392b68880a9ecfaf13409c17013d6a9707b11b3987d2d59e2"
+      "sha256": "feee042c28feb84930f45eeeaa01b3415054612f9d28a7207ff7095bae3fe24f"
     },
     {
       "path": "SECURITY.md",
@@ -97,17 +97,27 @@
     {
       "path": "THIRD_PARTY_NOTICES.md",
       "kind": "text",
-      "sha256": "2ea1ce0798d91f491863ba001376f4a1e1dcd9541aaba8f5aca7f9864e82fee6"
+      "sha256": "de6215b6c7e5ceabe3e192fbdf34d8fcc034eb62b45feaf5ddfd9e3c3434de3d"
     },
     {
       "path": "VERSION.json",
       "kind": "text",
-      "sha256": "279a8c288dba2824f8968d2667ef8e9f9106d54e2be7500981922a72a6503eaf"
+      "sha256": "e4025ff5907642ea3976f15a99f344aac5eddb243063202fc566452a93d73b8b"
     },
     {
       "path": "__tests__/CampaignStudioDrawer.test.jsx",
       "kind": "text",
       "sha256": "3df58e92bf398ccf9356d62fba297137c547a33d79b966e4a32b295212174d39"
+    },
+    {
+      "path": "__tests__/FirstRunAccountSetup.test.jsx",
+      "kind": "text",
+      "sha256": "ac5663c017c59afd5eed17346c15e3975e032fb508aebf197120172a95484326"
+    },
+    {
+      "path": "__tests__/defaultAgentAvatars.test.js",
+      "kind": "text",
+      "sha256": "6548e8d2eee0df6448089dc6da266ab72d6716cf4317eae73e1583f1a86ed6bc"
     },
     {
       "path": "__tests__/featureInventory.test.js",
@@ -117,7 +127,32 @@
     {
       "path": "__tests__/featureManifest.test.js",
       "kind": "text",
-      "sha256": "69e3a22a4e017c6b1f433831aee4b5d8c69171074064a9343e4ec5aa3ad237db"
+      "sha256": "fe6ad783f942ec78b33623a9b2b9ef3d6d37ed8192fec431d767b5fc28ba2567"
+    },
+    {
+      "path": "__tests__/financeInvoicesRegression.test.jsx",
+      "kind": "text",
+      "sha256": "47949d56d60cfc98381f8f9936c69c737769f679f76d1391f68f71b8f29e7861"
+    },
+    {
+      "path": "__tests__/firstRunAccount.test.js",
+      "kind": "text",
+      "sha256": "8ed86072f8c30f6706b94102036fbb7a908a048002c4158ef694ba2c27ab3dbe"
+    },
+    {
+      "path": "__tests__/firstRunSetupRoute.test.js",
+      "kind": "text",
+      "sha256": "2d422b3cd42ba3f2d6e860ddcb4532fd0e3921d2c12c63f8351968aac2ce6bd9"
+    },
+    {
+      "path": "__tests__/harnessReleaseAvailability.test.js",
+      "kind": "text",
+      "sha256": "a71f1ee2cd169116610dfeefb55d3e5d902b6eacaa8a7c3fcf13bf2116225951"
+    },
+    {
+      "path": "__tests__/harnessSupport.test.jsx",
+      "kind": "text",
+      "sha256": "42316f764e68826a2ada265a69e44f6305e42ae66a9be42daef2f52ccb4a2f16"
     },
     {
       "path": "__tests__/leadSweepRuns.test.js",
@@ -128,6 +163,11 @@
       "path": "__tests__/leadVendorApollo.test.js",
       "kind": "text",
       "sha256": "7199c2edd0c983f8f68b31624f71636e0da69360da74ce3a43e65b6dddd4aff1"
+    },
+    {
+      "path": "__tests__/mediaSavedOpenAiKey.test.js",
+      "kind": "text",
+      "sha256": "cf078404126daf4b4ce6253234910b5f5785169db17a58299960b4b70d616749"
     },
     {
       "path": "__tests__/monitoringEngine.test.js",
@@ -145,9 +185,104 @@
       "sha256": "7d5a72a267377d494ee1c7f69e275083cc9da9e74e78dc6634947836f377d547"
     },
     {
+      "path": "__tests__/openOctiAgentRouting.test.js",
+      "kind": "text",
+      "sha256": "039ce92e0ae70078afaa1497c1fbb50eb4b8f8c81b556643b37ac4d848226e3a"
+    },
+    {
+      "path": "__tests__/openOctiAskButton.test.jsx",
+      "kind": "text",
+      "sha256": "e6916e60e0467dd2ed5fe110365e45a5896219c01408c6a2aff7bf9e6f1bd06f"
+    },
+    {
+      "path": "__tests__/openOctiAssistant.test.js",
+      "kind": "text",
+      "sha256": "6cca84cb95845a6267d841e0889e22df05084e92a57ea120e9cc257089913dab"
+    },
+    {
+      "path": "__tests__/openOctiDirectProviders.test.js",
+      "kind": "text",
+      "sha256": "6d0f470ddfaa47dc2617c1c9d64e6c726af59684331a5f0ad4dc9c81137b412d"
+    },
+    {
+      "path": "__tests__/openOctiGeminiGuide.test.js",
+      "kind": "text",
+      "sha256": "db344ab1fd260089d1c2eaf3bd7f3129a6cdf9e408231a0ceab01e91231ae337"
+    },
+    {
+      "path": "__tests__/openOctiGitea.test.js",
+      "kind": "text",
+      "sha256": "bd28254007d5e574cefa33340e313c68b8271ac7c3664403ac2bd520b924a0da"
+    },
+    {
+      "path": "__tests__/openOctiGuideRoute.test.js",
+      "kind": "text",
+      "sha256": "a3aa0a2462d4b1844391bf52878ebba043e93a263d108ec8dda97e4639073b6c"
+    },
+    {
+      "path": "__tests__/openOctiKnowledgePackage.test.js",
+      "kind": "text",
+      "sha256": "0d05d94772313793902c65d67fe1efebe063c5ba2e4b52ea2af46472ec4898cc"
+    },
+    {
+      "path": "__tests__/openOctiNetwork.test.jsx",
+      "kind": "text",
+      "sha256": "2893a087472acb55893e88901788f1a0dc0dfe401f51271ddebb452e5f522e73"
+    },
+    {
+      "path": "__tests__/openOctiSystemStatus.test.js",
+      "kind": "text",
+      "sha256": "da5ea7a86715fd97026420d29f755efd5e26f3e04ffe73648ebb4ade92d200b4"
+    },
+    {
+      "path": "__tests__/openOctiVoiceGuide.test.jsx",
+      "kind": "text",
+      "sha256": "ff7922c7f6c6f374fd3452bb63fdd1cc0dea8c7407787788d4b25d96de06c2a3"
+    },
+    {
+      "path": "__tests__/openOctiVoiceKey.test.js",
+      "kind": "text",
+      "sha256": "0c9cc5c11c0a4e0593f520a3a56f58500490123848d1e01ae2a5fcde7e3ec513"
+    },
+    {
+      "path": "__tests__/openOctiVoiceRoster.test.js",
+      "kind": "text",
+      "sha256": "3148060666b30b5de9d9a553f39ae2470a2ca9a0c42ddeeb4ddbeac2653fd632"
+    },
+    {
+      "path": "__tests__/openOctiVoiceRouting.test.js",
+      "kind": "text",
+      "sha256": "7793c3b5c60774c8a0e64d78646eef020963762918baa24c879aa79a9e3d1976"
+    },
+    {
+      "path": "__tests__/openOctiVoiceSession.test.js",
+      "kind": "text",
+      "sha256": "a146aeed9e46e85b341ac989a783bb45efa9fef71755782696a9ad53a204302b"
+    },
+    {
+      "path": "__tests__/openclawDashboard.test.js",
+      "kind": "text",
+      "sha256": "3b05c54d6979d81a5d98dd3ba1b61697aecd074ccf30d18b5be340e9b938f9d8"
+    },
+    {
+      "path": "__tests__/openclawStreamIsolation.test.js",
+      "kind": "text",
+      "sha256": "8e6829d0194d8ce07c81d8ec55909e14a33771a29923cbcf006cd92956eb42e0"
+    },
+    {
       "path": "__tests__/openoctiBoundary.test.js",
       "kind": "text",
       "sha256": "ac2ed67345e34b06ae203e28f6476d2e5b3dc8d04dcc293d6cb061cb43ec67bc"
+    },
+    {
+      "path": "__tests__/openoctiClientSetup.test.jsx",
+      "kind": "text",
+      "sha256": "33a0e7bccffd1070ade6b840b05e5d173dcc518448d2660d324af9ae1f69f11e"
+    },
+    {
+      "path": "__tests__/openoctiCommercialCatalogBoundary.test.js",
+      "kind": "text",
+      "sha256": "46e04acf6c64595105784f1e4c1c2dc4a142dec0535c7963bb99e723263804e2"
     },
     {
       "path": "__tests__/openoctiDocuments.test.js",
@@ -165,6 +300,11 @@
       "sha256": "28f8334b89749c64866d26dbee5e0d2ff861a26da0cc42d4e9c34cb1a23eb57c"
     },
     {
+      "path": "__tests__/openoctiHelpChat.test.js",
+      "kind": "text",
+      "sha256": "d63feeb5d3980523ad523b1f8b390b0407dd99206e38848419d1e5137273d605"
+    },
+    {
       "path": "__tests__/openoctiKeys.test.js",
       "kind": "text",
       "sha256": "81aaa971bad04573dd4ee09de7b277f0ae76ad08c90187aa88fdd6067525ace2"
@@ -175,9 +315,24 @@
       "sha256": "de98b8ae2d7a67d77e163763b8e3be7c9212d938b36e1cfff1b5d8e811b61fab"
     },
     {
+      "path": "__tests__/openoctiPostizSafety.test.js",
+      "kind": "text",
+      "sha256": "eea2d147449b72625ef83754a5391e8b19545f684d472561f4b928c7be4be37b"
+    },
+    {
+      "path": "__tests__/openoctiPostizSetup.test.js",
+      "kind": "text",
+      "sha256": "486817dc84eff42783d8323437a84b9d4cdcb702177a1a8a88b955712696a5ed"
+    },
+    {
       "path": "__tests__/openoctiSeed.test.js",
       "kind": "text",
       "sha256": "2c3069a24df6b8ee3f0c35f3ce33d71e5fe12de0b3426dcd0ee987739f870791"
+    },
+    {
+      "path": "__tests__/openoctiSetupHelp.test.jsx",
+      "kind": "text",
+      "sha256": "58ff15745c02d6b680519a18cfb3020c997d1b86281a3d4a36f15d7ca4837685"
     },
     {
       "path": "__tests__/openoctiStarterRuntime.test.js",
@@ -190,14 +345,64 @@
       "sha256": "00dee27e663c3fe1e69cfef3c33b896a4664bc1112d05a8c3c5337b73577fc5d"
     },
     {
+      "path": "__tests__/opsPublicBoundary.test.jsx",
+      "kind": "text",
+      "sha256": "815f76ff0ec28fcf39489595cbee8f261e243680166a73d2d37d5a017b2b0c45"
+    },
+    {
       "path": "__tests__/orchestrationsRoute.test.js",
       "kind": "text",
       "sha256": "7e4029573a80dd7b9105d8bc2718c2dddf8b4dfacb5dff2e405a0a366f5a04f0"
     },
     {
+      "path": "__tests__/postizConnection.test.js",
+      "kind": "text",
+      "sha256": "b62063c2d6d08904d126876e13772399a45608be6530366f01ae33fd909e1243"
+    },
+    {
+      "path": "__tests__/realtimeAudio.test.js",
+      "kind": "text",
+      "sha256": "90e13c49db832920fc2907a1c7faa94480b1b9858926317542b1bfcaada4eb07"
+    },
+    {
+      "path": "__tests__/realtimeSessionScope.test.js",
+      "kind": "text",
+      "sha256": "00385cf26765bf3ce290448573b6471a9b704d659c7c125279cdd1bafcf1983e"
+    },
+    {
       "path": "__tests__/sanity.test.jsx",
       "kind": "text",
       "sha256": "02747305e97174c571ada0e9dde5f23883008cdb777ae8c83f5b3bac1b747462"
+    },
+    {
+      "path": "__tests__/sessionSecret.test.js",
+      "kind": "text",
+      "sha256": "045bcda51e71f589c31a1bd2085458f97ef9970d3ce8a6ce75e3d4b01aac73e1"
+    },
+    {
+      "path": "__tests__/shipDeskPublicBoundary.test.jsx",
+      "kind": "text",
+      "sha256": "4fc7615c3a32cf08a547e7f4c1ebedaaf39c28072ffcca4fe627cbfd2270d543"
+    },
+    {
+      "path": "__tests__/stripeClientRefresh.test.jsx",
+      "kind": "text",
+      "sha256": "e63b18315035599973c1e9f3d2c4c2115c9dfaf1ea714bc89464f6bd48f8d967"
+    },
+    {
+      "path": "__tests__/stripeConfiguration.test.js",
+      "kind": "text",
+      "sha256": "51e9c75cdec44315548a535766019b88246284337dbbc978b2e0cfd23df67182"
+    },
+    {
+      "path": "__tests__/voiceProviderNotice.test.jsx",
+      "kind": "text",
+      "sha256": "386ddaa8549985466c0384bc5263a15a1a9e557baece0038c8d4c7f0d0cf7ddc"
+    },
+    {
+      "path": "__tests__/workspaceLayout.test.jsx",
+      "kind": "text",
+      "sha256": "cd4f912d0e508fe68882975a714da64d00abd13a273cc87945fc855714f98d7d"
     },
     {
       "path": "app/.well-known/farrington-platform.json/route.js",
@@ -212,12 +417,22 @@
     {
       "path": "app/accounts/AccountsManager.js",
       "kind": "text",
-      "sha256": "34504f3a0e960166be42c04119a263d2f5ec388f424d64ce9ef0d109a448ee2b"
+      "sha256": "490b47484663efce2f65d17f102543a20371ccf97a997634b93bb1231e26cb40"
+    },
+    {
+      "path": "app/accounts/ClientAccountSetup.js",
+      "kind": "text",
+      "sha256": "b412d0f9205e22e1a3324bcdc48a08c7170944f07f5725839e53f0a19e6e01ce"
     },
     {
       "path": "app/accounts/OwnerInboxTab.js",
       "kind": "text",
       "sha256": "049d9c049d5e6b5db068fa8fe7ce36132c1a8ed6364036b2b132ddf5a460c337"
+    },
+    {
+      "path": "app/accounts/PortalAccessForm.js",
+      "kind": "text",
+      "sha256": "5665b1c0923fa61875353ee3840325354fc4c9609441944f6259fb0e795fbf47"
     },
     {
       "path": "app/agent-labs/AgentSandbox.jsx",
@@ -272,7 +487,7 @@
     {
       "path": "app/api/accounts/route.js",
       "kind": "text",
-      "sha256": "8ff274be642763ca7199818cd3f4f9ca93cc35116ba714ddbf4ad5904fecac6c"
+      "sha256": "39fabd6544a7d1c93cf5a8992fdebc4f16fe4a704ddfbe28c4e2166ea7747d7e"
     },
     {
       "path": "app/api/accounts/wallet/route.js",
@@ -425,6 +640,11 @@
       "sha256": "3261445c68b2dd4450a247e9b6c38f9c0cba50da77606c05d779976ade9231c2"
     },
     {
+      "path": "app/api/auth/setup/route.js",
+      "kind": "text",
+      "sha256": "1f46926e431868724b029107d958d582594a0ac6bb9f37eb9d6e318ec9ac81d0"
+    },
+    {
       "path": "app/api/automations/approvals/route.js",
       "kind": "text",
       "sha256": "b3b3c5b061dab130ea9fd72a0bc95b5441692d56022896e901ea1af790be85d2"
@@ -472,7 +692,7 @@
     {
       "path": "app/api/builder/start/route.js",
       "kind": "text",
-      "sha256": "126d8f25a5768228a69e54999e5e3ea2dfb1bb77b651081a7d431199a6516c57"
+      "sha256": "831fa8bb2b3b28c194735968040422b72cd75e44fd693c59d0315c7e84d18126"
     },
     {
       "path": "app/api/builder/status/route.js",
@@ -492,7 +712,7 @@
     {
       "path": "app/api/calendar/delete-event/route.js",
       "kind": "text",
-      "sha256": "3360ea71434d088923723d18ca2730ac828623a53ceb0d7db7b11f839f283fe5"
+      "sha256": "76decba6abe88ccff6d5f15fa9885c38a68b51afc1bd23110b5058786ae79735"
     },
     {
       "path": "app/api/calendar/events/route.js",
@@ -507,7 +727,7 @@
     {
       "path": "app/api/calendar/update-event/route.js",
       "kind": "text",
-      "sha256": "7801f682efaa76f8f5c7122f1bf02daacc7cb069c78d0d0148cfcc0d3c70379d"
+      "sha256": "dc8bc91f7af2b79729e474ebe5e318e4cb5799f0dd03e888efe2aca48e8e9642"
     },
     {
       "path": "app/api/campaign-studio/route.js",
@@ -702,7 +922,7 @@
     {
       "path": "app/api/harness/dashboard/[runtime]/[[...path]]/route.js",
       "kind": "text",
-      "sha256": "5d928006c6c3790cfa773b1ec7fe4ae9fc8a6d1a5eb79379dfd1d351c59ccec4"
+      "sha256": "6ff65019da1c933a3007dd803a334bb6dd49e4156e1ebe5926cbc3e7693b8d82"
     },
     {
       "path": "app/api/harness/deerflow/open/route.js",
@@ -710,9 +930,14 @@
       "sha256": "ecefb7916c2ff4972e6823a131d64e89b45952c8b50ae6c7ab4b99057dd4fbfd"
     },
     {
+      "path": "app/api/harness/openclaw/authorize/route.js",
+      "kind": "text",
+      "sha256": "a4b68421cb70711e11bb797efe03a92c80b6a01563bb3dd65495ea827e43dd40"
+    },
+    {
       "path": "app/api/harness/openclaw/open/route.js",
       "kind": "text",
-      "sha256": "777b0c8381fa8eb842fdcebbeb151bf1a7772b614df45610dbf760c4a4ca3d9b"
+      "sha256": "9a5bdc743ad66d94831f20b39b93195c5b5c6fd13593b92a14e9339b18906374"
     },
     {
       "path": "app/api/harness/runtimes/route.js",
@@ -822,7 +1047,7 @@
     {
       "path": "app/api/leads/route.js",
       "kind": "text",
-      "sha256": "bbb73e6139f89dc60386d0cfe6fab7988742d717b00716e434d5f31d0cac38e1"
+      "sha256": "20ef970bcf258895da5cc83f025799af52470b18e530389e2067f6f062bdf3ec"
     },
     {
       "path": "app/api/leads/save-from-chat/route.js",
@@ -887,7 +1112,7 @@
     {
       "path": "app/api/network/apis/route.js",
       "kind": "text",
-      "sha256": "077fa8157fdbac608eb4e5bc88efca39ef50ab1c1c47d8849d42da486b9c23a8"
+      "sha256": "ead9f881c74c2cb74cbf995f5c8d4a6e3bc1725bab222814b1950eb541d1dd99"
     },
     {
       "path": "app/api/network/mode/route.js",
@@ -897,17 +1122,17 @@
     {
       "path": "app/api/network/restart-tunnel/route.js",
       "kind": "text",
-      "sha256": "ae2b48c35b365b9ea9705fc176bd3e2e0e6971c5355c53927178a359e6d5980f"
+      "sha256": "a4704caae4aefd7f8bd4be59e74b7d1e1038b1c448b80b9b44e830771e3dd2e5"
     },
     {
       "path": "app/api/network/status/route.js",
       "kind": "text",
-      "sha256": "e9e808514a068d57a15cc3c21574c7d61cd7c4dcab739e63f60c310dcab3ed41"
+      "sha256": "1d6c8a4d55f47245ea7b3754b608c4d7070c233e1449798d11f38b54da0238ed"
     },
     {
       "path": "app/api/network/watchdog/route.js",
       "kind": "text",
-      "sha256": "5ef38c7252ac43674d2936d189321d0590af87677dc6add1659a3faca286d52b"
+      "sha256": "616b0a3accd00713e229b65d0a163d908207bff554430ff324ec1f6c74b7c4cb"
     },
     {
       "path": "app/api/notes/route.js",
@@ -980,6 +1205,16 @@
       "sha256": "81ead428d93917bc932a2de8081b995d5aa77b22df7389d70bb30e393c28027f"
     },
     {
+      "path": "app/api/openocti/guide/route.js",
+      "kind": "text",
+      "sha256": "624f76cd4afb72fd51d28fc09e176d12eb75b7a8513c809ad3c046315044ca15"
+    },
+    {
+      "path": "app/api/openocti/help/chat/route.js",
+      "kind": "text",
+      "sha256": "d9fb282a0261468969f8920f4b02ccc94d9c172e25733dbc508ddeef0e6521fb"
+    },
+    {
       "path": "app/api/openocti/import/route.js",
       "kind": "text",
       "sha256": "8f4db05ea51e8dc7b60bc695c7b8bdf431c568f3dbd6b9c39c30206e5bc39f2c"
@@ -988,6 +1223,11 @@
       "path": "app/api/openocti/keys/route.js",
       "kind": "text",
       "sha256": "9b3b1a21fcf78c1c8721758516426104492414dbb4f5a1d8c21dbfe7b6a61e31"
+    },
+    {
+      "path": "app/api/openocti/postiz/route.js",
+      "kind": "text",
+      "sha256": "ac3820d116548bcfb558c98e49bbf143b40cd9d204bd225c0ceacd0163962ea8"
     },
     {
       "path": "app/api/openocti/sample-data/route.js",
@@ -1000,6 +1240,11 @@
       "sha256": "4eccef1716c1d0ac838cc0a27e6c28465c0c6ca189fac4383f11a60fc708faa5"
     },
     {
+      "path": "app/api/openocti/stripe/route.js",
+      "kind": "text",
+      "sha256": "4c7b33f2f3415063e73fe5906a343f25cf7bc140b1725678e8def3c46825d663"
+    },
+    {
       "path": "app/api/opportunities/requirements/route.js",
       "kind": "text",
       "sha256": "afa08de068542e708bc0b49e3bc8b9b2de3b123256be4d7941bcf225821e7bb7"
@@ -1007,7 +1252,7 @@
     {
       "path": "app/api/opportunities/route.js",
       "kind": "text",
-      "sha256": "a75c0947ac11568276691c46345c7583692d01ece849eab57f4aaa89f53631bf"
+      "sha256": "1370f4ee0ff285f4bfe7520b0234d2e1c24ffdd4d9b237cb0d72de3e2abdf41f"
     },
     {
       "path": "app/api/ops/incidents/poll/route.js",
@@ -1085,6 +1330,11 @@
       "sha256": "63c3421c47de504f1afc0b72dd7c3ca8bcede6920b6d853344147b912b761ea0"
     },
     {
+      "path": "app/api/payments/config/route.js",
+      "kind": "text",
+      "sha256": "0621604edde51aa94bf3225391a0aeeda0b6d612f3db579f602cc776c4936dfc"
+    },
+    {
       "path": "app/api/payments/export/route.js",
       "kind": "text",
       "sha256": "2f793fc7ede99f143e2ba311e18073adc289a87742fe6d53ed686df309f0ba03"
@@ -1102,12 +1352,12 @@
     {
       "path": "app/api/platform-admin/v1/capabilities/route.js",
       "kind": "text",
-      "sha256": "aa1af6b5281fcf63155faa06af3349e55e0bf2286d4559d2605e2c185b7fca51"
+      "sha256": "7d2379a92a3cd37c68b865366a4a0e25a9ef67469c29169060d874c150595c44"
     },
     {
       "path": "app/api/platform-admin/v1/capabilities/test/route.js",
       "kind": "text",
-      "sha256": "34881db7d20dc4ea7c882a7d76488165e628f901b48369270916254fcacd7685"
+      "sha256": "95195097b4ebc7ae69dad911df717872f8603657387fdbc671bba15826d81057"
     },
     {
       "path": "app/api/platform-admin/v1/errors/route.js",
@@ -1147,12 +1397,12 @@
     {
       "path": "app/api/postiz/channels/route.js",
       "kind": "text",
-      "sha256": "e89677eaad480ddc4957d92cf7bc1205eaba1c0c04b0216a52bf5519b0928fab"
+      "sha256": "a9c6a6ca26686d69cc2d0d0b57a6e8acec83727d24787b0da4c6dcad7be1d84f"
     },
     {
       "path": "app/api/postiz/publish/route.js",
       "kind": "text",
-      "sha256": "d178846c977dc29569c14e7936952c4a9fae60cdcb3dc5ce578967152d84cc85"
+      "sha256": "8c5ac8dde2dbcf5d5a4d4a0de2307266c7613217679ceeb5c6859521841adc45"
     },
     {
       "path": "app/api/press/campaigns/[id]/route.js",
@@ -1207,7 +1457,7 @@
     {
       "path": "app/api/products/[slug]/route.js",
       "kind": "text",
-      "sha256": "444139078253bcdab3f8fe76849e422d8b3b8a131aeee5ca5241bd632b5d711f"
+      "sha256": "19838c260d97c74fd536cc3ac73744e0bbb9ef67bf07a62869c3e26251958b6f"
     },
     {
       "path": "app/api/products/bridge.js/route.js",
@@ -1217,7 +1467,7 @@
     {
       "path": "app/api/products/checkout/route.js",
       "kind": "text",
-      "sha256": "98e9dadde93936a855b2b5ff5f7c64122edb7416f485a5a9859d78754b09cc8f"
+      "sha256": "015181d5261d02188c138a68b83f28c01fa611014f5c858ea5e8eef1c7cc5867"
     },
     {
       "path": "app/api/products/inquiry/route.js",
@@ -1227,7 +1477,7 @@
     {
       "path": "app/api/products/manage/route.js",
       "kind": "text",
-      "sha256": "a30fed90729e0570b1ee9ce8fc3316aabe0f4ba0e0ea03b1ec0b3df7ec778404"
+      "sha256": "d85b91726512cb9fd84e0603f379b851c3bc0359999fead0cc9cc75b72a623c4"
     },
     {
       "path": "app/api/products/orders/route.js",
@@ -1272,7 +1522,7 @@
     {
       "path": "app/api/reports/url/route.js",
       "kind": "text",
-      "sha256": "5aacf8f0e3aa5a053b7222729d9d5977a03c70f5a7d9cc17f9eab3d9aae89570"
+      "sha256": "b837c55fbd56ed9a7fbdfe485b3958fa52f8dc3387ece7380c462eebcbf1a391"
     },
     {
       "path": "app/api/reports/url/run/route.js",
@@ -1437,7 +1687,7 @@
     {
       "path": "app/api/twilio/outbound/route.js",
       "kind": "text",
-      "sha256": "a023cc0039c8cd8e95294b187fa2d4df61255c960e39021d16f7d31970d0c40c"
+      "sha256": "b05eaa2054b79c002917bd854f08e46b3588f32cbb82ac6dab049a6b7be0e98d"
     },
     {
       "path": "app/api/twilio/provision-number/route.js",
@@ -1452,7 +1702,7 @@
     {
       "path": "app/api/twilio/voice/route.js",
       "kind": "text",
-      "sha256": "ff280a73b976bd7c008b668fcf04a37a6141a7e7cefe15436bf84167d9966620"
+      "sha256": "7b2745048a81143fbb16ef7908a79b4f774dbce12205ddd7dfd2fc1a24a2b2b3"
     },
     {
       "path": "app/api/twilio/wait/route.js",
@@ -1687,7 +1937,7 @@
     {
       "path": "app/components/ChatPanel.js",
       "kind": "text",
-      "sha256": "3dda2f5626990103b63a02d2fc24a75db0ff7d376a0d3f0f3c027f85984f1297"
+      "sha256": "3de3411e004b7f8e5b0900386b066490e07e92ea62ae201abae83623c969e6ee"
     },
     {
       "path": "app/components/ClientErrorReporter.js",
@@ -1732,7 +1982,7 @@
     {
       "path": "app/components/EmergencyHangup.js",
       "kind": "text",
-      "sha256": "f5bc5b68a073216c6a29fade2f005a677569d17a04471ebf4044b471dd234964"
+      "sha256": "21da617d69d0f7feb85701bbcdfa0bef46a92ecc8bb54dc9d399deaedd791ba0"
     },
     {
       "path": "app/components/GestureMode.js",
@@ -1742,7 +1992,7 @@
     {
       "path": "app/components/IntegrationGate.js",
       "kind": "text",
-      "sha256": "0409fa5e7f739805988a4028cd945cc816c8b2bf8b6857673ba8594ab6543650"
+      "sha256": "32830abeb99636c13a1dcfc69daf9dff00034803ad6b348686abab8752dbb2d4"
     },
     {
       "path": "app/components/ItemActionsMenu.js",
@@ -1812,12 +2062,17 @@
     {
       "path": "app/components/OpenOctiGuidePanel.js",
       "kind": "text",
-      "sha256": "8d42818e0a1184adff08094952bd9a4946c237d9ac0cf4aeb79723988968817b"
+      "sha256": "cf063d5c7ebcf4d5ee6947db34bf0335d5898043381c642eb3e949907a11f88e"
     },
     {
       "path": "app/components/OpenOctiUnavailable.js",
       "kind": "text",
       "sha256": "b8da36106a718f045770a7b54e2bef121342c594158a8f8ef6d3b7b93f2cd8e4"
+    },
+    {
+      "path": "app/components/OpenOctiVoiceGuide.js",
+      "kind": "text",
+      "sha256": "c6450fbd00685a9611350638787e87c74cf0cc45bf93c4a233db9261afd0654c"
     },
     {
       "path": "app/components/OperatorContextRail.js",
@@ -1892,7 +2147,7 @@
     {
       "path": "app/components/VideoMeetButton.js",
       "kind": "text",
-      "sha256": "f43f4794120468a000efbc1fdbb6e6d30540857ceaa3d19c9a0e0601ac8cb8d1"
+      "sha256": "b2d796ae726df22ea922b2cf0161e4f6bd9a11d5444a7003241ef4c82243c828"
     },
     {
       "path": "app/components/ViewModeToggle.js",
@@ -1905,9 +2160,19 @@
       "sha256": "b71735f824f91578f7b286a592bf2123abb0d9927f2c548b8eafc888d1f7916e"
     },
     {
+      "path": "app/components/VoiceProviderNotice.js",
+      "kind": "text",
+      "sha256": "25ffc89ac24e9065b97dcb0ad18741544ec20ecb4718aa347e7ac5259d1bb200"
+    },
+    {
       "path": "app/components/VoiceSession.js",
       "kind": "text",
-      "sha256": "a4d96d298eac2536c401240ee47a0d6b08dcacba239a5b14d7794e19530ad19a"
+      "sha256": "39a52c4a6645a6d48c49b9f098462111b065819736760e1f5091b039657ccdcc"
+    },
+    {
+      "path": "app/components/WorkspaceLayoutSettings.js",
+      "kind": "text",
+      "sha256": "c787027e0a2f9a0129b4d18d693ad8fc60549f570a4ee3cbcd782f864cb60c4a"
     },
     {
       "path": "app/components/operatorContextActions.js",
@@ -1952,7 +2217,7 @@
     {
       "path": "app/dashboard/OpenOctiFirstRun.js",
       "kind": "text",
-      "sha256": "579cbff837c6016e4dd7071a0df0be88d7a39352dfe49df309f91358732ca58e"
+      "sha256": "736ec6adb5076ef0dc0dc0f6e8c9de8bd1c441df7aa7628ad9824d010aceb04e"
     },
     {
       "path": "app/dashboard/OpenOctiSampleChip.js",
@@ -2020,6 +2285,11 @@
       "sha256": "f5828a94cf5df4ac1d1b4d4db6d17e830bf94c021365cdc22871c321d0b5b6d4"
     },
     {
+      "path": "app/finance/InvoicesManager.js",
+      "kind": "text",
+      "sha256": "4f42c7ddf6cb2895c92afe8b14ef7e1c002e36c899b24416f3ea7903728364fb"
+    },
+    {
       "path": "app/finance/PrivacyFinancePanel.js",
       "kind": "text",
       "sha256": "65517fe1b9412306ecf1fa0a2b11d91561440995014d829c0556470c0c602d6f"
@@ -2052,7 +2322,7 @@
     {
       "path": "app/front-end/page.js",
       "kind": "text",
-      "sha256": "c7ade1126c4757b5a8650f90c1e3011972391e89744a68c0b206da38da5251f2"
+      "sha256": "48622c9f3e119d7c35f7e2f4c73ec0eba7eb3137da1f2cedfd2f26dc35121de5"
     },
     {
       "path": "app/gitea/GiteaWorkspace.js",
@@ -2073,6 +2343,16 @@
       "path": "app/harness/HarnessManager.js",
       "kind": "text",
       "sha256": "843705dfe2d32edaeadb40112f233dfac91a6e896c6823a7647d99a15017f3d9"
+    },
+    {
+      "path": "app/harness/HarnessSupport.js",
+      "kind": "text",
+      "sha256": "b3c79d18d14be5cd6fdd0c287eb17a2a9548b02a5302c2650a4d393ea808d9ca"
+    },
+    {
+      "path": "app/help/page.js",
+      "kind": "text",
+      "sha256": "77650ba5356ad4d457d6a0883f46f1574f689e910e43c6c22b5c9d3f67d13b2f"
     },
     {
       "path": "app/invoice/[id]/paid/page.js",
@@ -2107,7 +2387,12 @@
     {
       "path": "app/leads/QualifyWizard.js",
       "kind": "text",
-      "sha256": "885ed3db97838ed7b718b02665799365d7a71a937e8fb3bd572e64d52b8239e6"
+      "sha256": "74d2cc712ee6d3d36865ed7f526afc38d55c94b5e415de1f490c13b2b5954658"
+    },
+    {
+      "path": "app/login/FirstRunAccountSetup.js",
+      "kind": "text",
+      "sha256": "795d71bcff3ec9950b2c677882d47d3fe927043a2d2b0a88a5488e14a46f370f"
     },
     {
       "path": "app/login/loginWelcomeAudio.js",
@@ -2157,7 +2442,12 @@
     {
       "path": "app/network/NetworkManager.js",
       "kind": "text",
-      "sha256": "087704ddf641cc27e40fb4941c46de8ff5291bdc0dd1e35306caaa1ef2bd56df"
+      "sha256": "64d750049d33fc304dbfafce00cfdcc78de4a7a1240c4e809af48cd562ae6ac6"
+    },
+    {
+      "path": "app/network/OpenOctiNetwork.js",
+      "kind": "text",
+      "sha256": "598106bd7b42311b308b80249272e7aa6cb4672baf186917224b9bd0662ba3b0"
     },
     {
       "path": "app/notes/NotesManager.js",
@@ -2212,7 +2502,7 @@
     {
       "path": "app/ops/money/MoneyConsole.jsx",
       "kind": "text",
-      "sha256": "52acc4af4a6c286bc3778335244f7abd65ff29b8c9b4c248f79f4428b249f5eb"
+      "sha256": "10b78cb12400890749444ca47b0b41ad9c5d01f8dfb45e378634d3410d1628bc"
     },
     {
       "path": "app/ops/money/page.js",
@@ -2227,7 +2517,7 @@
     {
       "path": "app/page.js",
       "kind": "text",
-      "sha256": "0db6cc43ae64971bc44a3e46406895f2e65b98a95d94b08b6cae2e03fd3c73d2"
+      "sha256": "b6ef56a25cad995432dcc6c216e16376aabed02c91d15edf63f02c7bd0e89652"
     },
     {
       "path": "app/payments/PaymentTerminal.js",
@@ -2242,7 +2532,7 @@
     {
       "path": "app/pipelines/PipelinesManager.js",
       "kind": "text",
-      "sha256": "09483bfe964a87a2bb44f7e0c641920c719a46d8b5cee7f330a12181e7bff8ca"
+      "sha256": "33f84d067afe3ef68a9509a66fc079c92b5da8dbeb8cd88733fba0a3a0e8e145"
     },
     {
       "path": "app/press/PressDeskManager.js",
@@ -2267,12 +2557,17 @@
     {
       "path": "app/products/ProductCatalogManager.js",
       "kind": "text",
-      "sha256": "065f7fa1026b4c6641dbdd8b5742692dfdff9dd9a8963e86ae009094732d2e91"
+      "sha256": "fd6907b48b90ad4d1f9bba0cb1535dda41e0dff490e27b1265089203741673cf"
+    },
+    {
+      "path": "app/products/ProductCommerceFields.js",
+      "kind": "text",
+      "sha256": "b6de239551314f55a34180e8391777ce1a165eb273f010f1179a6d4f5d752632"
     },
     {
       "path": "app/products/ProductOrdersInbox.js",
       "kind": "text",
-      "sha256": "74e794876f8db9c2c11d836a93903a68fa8812428bdf082f66c344388a643af8"
+      "sha256": "6daa26a6983bf9fab0b4d5be65447c360350a5f8c222ab0f14e12430105e1bfc"
     },
     {
       "path": "app/products/StripeCatalogSyncPanel.jsx",
@@ -2327,7 +2622,7 @@
     {
       "path": "app/settings/IntegrationsSettings.js",
       "kind": "text",
-      "sha256": "b68bf68177d5f9d67cfa69c032d5e34976110827885b5d6830d969a2ee049136"
+      "sha256": "2c15b828a44057d36c111ae69e71e13e160dc12d3a35ee6531338e5b3520e93d"
     },
     {
       "path": "app/settings/MonitoringSettings.js",
@@ -2352,7 +2647,12 @@
     {
       "path": "app/settings/SettingsManager.js",
       "kind": "text",
-      "sha256": "3ea6e2d90e172042bf7f1f89c42da0e1c5bf3a32ddda09b7ee1e76c1159735b2"
+      "sha256": "4685000f771c5346d9d70c8dc34b38ca70e6da96da7197f95b028318c8211f19"
+    },
+    {
+      "path": "app/settings/StripeSettings.js",
+      "kind": "text",
+      "sha256": "356ffd83270df5210732547b5000678796425e3599a86c743d9e5acbd80cdecd"
     },
     {
       "path": "app/settings/UsersSettings.js",
@@ -2405,6 +2705,16 @@
       "sha256": "6e3f35fb5a8fb6a3db886f913251b15918dc85ee226d1fa9a4faec276a102d51"
     },
     {
+      "path": "app/settings/postiz/PostizSetup.js",
+      "kind": "text",
+      "sha256": "a2c52fe4d60e83a81f5478d7471a8c0ef9fccd6cdcf8f317dc0c4eeee66660a7"
+    },
+    {
+      "path": "app/settings/postiz/page.js",
+      "kind": "text",
+      "sha256": "22d9221ecb3a3da1564cc7bba6b17b6f9201a477a6266b0a6e53daf8e483b6f7"
+    },
+    {
       "path": "app/settings/sample-data/OpenOctiSampleSettings.js",
       "kind": "text",
       "sha256": "a2446aa5a829fe1accb5f5d86293a4d956075443e648d05b2b034a91ab7ad2ff"
@@ -2422,12 +2732,12 @@
     {
       "path": "app/social/SocialPublishing.js",
       "kind": "text",
-      "sha256": "c8f413fdee71c7d085586040e97d46b4194fc43381d85ff8e213a3a7b9c4254c"
+      "sha256": "1031a8830ed7b4c5ac98b7baeea4ac74270a086b3051859de758d93632d9b15b"
     },
     {
       "path": "app/sponsors/SponsorCRM.js",
       "kind": "text",
-      "sha256": "7b27636113640a9f12904a5536b70956377b65ee71e108f905eb2111743b7c78"
+      "sha256": "aebb27653f5b3bbff5ba64eb04a264cf375a961ac352cbaadcb542898b2787bf"
     },
     {
       "path": "app/status/page.js",
@@ -2640,6 +2950,11 @@
       "sha256": "f98680e83827d33063224a71de18dd1d4e56b9e4ce12566fdce4bd5815de3561"
     },
     {
+      "path": "deploy/openclaw-dashboard-proxy.mjs",
+      "kind": "text",
+      "sha256": "8368b0989382f74b89d263f399aac6ca75d7fda05452f155317cd31f6e93a610"
+    },
+    {
       "path": "deploy/openclaw/Dockerfile",
       "kind": "text",
       "sha256": "67f19d1f244ef37f2800a122a5dc6fc6d3f5f1795c0378e0597c72859df47f09"
@@ -2668,6 +2983,11 @@
       "path": "deploy/openclaw/openocti-plugin/package.json",
       "kind": "text",
       "sha256": "abd907f535e185df323ad5735f31f7aa8f6fcc3bb2cd38c5c94991180311c6b4"
+    },
+    {
+      "path": "deploy/openclaw/seed-knowledge.mjs",
+      "kind": "text",
+      "sha256": "97f4f92ecd71bc5263cff0943b9dc902ea4b666bb9311d11149df2779e158052"
     },
     {
       "path": "deploy/openclaw/seed/openclaw.json",
@@ -2817,7 +3137,7 @@
     {
       "path": "deploy/openclaw/seed/workspace/octi/knowledge/ENVIRONMENT.md",
       "kind": "text",
-      "sha256": "9b4a9ae755216408b720422fe28025c22899afa57b163c2c1bdf9dee7c75a04a"
+      "sha256": "d51314c923a8682719f43a9722f43114084b48b99cc9453c4ea71d8d936f1039"
     },
     {
       "path": "deploy/openclaw/seed/workspace/octi/knowledge/FEATURE-MANIFEST.md",
@@ -2827,7 +3147,7 @@
     {
       "path": "deploy/openclaw/seed/workspace/octi/knowledge/PACKAGE.md",
       "kind": "text",
-      "sha256": "0a33cedc38af208d56697ab00dbb8183f34a89a623792965b3620ebaccd554e1"
+      "sha256": "6091cc1cdfcfe6b2800faa320451e68a027f18d9ea4e187acc1af3a016808c5a"
     },
     {
       "path": "deploy/openclaw/seed/workspace/press-release-agent/AGENTS.md",
@@ -2890,9 +3210,49 @@
       "sha256": "64c5c04333f80135c540b5fb6c77e7f776d851eea127ad83390ad26ad68240a4"
     },
     {
+      "path": "deploy/openocti-server.mjs",
+      "kind": "text",
+      "sha256": "1a097df57f1055bee1fe3cda8b4c6e0ec91bc9b63ec7f2d1fa77e0d46102d906"
+    },
+    {
+      "path": "deploy/postiz/LICENSE.upstream.txt",
+      "kind": "text",
+      "sha256": "d322fb1066693d8ed25495d11029f443aa793316852749e1389773c1946251b3"
+    },
+    {
+      "path": "deploy/postiz/UPSTREAM.md",
+      "kind": "text",
+      "sha256": "877fdda2dd6f3a9ea0113d82f1a78a5074d654099c19c8b014ec43a55cd900cc"
+    },
+    {
+      "path": "deploy/postiz/ecosystem.config.cjs",
+      "kind": "text",
+      "sha256": "5971f5fff75ce55a3354741ada789fda1914c70b5543cfdc73cf2a22bd012040"
+    },
+    {
+      "path": "deploy/postiz/start.sh",
+      "kind": "text",
+      "sha256": "3978737a57fa69bd6095a6449f8f5e58da7a73c8fb920b23d08cace2cb0deb69"
+    },
+    {
+      "path": "deploy/postiz/temporal.yaml",
+      "kind": "text",
+      "sha256": "3daf0cec1a6f38750ea37803403003670cf534314705fe5d54593f898d8e4309"
+    },
+    {
+      "path": "deploy/session-secret.mjs",
+      "kind": "text",
+      "sha256": "e5893d2ab64c4c4c40733c7eb0cd60042bf53bdc5ea44052632ec1d704c6302c"
+    },
+    {
       "path": "deploy/start-app.mjs",
       "kind": "text",
       "sha256": "875bc604edbb8a6670985695e0c4d028090a3e1e35537c5f2c6bd0938de8d1b4"
+    },
+    {
+      "path": "deploy/starter-vault.mjs",
+      "kind": "text",
+      "sha256": "b588cce8747d9e139791308fcf2a4a27e2d433aa87651050961164810f27c5f8"
     },
     {
       "path": "deploy/systemd/openocti-monitoring.service",
@@ -2932,7 +3292,7 @@
     {
       "path": "docker-compose.yml",
       "kind": "text",
-      "sha256": "40efebc8216771a266aa8b9fca3e4997dadf67925fbf0194ed49815411911d00"
+      "sha256": "741ac040b4a94870202150620db586a6ab3524067d6e882f5eca94afd9692f0b"
     },
     {
       "path": "docs/DATA-MODEL.md",
@@ -2942,7 +3302,7 @@
     {
       "path": "docs/INSTALL.md",
       "kind": "text",
-      "sha256": "177bea3a27d632678b757bd21aa17fff0af9b00c0a1c5180c16e33830bf3b6fe"
+      "sha256": "80f42c704974980683f761253a7c7b50547e1aa576d2187e74954279263ee1d3"
     },
     {
       "path": "docs/RELEASING.md",
@@ -3020,6 +3380,11 @@
       "sha256": "110418f0e87dc799132b7e3e7bdd2c7aff22390d4670031c14554f8e3c2405f4"
     },
     {
+      "path": "docs/guides/getting-started.md",
+      "kind": "text",
+      "sha256": "74581309903a55c2edfeadb5e3c379bf0e6ec2017bd9f1f8f4493b9cd2726c86"
+    },
+    {
       "path": "docs/guides/import-center.md",
       "kind": "text",
       "sha256": "9d2b5ab9e956af0273a4b38c8f353b46eb9d3e18cc5a905b13efaa22d3814cff"
@@ -3045,6 +3410,11 @@
       "sha256": "4d495cb3fc9cd8f2074e3cb000167a519dfb8d5767a7e42376bab6c4e7a7f755"
     },
     {
+      "path": "docs/guides/postiz-setup.md",
+      "kind": "text",
+      "sha256": "45dbc1f5cfe2e757100d0dabb0e7c5ebd2fa5381a02bd1dd1913d327364a07e4"
+    },
+    {
       "path": "docs/guides/public-release-boundary.md",
       "kind": "text",
       "sha256": "6f90bc8bbecb280232bdec88140b23c4457a9b1e83cec58dfb9fd9527276c440"
@@ -3053,6 +3423,11 @@
       "path": "docs/guides/running-on-a-vps.md",
       "kind": "text",
       "sha256": "e824b4998ae3fcab20c0535167bcf4cf99e70d3ac38bd1af5fdc1156ca7553cd"
+    },
+    {
+      "path": "docs/guides/stripe-setup.md",
+      "kind": "text",
+      "sha256": "d57df77d14039106e9179f6025c039f234a035dadd5c09c44b0dc3d1db365cdd"
     },
     {
       "path": "docs/guides/truthdiff.md",
@@ -3072,7 +3447,7 @@
     {
       "path": "docs/keyless-audit.md",
       "kind": "text",
-      "sha256": "68bf098258b18afb072a9e13c94e6e3aed40f81e3aaeb1c15015e13927b091f9"
+      "sha256": "03b96c47e6784b0a8e103a3c5b468e9fbb4c7003bc5a4405fa63a21550c03d92"
     },
     {
       "path": "docs/releases/1.0.1.md",
@@ -3113,6 +3488,21 @@
       "path": "docs/releases/1.2.1.md",
       "kind": "text",
       "sha256": "750af062084d8cadd9ea775ec6405cb387c038868d114fbf7d6e8cd373059f92"
+    },
+    {
+      "path": "docs/releases/1.2.3.md",
+      "kind": "text",
+      "sha256": "6124ca53ee2d094999bb534f9675116ea866b403900c7c48bdb9070863707f39"
+    },
+    {
+      "path": "docs/releases/1.2.4.md",
+      "kind": "text",
+      "sha256": "b2c72032f58a22eb6ddf6f9f6dc10aa86e82ecee625d8458c5f44343c3b3aa76"
+    },
+    {
+      "path": "docs/releases/1.3.0.md",
+      "kind": "text",
+      "sha256": "85b72cde961cdc8f9f6e1c6e720b56d55c84fb0444387790d32098cef625320d"
     },
     {
       "path": "docs/screenshots/README.md",
@@ -3170,6 +3560,26 @@
       "sha256": "24ae064059215ba9f221cb6be3f7939685d8c8eacf7b90a7be979e526aff8fdf"
     },
     {
+      "path": "docs/screenshots/postiz-first-admin.png",
+      "kind": "binary",
+      "sha256": "9f9338d010ad0271a85466a08ba3ea0facba63ab0d29599bfe0804132c80c3aa"
+    },
+    {
+      "path": "docs/screenshots/postiz-help-mobile.png",
+      "kind": "binary",
+      "sha256": "42ea5fcb9922e27d6c254612a0acfbc1a3ceb37121c187481cdc28e052f712b1"
+    },
+    {
+      "path": "docs/screenshots/postiz-keyless-help.png",
+      "kind": "binary",
+      "sha256": "523f3099125297c44df0f2edc47d33adb92586025a6682143bd5b8db42f8a48d"
+    },
+    {
+      "path": "docs/screenshots/postiz-settings.png",
+      "kind": "binary",
+      "sha256": "19930446619cd48c4c4ce1a44a40835a9b4bd98912b271a1f79c8e6ab44c619a"
+    },
+    {
       "path": "docs/screenshots/shot-1-dashboard.jpg",
       "kind": "binary",
       "sha256": "4cd3c5299182f8c46effbdff9dcaf31e6fd5e5e4422fa50d1ab9990ac2b82f5b"
@@ -3202,12 +3612,67 @@
     {
       "path": "instrumentation.js",
       "kind": "text",
-      "sha256": "fd61a98c38e0a17d9dcadac4ecf37459b1bbf6b3733b2d6904b932850b4c3e0d"
+      "sha256": "d92a827277f6c1ad0b0b924f150534ada1a9cab5b2d6fa6f9cd92bef623fa7d3"
     },
     {
       "path": "jsconfig.json",
       "kind": "text",
       "sha256": "7f8fc00f3ada209d0af2f71a415b9fead92ff626b7e948662ffb194e1e04e885"
+    },
+    {
+      "path": "knowledge/agents/coding.md",
+      "kind": "text",
+      "sha256": "d6e82a3526951185fe010ce23ad792ab02d5b34f83a51e8f97fcf5ddccd5bfbb"
+    },
+    {
+      "path": "knowledge/agents/coding.voice.md",
+      "kind": "text",
+      "sha256": "4decfb32bc7a0bd50c39374912bf073d49d174c6f1b19fe9497730dd36f537c6"
+    },
+    {
+      "path": "knowledge/agents/legal.md",
+      "kind": "text",
+      "sha256": "17fb0a0112b8e68f7bfdc77ae7b814398f2fb9a767e556baaedf462dad7137b7"
+    },
+    {
+      "path": "knowledge/agents/legal.voice.md",
+      "kind": "text",
+      "sha256": "f3360f2bfdd13f48aaab99462d01d71ab1e442a3c40010a3dd1d7af181a49a84"
+    },
+    {
+      "path": "knowledge/agents/main.md",
+      "kind": "text",
+      "sha256": "4874dddc5a3a33070feeb56957b087bc7ac95bbb3707c0ab19beeccb924ddc8c"
+    },
+    {
+      "path": "knowledge/agents/main.voice.md",
+      "kind": "text",
+      "sha256": "0d6a68afb2882242ecfb66459596bd955fbf148cae039438bf17800bc42b6c17"
+    },
+    {
+      "path": "knowledge/agents/matilda.md",
+      "kind": "text",
+      "sha256": "519323834ff238f914d690dea04a93f5a3d3a2fd552384b37199b357f4c7ce96"
+    },
+    {
+      "path": "knowledge/agents/matilda.voice.md",
+      "kind": "text",
+      "sha256": "7a553e8ea986a09058616e2bd08710bfad33e71b28803cb269a65ddd9b4a332e"
+    },
+    {
+      "path": "knowledge/agents/social-media.md",
+      "kind": "text",
+      "sha256": "a627cd32a908e812f7783ee9407a808c12ac924ea0e6089ca6af362e5abc2e4a"
+    },
+    {
+      "path": "knowledge/agents/social-media.voice.md",
+      "kind": "text",
+      "sha256": "fdedebaac0add9d3cc19c07a8aff398bbf57ceb213398379ae02e35039a5268c"
+    },
+    {
+      "path": "knowledge/vault/Welcome.md",
+      "kind": "text",
+      "sha256": "a4311403f69cc7215f761c3422286616f4a03e6bda60b6d4abd44aae61280737"
     },
     {
       "path": "lib/active-record.js",
@@ -3218,6 +3683,11 @@
       "path": "lib/agent-channels.js",
       "kind": "text",
       "sha256": "f38c49ad3cd32712b27f2c4456ccb89bfe84ec87f24888ee8203afa22a639fcf"
+    },
+    {
+      "path": "lib/agent-chat-selection.js",
+      "kind": "text",
+      "sha256": "ecf0482b7e56571f3341038d728125e08c19af742c483fd15443eeeba9333870"
     },
     {
       "path": "lib/agent-creds.js",
@@ -3487,7 +3957,7 @@
     {
       "path": "lib/direct-provider-chat.js",
       "kind": "text",
-      "sha256": "787dc8e6a26b1afd12e90be0c466a7a404dcd30822b0b4c87f07e6f278040514"
+      "sha256": "b66756f74ba16a981882eecfa9b73f0bfcd106e32bae8972ba46df89b4c93ce2"
     },
     {
       "path": "lib/documentSignatures.js",
@@ -3502,7 +3972,7 @@
     {
       "path": "lib/edition.js",
       "kind": "text",
-      "sha256": "7ad714e7799f578dec2094d0efa4f72015e319be05280afeda7349e520544018"
+      "sha256": "42ebd6527ca0f19d50c44a30f2126c4e27e3795cbdf99df329194fe11b151403"
     },
     {
       "path": "lib/elevenlabs-clone.js",
@@ -3532,7 +4002,12 @@
     {
       "path": "lib/feature-manifest.js",
       "kind": "text",
-      "sha256": "befdc245baad847133b039110dffdefd10adc3c03f719aacb67db6b3841e4f92"
+      "sha256": "490c219f5c396df8bbb0fd4d860238c243aec98312bd71a26a2f5dec1a4c19e9"
+    },
+    {
+      "path": "lib/first-run-account.js",
+      "kind": "text",
+      "sha256": "855e20fd0f6b021e3180725fe7a833b62ecfbead6236ee5895a3bbba893d0562"
     },
     {
       "path": "lib/fkl-index.js",
@@ -3542,7 +4017,7 @@
     {
       "path": "lib/gcal.js",
       "kind": "text",
-      "sha256": "6f9de3c24e3e5e7f875a6da60a2dfd4843aedf916900f874c8f39ad49a00ab99"
+      "sha256": "f43f1d813a8a318b69131969e076f5d6e70d0ce3544974220956520f576e0be6"
     },
     {
       "path": "lib/gitea-mirror-status.js",
@@ -3617,7 +4092,7 @@
     {
       "path": "lib/integration-probes.js",
       "kind": "text",
-      "sha256": "328a028688b6856a0e0b6e46131ef44cd2de0f64520d107c51cdb422e100e118"
+      "sha256": "b9cbd37fc10d540826fa8f6f48722554a5bbb5513b62a11df626d3acaa9387a6"
     },
     {
       "path": "lib/integration-test-status.js",
@@ -3767,7 +4242,7 @@
     {
       "path": "lib/licenseManager.js",
       "kind": "text",
-      "sha256": "2c7b449e946a3f8d454a53deadbcd2ad966687c468556ec36d62ba8ef9d49eb6"
+      "sha256": "edac7e397de8e732aa2e484cbf44ec67653625453289e48ad058b4d52db3a4a1"
     },
     {
       "path": "lib/login-rate-limit.js",
@@ -3802,7 +4277,7 @@
     {
       "path": "lib/mode.js",
       "kind": "text",
-      "sha256": "c931cb0de1f8fce8cbd18d142cb433d8df09abae2d18c48100e700d7afe9a0fb"
+      "sha256": "a85ddbb49d8fce077feb8e847ca58846b2af17a8dd9a60eea923f24c9a148746"
     },
     {
       "path": "lib/model-catalog.js",
@@ -3900,9 +4375,39 @@
       "sha256": "a0c63197ba6739fcf4bacdcfd8d0334cceb89df5b27571595022474f6aa50cba"
     },
     {
+      "path": "lib/openclaw-dashboard.js",
+      "kind": "text",
+      "sha256": "e912c06c79db2e7a0ca2c32a82e8843257139d00fcd0d88e2c8db64068c2efd1"
+    },
+    {
       "path": "lib/openmontage.js",
       "kind": "text",
       "sha256": "30f388ccd6cb624964bbadf05fa5ecdad56a7de3cef015fd3e91cab461129333"
+    },
+    {
+      "path": "lib/openocti-agent-avatars.js",
+      "kind": "text",
+      "sha256": "a0d8362be949d16cc88736497e543f7b9948c3c64b8c3673a8a32d041fd9b2ce"
+    },
+    {
+      "path": "lib/openocti-assistant.js",
+      "kind": "text",
+      "sha256": "0718ebd94c4845d13335b1ad59bdb97e380466c9ec9c11bdaa87b2095789266f"
+    },
+    {
+      "path": "lib/openocti-gemini-voice.js",
+      "kind": "text",
+      "sha256": "31640add689f2bf839030bdae88da5e9cb8fbade5275942e0460c1cef6f81f29"
+    },
+    {
+      "path": "lib/openocti-gitea.js",
+      "kind": "text",
+      "sha256": "62769dbdcbbe0d89bef7e177d34a1c2bbe72906b0e285f2accd8df2640dabf2e"
+    },
+    {
+      "path": "lib/openocti-help-chat.js",
+      "kind": "text",
+      "sha256": "6fbd9da0a9eee4fd66db2dc6e257b257f949d9b169406a5db80e6033a6d3e290"
     },
     {
       "path": "lib/openocti-import.js",
@@ -3913,6 +4418,21 @@
       "path": "lib/openocti-keys.js",
       "kind": "text",
       "sha256": "904fd7dc2255cb81ef1afd390c6291675c5a60a30aad5a7f918167f0f4235718"
+    },
+    {
+      "path": "lib/openocti-knowledge.js",
+      "kind": "text",
+      "sha256": "584025a02a36f2137c90104f1fa1ab6acd685eed20d502bfa4e1d25e0c2367de"
+    },
+    {
+      "path": "lib/openocti-postiz-progress.js",
+      "kind": "text",
+      "sha256": "1d5af7217140e44b8113ca51d568c624a107b2c07a459bf4a0e2d4e93ad0afb5"
+    },
+    {
+      "path": "lib/openocti-postiz-settings.js",
+      "kind": "text",
+      "sha256": "693b4e123b5b991d6bb412f8f2c8bb7ad9e3f01342e58a099fab0c973a0367be"
     },
     {
       "path": "lib/openocti-profile.js",
@@ -3927,12 +4447,27 @@
     {
       "path": "lib/openocti-settings-links.js",
       "kind": "text",
-      "sha256": "fa8e1b66aa64023919d223989a7b924b4e79d5a43a4f19804cc5a3ff4e71fd32"
+      "sha256": "04b6f9ed6c17f45226f08d3a4daa39c7c8542305d4c3fa0436aaccb9d3cc1d87"
+    },
+    {
+      "path": "lib/openocti-setup-help.js",
+      "kind": "text",
+      "sha256": "c1a1daa5aaff2e05631c5c27cd2a787b0bc00e3ebcd6912ecaf2bce31823301d"
+    },
+    {
+      "path": "lib/openocti-system-status.js",
+      "kind": "text",
+      "sha256": "6af4a0bb057b1510aa438dc8311233207ddc35fea5009d273436fa3fce429cd6"
+    },
+    {
+      "path": "lib/openocti-voice-routing.js",
+      "kind": "text",
+      "sha256": "0d21025701e962b29e780ffbc248265a32801bafbf46a07b0beeb59bcb373c86"
     },
     {
       "path": "lib/openocti/closed-module-stub.cjs",
       "kind": "text",
-      "sha256": "971f421ca3adcf4576606e51218ec632b5d9d7f45d34f19b03b9c265a38ec74c"
+      "sha256": "ef3cc624645f9913eade3a18d19e37b326a557235906ffa0adb2ae0fd48ae703"
     },
     {
       "path": "lib/operator-agent/approval.js",
@@ -3967,7 +4502,7 @@
     {
       "path": "lib/operator-agent/run.js",
       "kind": "text",
-      "sha256": "21b72419b363ed29f1ceb080deb9a424ec8815143e480aaed95da6d5b00b652e"
+      "sha256": "dd754033e2d3658dd373000e02b2f073c7abdced4970bd8421965ac5aeac25a2"
     },
     {
       "path": "lib/operator-agent/state.js",
@@ -3992,7 +4527,7 @@
     {
       "path": "lib/operator-agent/tools/common.js",
       "kind": "text",
-      "sha256": "401ec4f0d127b0477c05ae8ee15919ad748830eae83685c7b3fa929644ccbe15"
+      "sha256": "5aaf90ab4dbe941a9d29d4ba4583203627c7b897ee7967d97998855a251524c3"
     },
     {
       "path": "lib/operator-agent/tools/contacts.js",
@@ -4027,7 +4562,7 @@
     {
       "path": "lib/operator-agent/tools/registry.js",
       "kind": "text",
-      "sha256": "71c54c4ac3fd3ccbb26d6caad4d0d3912f054a6f926d467bc47f2ee547454bc8"
+      "sha256": "12243c63d6f685c00fcad1aebe76b6071ca811f98261bb6e2edcd5819dfac889"
     },
     {
       "path": "lib/operator-agent/voice-queue.js",
@@ -4057,7 +4592,7 @@
     {
       "path": "lib/outbound-email.js",
       "kind": "text",
-      "sha256": "65ccba3254f1dd62ae36b5296bf693ee1f8e19392e8c26acc91f13737e700511"
+      "sha256": "038229e4709d7a1d00f10a572f6bb5088e21c160a289266486de750ff0f7dcc4"
     },
     {
       "path": "lib/ownerInbox.js",
@@ -4067,7 +4602,7 @@
     {
       "path": "lib/paymentLedger.js",
       "kind": "text",
-      "sha256": "9640f0aaaed8627eb1ac51e69ed98b7ae82e2fd0e6f15f55931fea38317c6390"
+      "sha256": "3fec163c0954755622e901a6fd67e2151c5ca28de90de2c239a16b4d03622dfd"
     },
     {
       "path": "lib/permissions.js",
@@ -4085,9 +4620,19 @@
       "sha256": "18bf5bdf19b51b7cadd7326ced8f33980ab2423201ce8fa592ea14d1d2c8dbcf"
     },
     {
+      "path": "lib/postiz-config.js",
+      "kind": "text",
+      "sha256": "b25a6d777f866c296c792ad47fc12029d7cf60f98ef7796c32088a5f4417c29f"
+    },
+    {
+      "path": "lib/postiz-diagnostics.js",
+      "kind": "text",
+      "sha256": "e8018bcede8bd46e9dbccd909fac58494759d51a7c4c17a9ff42ae331ca476e7"
+    },
+    {
       "path": "lib/postiz-publish.js",
       "kind": "text",
-      "sha256": "d21de73298f41771e6fca4c1fa8cd2de951ccb352c748723d2e6eed09bc12c92"
+      "sha256": "e1173721dd527b7296cc5ce1847ad8ce04932cce382159883b5646917146698d"
     },
     {
       "path": "lib/press/acquisition-pr2.js",
@@ -4187,7 +4732,12 @@
     {
       "path": "lib/productCatalog.js",
       "kind": "text",
-      "sha256": "ed92fc10bdf4c4008aacdc53da5a87538239f7d7c7cc14054c12c005d3b873b5"
+      "sha256": "c831a9e348f1ba1f8409198edf95dbb3841a5eaa0c302ee6cd21ea3202f03ffe"
+    },
+    {
+      "path": "lib/productCatalogEditing.js",
+      "kind": "text",
+      "sha256": "00b6cdfa501034dda234187049c38680e96874888cb3bcec0494144ca0a2d3e2"
     },
     {
       "path": "lib/productSalesLane.js",
@@ -4208,6 +4758,16 @@
       "path": "lib/public-endpoint-rate-limit.js",
       "kind": "text",
       "sha256": "016f03156cd501f98ddca59096e1f0dc6faef893915535b5ca8a961b4dfbf0bb"
+    },
+    {
+      "path": "lib/realtime-audio.js",
+      "kind": "text",
+      "sha256": "22e97db287982b822cbfe24fa52776c87d3619b926bd2e019e4ab5d1c10d8de2"
+    },
+    {
+      "path": "lib/realtime-session-scope.js",
+      "kind": "text",
+      "sha256": "7cb5b0d021ec5f8124f6a929d8e2b55d1a4b02b6eba9761573395820285d4153"
     },
     {
       "path": "lib/realtime-voice-tools.js",
@@ -4315,6 +4875,11 @@
       "sha256": "d6b527ad01f063ab8249b8fc024e72fa20d3fca8c316de527b053988f84f2387"
     },
     {
+      "path": "lib/stripe-configuration.js",
+      "kind": "text",
+      "sha256": "3a0ce6e3a08e3d2239c1c8598ed189af199c64041f20ddfc5f08614e94b7a312"
+    },
+    {
       "path": "lib/subscriptionImport.js",
       "kind": "text",
       "sha256": "dd3c0b841ed08dddf464184a5a407284180648ac5737af3ba076f0f34b83c09a"
@@ -4395,6 +4960,16 @@
       "sha256": "d09abe8f169104ab12df97eeb7930cf6aaa300abb053d3af7bc8c1cf85b5d446"
     },
     {
+      "path": "lib/use-stripe-client.js",
+      "kind": "text",
+      "sha256": "64029d2b97cc9a912d9929795babc380ecd949ffaafa58c4acababff5616d5f0"
+    },
+    {
+      "path": "lib/use-workspace-layout.js",
+      "kind": "text",
+      "sha256": "e17b1053c109e3bf1c17d5386296496d1496e9bdaf6990a4113ab0de3782167a"
+    },
+    {
       "path": "lib/useCachedData.js",
       "kind": "text",
       "sha256": "eca26660d03e51cb950c51730833eb1db543ce2820ef4a4607a4a32238a172a7"
@@ -4452,7 +5027,7 @@
     {
       "path": "lib/youtube.mjs",
       "kind": "text",
-      "sha256": "c290cfaf0677b80c6ab6339a939742a670a4a173eb6e08cc95b183ac40632b47"
+      "sha256": "2b7def24f65ee26ea89f5ab97d136551af6694d4c6a862b3632fb87d04f93e7e"
     },
     {
       "path": "mcp-server/README.md",
@@ -4482,7 +5057,7 @@
     {
       "path": "middleware.js",
       "kind": "text",
-      "sha256": "c1d424ad402978fd1c671472af56d4527d7918cf7ed7831d8955c73817f5e511"
+      "sha256": "5999c314a82b87e5b33b36d014afb4e4c06dfc8c6f68cdee8dba11b3067b57bc"
     },
     {
       "path": "next-env.d.ts",
@@ -4492,7 +5067,7 @@
     {
       "path": "next.config.js",
       "kind": "text",
-      "sha256": "93e02a1e78010939570f0c2d5ebc2fe39d6fd40312b02e89b0eba6e069251cfc"
+      "sha256": "ae818772e201626e5c115d9bb916716b346d07eabf4e4d645eff7a0db28bbb86"
     },
     {
       "path": "ops/deepseek-harness/THIRD_PARTY_NOTICES.md",
@@ -4527,12 +5102,12 @@
     {
       "path": "package-lock.json",
       "kind": "text",
-      "sha256": "b6d8e1d352eeef3842f252ea8ae0ec2647f00126ed77ed167ad7238673a8f522"
+      "sha256": "ff04fd8c5ebeb768f8e3cd2cbdab153ae650ded3a9cd104c6159e7e6bbe49d48"
     },
     {
       "path": "package.json",
       "kind": "text",
-      "sha256": "6c843fa8f93510f101696a45f937904f6e4ad922d73b5152cfb3bd29ff15acef"
+      "sha256": "8459ba7c35849f895141afc970f44da619556ca706121c423bb33700a2b68577"
     },
     {
       "path": "postcss.config.js",
@@ -4617,7 +5192,7 @@
     {
       "path": "public/brand/command-center-loader/loader.html",
       "kind": "text",
-      "sha256": "955d4e85c61e914b0bc3aaae168b0f5b02dc25a7e81d59564745e38337a6d35d"
+      "sha256": "6f96d8e7602c5109c8c2082692ca0bf024948536ab319e6857e70835be994fa1"
     },
     {
       "path": "public/brand/command-center-logo.png",
@@ -4647,7 +5222,7 @@
     {
       "path": "public/brand/fd-brand-dark.svg",
       "kind": "text",
-      "sha256": "cbf141d247ff8f824c9d114d7f835ea95a13e7df828f76e3d981949035dcb805"
+      "sha256": "9e1a63c018ecc64333d5d9cd8b742cf28d8d3b56b13a132d9b3469e1912f5bdf"
     },
     {
       "path": "public/brand/fd-brand-light.png",
@@ -4657,7 +5232,7 @@
     {
       "path": "public/brand/fd-brand-light.svg",
       "kind": "text",
-      "sha256": "5e6136a8fe66964fcc0620a5614ed8df721741dfd6878165254709e65dc6ea8e"
+      "sha256": "f86645d812700a9596e1583e017d7b35922dda2cfe0c3cde9ee0faa0cb0fbdca"
     },
     {
       "path": "public/brand/fd-brand-warm-transparent.png",
@@ -4677,7 +5252,7 @@
     {
       "path": "public/brand/fd-mark-dark.svg",
       "kind": "text",
-      "sha256": "77cd4aa31b5c862ba51c99267716168eac02b9870310a1195e5738437c599ecb"
+      "sha256": "e562cb3228378850ac3e20f5822f32349b38bfba35bb06d496713c7e5150dee2"
     },
     {
       "path": "public/brand/fd-mark-light.png",
@@ -4687,12 +5262,12 @@
     {
       "path": "public/brand/fd-mark-light.svg",
       "kind": "text",
-      "sha256": "40e78208a2dc436f79ed7b480bde8c5a4b19000522d81d89685ad916a5c85138"
+      "sha256": "15951f19157499d54e703acc036d7f73cbda158c181af266908d309554fa20b9"
     },
     {
       "path": "public/cc-front/Farrington.html",
       "kind": "text",
-      "sha256": "f396a182829b921333e1528946652ec9e9c4ad14fe0decb59b4fbcbeac200d91"
+      "sha256": "77ce63700cff5041407345a3c8c2189024d31731adb21fca7b65e863e3d30e1e"
     },
     {
       "path": "public/cc-front/app.jsx",
@@ -4702,7 +5277,7 @@
     {
       "path": "public/cc-front/components.jsx",
       "kind": "text",
-      "sha256": "c54b1813cf98c1039b40e4473a67fc5068227f618a969eb6afdf35a757764698"
+      "sha256": "aed92c455fa6ea567c6e05f470e547ed025fe351ada1506b4017dcd4fe3c8baa"
     },
     {
       "path": "public/cc-front/data.js",
@@ -4722,7 +5297,7 @@
     {
       "path": "public/cc-front/screens_marketing.jsx",
       "kind": "text",
-      "sha256": "6e0b782ff088f1fd57a77d9c8defae8f057c6813330229c2b529ab75cda21096"
+      "sha256": "6e4ced88f51c7ca2546e8326b6489d19865227b781830a553fb59a6816f4bbf0"
     },
     {
       "path": "public/cc-front/styles.css",
@@ -4910,6 +5485,31 @@
       "sha256": "e0b51f81798a6d261b9d7df0d0e8149191a949daaccbdd612d9ec10c618d514b"
     },
     {
+      "path": "public/help/getting-started.md",
+      "kind": "text",
+      "sha256": "3202f659ce91368e6a761b57b17a02558bdbfd57de124062f876b53c63452eaa"
+    },
+    {
+      "path": "public/help/images/postiz-first-admin.png",
+      "kind": "binary",
+      "sha256": "9f9338d010ad0271a85466a08ba3ea0facba63ab0d29599bfe0804132c80c3aa"
+    },
+    {
+      "path": "public/help/images/postiz-help-mobile.png",
+      "kind": "binary",
+      "sha256": "42ea5fcb9922e27d6c254612a0acfbc1a3ceb37121c187481cdc28e052f712b1"
+    },
+    {
+      "path": "public/help/images/postiz-keyless-help.png",
+      "kind": "binary",
+      "sha256": "523f3099125297c44df0f2edc47d33adb92586025a6682143bd5b8db42f8a48d"
+    },
+    {
+      "path": "public/help/images/postiz-settings.png",
+      "kind": "binary",
+      "sha256": "19930446619cd48c4c4ce1a44a40835a9b4bd98912b271a1f79c8e6ab44c619a"
+    },
+    {
       "path": "public/icon-192.png",
       "kind": "binary",
       "sha256": "f8d61568daa54ca516cc97ddad61130da0622e7aee6b5e130f30b420023dc2a8"
@@ -5010,6 +5610,81 @@
       "sha256": "cbdf74fc7b154ae013f4c4e7ed8598a141c3af9b3ff1610bbcc6069609da082a"
     },
     {
+      "path": "public/openocti/avatars/README.md",
+      "kind": "text",
+      "sha256": "a2e203c4765204b89527856cdc58051602496cd9972ed010be82b37fcacb5a5c"
+    },
+    {
+      "path": "public/openocti/avatars/coding.svg",
+      "kind": "text",
+      "sha256": "253d11f01039616c46ecd2058c1f906c81661ef0fc938e21edd48f443177725a"
+    },
+    {
+      "path": "public/openocti/avatars/deep-research-analyst.svg",
+      "kind": "text",
+      "sha256": "d11d050a592c4e278a3e547ffcca40f62ad320d6de685fb65421b30944a539ad"
+    },
+    {
+      "path": "public/openocti/avatars/deepseek-lab-operator.svg",
+      "kind": "text",
+      "sha256": "fcf81f84b6763833aa09098a4c307e14fbacad086e6d96d38b7b56f684f0e654"
+    },
+    {
+      "path": "public/openocti/avatars/deerflow-client-vetting-analyst.svg",
+      "kind": "text",
+      "sha256": "b70f176c79be324747dfca85f9d2ee9894f271806633bd4d361224891b6e11a4"
+    },
+    {
+      "path": "public/openocti/avatars/deerflow-deliverables-producer.svg",
+      "kind": "text",
+      "sha256": "cd0b2d5a5f9302f3951bcec6fe6f1c28fb83ad6213c7aa204da8a974af9fc482"
+    },
+    {
+      "path": "public/openocti/avatars/deerflow-lead-research-analyst.svg",
+      "kind": "text",
+      "sha256": "09d7733b62d3c876564e04bd9d9b0b0c14173f7a34fde502571fc08ed5c274ac"
+    },
+    {
+      "path": "public/openocti/avatars/deerflow-market-competitor-analyst.svg",
+      "kind": "text",
+      "sha256": "a56296c2adcef2215edb320130d9434b7709427e0d386b0472c5ba032400ad4a"
+    },
+    {
+      "path": "public/openocti/avatars/deerflow-reputation-risk-analyst.svg",
+      "kind": "text",
+      "sha256": "0190531328bf1a3c7070ff9d5c9f70fb65a5586f06eeaeda5fc39c038f88358a"
+    },
+    {
+      "path": "public/openocti/avatars/deerflow-studio-producer.svg",
+      "kind": "text",
+      "sha256": "da513fbea2424c7e237a5b609ddab8821c7007c5bd2891038cd86e4879fe3775"
+    },
+    {
+      "path": "public/openocti/avatars/legal.svg",
+      "kind": "text",
+      "sha256": "6e01808fad4a6674a62db169e0bc94dafe7cd671dfce5b37cd236387fabd2df3"
+    },
+    {
+      "path": "public/openocti/avatars/main.svg",
+      "kind": "text",
+      "sha256": "3a83f5d659a3b566e28052341b94a13661fdcb2317c5bc800f0e473e837a2270"
+    },
+    {
+      "path": "public/openocti/avatars/matilda.svg",
+      "kind": "text",
+      "sha256": "8f43c418995893cc6d60203ba459fe5c438902351badf9ebf35b247d71d9bc42"
+    },
+    {
+      "path": "public/openocti/avatars/press-release-agent.svg",
+      "kind": "text",
+      "sha256": "489122b470e7e302d26d42ede80368638218bdd014c9fc11b6fae9285ac4ac33"
+    },
+    {
+      "path": "public/openocti/avatars/social-media.svg",
+      "kind": "text",
+      "sha256": "0deebc2138659555c518b9aa11edadef0fa9ea030d00b804b72ebc071ab58394"
+    },
+    {
       "path": "public/openocti/favicon.ico",
       "kind": "binary",
       "sha256": "df064923f77ef359bccde28c4926afda561b575f137dca889a0f8d2c3a15a8f2"
@@ -5047,7 +5722,7 @@
     {
       "path": "public/product-covers/command-center.svg",
       "kind": "text",
-      "sha256": "01884b2259d6f16b83bba775d029806e610cbe379b8338a1d37b78888969f94b"
+      "sha256": "508382237129d3738cf4c90b8a752d995cc17b9f89f5d38b681a6dee7eb36c73"
     },
     {
       "path": "public/profile/carl-farrington-512.jpg",
@@ -5082,7 +5757,7 @@
     {
       "path": "scripts/export-openocti.mjs",
       "kind": "text",
-      "sha256": "52a7462def5bb930de0b7445dded14057f9b1698df4270470177d33dae85c456"
+      "sha256": "5708d497cbba3ae740a6e12b14e4e6b0d13f7569caffb09aca15b1197b75f1ee"
     },
     {
       "path": "scripts/feature-inventory.mjs",
@@ -5100,9 +5775,14 @@
       "sha256": "78e0df8fc861776792ba7c29eb294a3b57dba75572b2a9a2daaee54200f4d20a"
     },
     {
+      "path": "scripts/generate-openocti-setup-guide.mjs",
+      "kind": "text",
+      "sha256": "ad9c42d3225116d80304faf9b7e9b367b1cc3643714ed8ebb7551ccea9158bf9"
+    },
+    {
       "path": "scripts/generate-third-party-notices.mjs",
       "kind": "text",
-      "sha256": "707dcae74e25b23f868ee2a79f0db7243ab7cb7355fcd9195464a6db1f7fb582"
+      "sha256": "abf6b62df58e8feec06151397ada7969f130b4f62a09b62ddaf19ced03b8d7f6"
     },
     {
       "path": "scripts/kill-port.ps1",
@@ -5117,7 +5797,7 @@
     {
       "path": "scripts/openocti-boundary-policy.json",
       "kind": "text",
-      "sha256": "b5ac5bb3295688482b0091a084f39a417675fc6512ed2385647b56b0957ac381"
+      "sha256": "0c9cafbe9b4c09b44136be57039b2914ef4fd7f2d474cf9e4a1f2ab10b05262b"
     },
     {
       "path": "scripts/openocti-build.mjs",
@@ -5127,7 +5807,7 @@
     {
       "path": "scripts/openocti-excludes.mjs",
       "kind": "text",
-      "sha256": "24b0ad38515f236e4bbf36ed48ec5c9fe31f9676795957b69f6795e749966836"
+      "sha256": "bb2eb4a7bfd1b3175a5e5abc39daeae4ad3c9eb2766e5f5efa00b97a4f169f28"
     },
     {
       "path": "scripts/openocti-source-snapshot.mjs",
@@ -5143,6 +5823,11 @@
       "path": "scripts/run-monitoring.mjs",
       "kind": "text",
       "sha256": "30ad4198bbc1c114ce826303f1722ca9994e7bb2bb43da8a9e1d2675586749dc"
+    },
+    {
+      "path": "scripts/setup-openocti-postiz.mjs",
+      "kind": "text",
+      "sha256": "61d18932b5c9b124dc176480f47a909ad1282b58a4c39f9536411b0a29501050"
     },
     {
       "path": "scripts/smoke-openocti-container.mjs",
@@ -5837,514 +6522,12 @@
     {
       "path": "vitest.config.js",
       "kind": "text",
-      "sha256": "a0a2ccfb434de275bacb7991fbc71352639269a79faf03dfedb052c19aceb863"
+      "sha256": "f00dc920eca235cc1cab78b80412fb513463638a517a39cfe1b65b9fb69b88b6"
     },
     {
       "path": "vitest.setup.js",
       "kind": "text",
       "sha256": "91a3c8962a0edcb956206a501d943fe99e1c78c6d4d8b5c9a948a3362c75978c"
-    }
-    ,
-  {
-    "path": "__tests__/firstRunAccount.test.js",
-    "kind": "text",
-    "sha256": "8ed86072f8c30f6706b94102036fbb7a908a048002c4158ef694ba2c27ab3dbe"
-  },
-  {
-    "path": "__tests__/firstRunSetupRoute.test.js",
-    "kind": "text",
-    "sha256": "2d422b3cd42ba3f2d6e860ddcb4532fd0e3921d2c12c63f8351968aac2ce6bd9"
-  },
-  {
-    "path": "__tests__/sessionSecret.test.js",
-    "kind": "text",
-    "sha256": "045bcda51e71f589c31a1bd2085458f97ef9970d3ce8a6ce75e3d4b01aac73e1"
-  },
-  {
-    "path": "app/api/auth/setup/route.js",
-    "kind": "text",
-    "sha256": "1f46926e431868724b029107d958d582594a0ac6bb9f37eb9d6e318ec9ac81d0"
-  },
-  {
-    "path": "app/login/FirstRunAccountSetup.js",
-    "kind": "text",
-    "sha256": "fdd4e77a6805ce878c50fabaf30b800f7e24440a814b1b1da5c629c1af11d8e3"
-  },
-  {
-    "path": "deploy/session-secret.mjs",
-    "kind": "text",
-    "sha256": "e5893d2ab64c4c4c40733c7eb0cd60042bf53bdc5ea44052632ec1d704c6302c"
-  },
-  {
-    "path": "lib/first-run-account.js",
-    "kind": "text",
-    "sha256": "855e20fd0f6b021e3180725fe7a833b62ecfbead6236ee5895a3bbba893d0562"
-  }
-    ,
-  {
-    "path": "__tests__/FirstRunAccountSetup.test.jsx",
-    "kind": "text",
-    "sha256": "13583c58add86fe923847bbb75522bcfc62ff90a20f0c52828e6c42bbfba2876"
-  },
-  {
-    "path": "__tests__/openOctiVoiceGuide.test.jsx",
-    "kind": "text",
-    "sha256": "ff7922c7f6c6f374fd3452bb63fdd1cc0dea8c7407787788d4b25d96de06c2a3"
-  },
-  {
-    "path": "__tests__/openOctiVoiceKey.test.js",
-    "kind": "text",
-    "sha256": "0c9cc5c11c0a4e0593f520a3a56f58500490123848d1e01ae2a5fcde7e3ec513"
-  },
-  {
-    "path": "app/components/OpenOctiVoiceGuide.js",
-    "kind": "text",
-    "sha256": "c6450fbd00685a9611350638787e87c74cf0cc45bf93c4a233db9261afd0654c"
-  },
-  {
-    "path": "__tests__/openOctiAskButton.test.jsx",
-    "kind": "text",
-    "sha256": "e6916e60e0467dd2ed5fe110365e45a5896219c01408c6a2aff7bf9e6f1bd06f"
-  },
-  {
-    "path": "__tests__/openOctiAssistant.test.js",
-    "kind": "text",
-    "sha256": "6cca84cb95845a6267d841e0889e22df05084e92a57ea120e9cc257089913dab"
-  },
-  {
-    "path": "__tests__/openOctiDirectProviders.test.js",
-    "kind": "text",
-    "sha256": "6d0f470ddfaa47dc2617c1c9d64e6c726af59684331a5f0ad4dc9c81137b412d"
-  },
-  {
-    "path": "__tests__/openOctiGeminiGuide.test.js",
-    "kind": "text",
-    "sha256": "db344ab1fd260089d1c2eaf3bd7f3129a6cdf9e408231a0ceab01e91231ae337"
-  },
-  {
-    "path": "__tests__/openOctiGuideRoute.test.js",
-    "kind": "text",
-    "sha256": "a3aa0a2462d4b1844391bf52878ebba043e93a263d108ec8dda97e4639073b6c"
-  },
-  {
-    "path": "__tests__/openOctiVoiceSession.test.js",
-    "kind": "text",
-    "sha256": "a146aeed9e46e85b341ac989a783bb45efa9fef71755782696a9ad53a204302b"
-  },
-  {
-    "path": "__tests__/voiceProviderNotice.test.jsx",
-    "kind": "text",
-    "sha256": "386ddaa8549985466c0384bc5263a15a1a9e557baece0038c8d4c7f0d0cf7ddc"
-  },
-  {
-    "path": "app/api/openocti/guide/route.js",
-    "kind": "text",
-    "sha256": "624f76cd4afb72fd51d28fc09e176d12eb75b7a8513c809ad3c046315044ca15"
-  },
-  {
-    "path": "app/components/VoiceProviderNotice.js",
-    "kind": "text",
-    "sha256": "25ffc89ac24e9065b97dcb0ad18741544ec20ecb4718aa347e7ac5259d1bb200"
-  },
-  {
-    "path": "lib/openocti-assistant.js",
-    "kind": "text",
-    "sha256": "0718ebd94c4845d13335b1ad59bdb97e380466c9ec9c11bdaa87b2095789266f"
-  },
-  {
-    "path": "lib/openocti-gemini-voice.js",
-    "kind": "text",
-    "sha256": "31640add689f2bf839030bdae88da5e9cb8fbade5275942e0460c1cef6f81f29"
-  },
-  {
-    "path": "__tests__/openOctiAgentRouting.test.js",
-    "kind": "text",
-    "sha256": "039ce92e0ae70078afaa1497c1fbb50eb4b8f8c81b556643b37ac4d848226e3a"
-  },
-  {
-    "path": "lib/agent-chat-selection.js",
-    "kind": "text",
-    "sha256": "b31186cddd7ddd87e26dc3a148681f88f048d59a40658358107ca96b79943a76"
-  },
-  {
-    "path": "__tests__/openOctiVoiceRoster.test.js",
-    "kind": "text",
-    "sha256": "3148060666b30b5de9d9a553f39ae2470a2ca9a0c42ddeeb4ddbeac2653fd632"
-  },
-  {
-    "path": "__tests__/openOctiVoiceRouting.test.js",
-    "kind": "text",
-    "sha256": "7793c3b5c60774c8a0e64d78646eef020963762918baa24c879aa79a9e3d1976"
-  },
-  {
-    "path": "lib/openocti-voice-routing.js",
-    "kind": "text",
-    "sha256": "0d21025701e962b29e780ffbc248265a32801bafbf46a07b0beeb59bcb373c86"
-  },
-  {
-    "path": "__tests__/openOctiGitea.test.js",
-    "kind": "text",
-    "sha256": "bd28254007d5e574cefa33340e313c68b8271ac7c3664403ac2bd520b924a0da"
-  },
-  {
-    "path": "__tests__/openOctiSystemStatus.test.js",
-    "kind": "text",
-    "sha256": "da5ea7a86715fd97026420d29f755efd5e26f3e04ffe73648ebb4ade92d200b4"
-  },
-  {
-    "path": "lib/openocti-gitea.js",
-    "kind": "text",
-    "sha256": "62769dbdcbbe0d89bef7e177d34a1c2bbe72906b0e285f2accd8df2640dabf2e"
-  },
-  {
-    "path": "lib/openocti-system-status.js",
-    "kind": "text",
-    "sha256": "6af4a0bb057b1510aa438dc8311233207ddc35fea5009d273436fa3fce429cd6"
-  },
-  {
-    "path": "__tests__/financeInvoicesRegression.test.jsx",
-    "kind": "text",
-    "sha256": "47949d56d60cfc98381f8f9936c69c737769f679f76d1391f68f71b8f29e7861"
-  },
-  {
-    "path": "__tests__/openOctiNetwork.test.jsx",
-    "kind": "text",
-    "sha256": "2893a087472acb55893e88901788f1a0dc0dfe401f51271ddebb452e5f522e73"
-  },
-  {
-    "path": "app/finance/InvoicesManager.js",
-    "kind": "text",
-    "sha256": "4f42c7ddf6cb2895c92afe8b14ef7e1c002e36c899b24416f3ea7903728364fb"
-  },
-  {
-    "path": "app/network/OpenOctiNetwork.js",
-    "kind": "text",
-    "sha256": "598106bd7b42311b308b80249272e7aa6cb4672baf186917224b9bd0662ba3b0"
-  },
-  {
-    "path": "__tests__/openOctiKnowledgePackage.test.js",
-    "kind": "text",
-    "sha256": "0d05d94772313793902c65d67fe1efebe063c5ba2e4b52ea2af46472ec4898cc"
-  },
-  {
-    "path": "deploy/openclaw/seed-knowledge.mjs",
-    "kind": "text",
-    "sha256": "97f4f92ecd71bc5263cff0943b9dc902ea4b666bb9311d11149df2779e158052"
-  },
-  {
-    "path": "deploy/starter-vault.mjs",
-    "kind": "text",
-    "sha256": "b588cce8747d9e139791308fcf2a4a27e2d433aa87651050961164810f27c5f8"
-  },
-  {
-    "path": "knowledge/agents/coding.md",
-    "kind": "text",
-    "sha256": "d6e82a3526951185fe010ce23ad792ab02d5b34f83a51e8f97fcf5ddccd5bfbb"
-  },
-  {
-    "path": "knowledge/agents/coding.voice.md",
-    "kind": "text",
-    "sha256": "4decfb32bc7a0bd50c39374912bf073d49d174c6f1b19fe9497730dd36f537c6"
-  },
-  {
-    "path": "knowledge/agents/legal.md",
-    "kind": "text",
-    "sha256": "17fb0a0112b8e68f7bfdc77ae7b814398f2fb9a767e556baaedf462dad7137b7"
-  },
-  {
-    "path": "knowledge/agents/legal.voice.md",
-    "kind": "text",
-    "sha256": "f3360f2bfdd13f48aaab99462d01d71ab1e442a3c40010a3dd1d7af181a49a84"
-  },
-  {
-    "path": "knowledge/agents/main.md",
-    "kind": "text",
-    "sha256": "4874dddc5a3a33070feeb56957b087bc7ac95bbb3707c0ab19beeccb924ddc8c"
-  },
-  {
-    "path": "knowledge/agents/main.voice.md",
-    "kind": "text",
-    "sha256": "0d6a68afb2882242ecfb66459596bd955fbf148cae039438bf17800bc42b6c17"
-  },
-  {
-    "path": "knowledge/agents/matilda.md",
-    "kind": "text",
-    "sha256": "519323834ff238f914d690dea04a93f5a3d3a2fd552384b37199b357f4c7ce96"
-  },
-  {
-    "path": "knowledge/agents/matilda.voice.md",
-    "kind": "text",
-    "sha256": "7a553e8ea986a09058616e2bd08710bfad33e71b28803cb269a65ddd9b4a332e"
-  },
-  {
-    "path": "knowledge/agents/social-media.md",
-    "kind": "text",
-    "sha256": "a627cd32a908e812f7783ee9407a808c12ac924ea0e6089ca6af362e5abc2e4a"
-  },
-  {
-    "path": "knowledge/agents/social-media.voice.md",
-    "kind": "text",
-    "sha256": "fdedebaac0add9d3cc19c07a8aff398bbf57ceb213398379ae02e35039a5268c"
-  },
-  {
-    "path": "knowledge/vault/Welcome.md",
-    "kind": "text",
-    "sha256": "a4311403f69cc7215f761c3422286616f4a03e6bda60b6d4abd44aae61280737"
-  },
-  {
-    "path": "lib/openocti-knowledge.js",
-    "kind": "text",
-    "sha256": "584025a02a36f2137c90104f1fa1ab6acd685eed20d502bfa4e1d25e0c2367de"
-  },
-  {
-    "path": "__tests__/openclawStreamIsolation.test.js",
-    "kind": "text",
-    "sha256": "8e6829d0194d8ce07c81d8ec55909e14a33771a29923cbcf006cd92956eb42e0"
-  }
-  ,
-    {
-      "path": "__tests__/realtimeSessionScope.test.js",
-      "kind": "text",
-      "sha256": "00385cf26765bf3ce290448573b6471a9b704d659c7c125279cdd1bafcf1983e"
-    },
-    {
-      "path": "lib/realtime-session-scope.js",
-      "kind": "text",
-      "sha256": "7cb5b0d021ec5f8124f6a929d8e2b55d1a4b02b6eba9761573395820285d4153"
-    }
-  ,
-    {
-      "path": "lib/openocti-agent-avatars.js",
-      "kind": "text",
-      "sha256": "a0d8362be949d16cc88736497e543f7b9948c3c64b8c3673a8a32d041fd9b2ce"
-    },
-    {
-      "path": "__tests__/defaultAgentAvatars.test.js",
-      "kind": "text",
-      "sha256": "6548e8d2eee0df6448089dc6da266ab72d6716cf4317eae73e1583f1a86ed6bc"
-    },
-    {
-      "path": "public/openocti/avatars/README.md",
-      "kind": "text",
-      "sha256": "a2e203c4765204b89527856cdc58051602496cd9972ed010be82b37fcacb5a5c"
-    },
-    {
-      "path": "public/openocti/avatars/main.svg",
-      "kind": "text",
-      "sha256": "3a83f5d659a3b566e28052341b94a13661fdcb2317c5bc800f0e473e837a2270"
-    },
-    {
-      "path": "public/openocti/avatars/coding.svg",
-      "kind": "text",
-      "sha256": "253d11f01039616c46ecd2058c1f906c81661ef0fc938e21edd48f443177725a"
-    },
-    {
-      "path": "public/openocti/avatars/social-media.svg",
-      "kind": "text",
-      "sha256": "0deebc2138659555c518b9aa11edadef0fa9ea030d00b804b72ebc071ab58394"
-    },
-    {
-      "path": "public/openocti/avatars/legal.svg",
-      "kind": "text",
-      "sha256": "6e01808fad4a6674a62db169e0bc94dafe7cd671dfce5b37cd236387fabd2df3"
-    },
-    {
-      "path": "public/openocti/avatars/matilda.svg",
-      "kind": "text",
-      "sha256": "8f43c418995893cc6d60203ba459fe5c438902351badf9ebf35b247d71d9bc42"
-    },
-    {
-      "path": "public/openocti/avatars/press-release-agent.svg",
-      "kind": "text",
-      "sha256": "489122b470e7e302d26d42ede80368638218bdd014c9fc11b6fae9285ac4ac33"
-    },
-    {
-      "path": "public/openocti/avatars/deepseek-lab-operator.svg",
-      "kind": "text",
-      "sha256": "fcf81f84b6763833aa09098a4c307e14fbacad086e6d96d38b7b56f684f0e654"
-    },
-    {
-      "path": "public/openocti/avatars/deep-research-analyst.svg",
-      "kind": "text",
-      "sha256": "d11d050a592c4e278a3e547ffcca40f62ad320d6de685fb65421b30944a539ad"
-    },
-    {
-      "path": "public/openocti/avatars/deerflow-lead-research-analyst.svg",
-      "kind": "text",
-      "sha256": "09d7733b62d3c876564e04bd9d9b0b0c14173f7a34fde502571fc08ed5c274ac"
-    },
-    {
-      "path": "public/openocti/avatars/deerflow-client-vetting-analyst.svg",
-      "kind": "text",
-      "sha256": "b70f176c79be324747dfca85f9d2ee9894f271806633bd4d361224891b6e11a4"
-    },
-    {
-      "path": "public/openocti/avatars/deerflow-market-competitor-analyst.svg",
-      "kind": "text",
-      "sha256": "a56296c2adcef2215edb320130d9434b7709427e0d386b0472c5ba032400ad4a"
-    },
-    {
-      "path": "public/openocti/avatars/deerflow-reputation-risk-analyst.svg",
-      "kind": "text",
-      "sha256": "0190531328bf1a3c7070ff9d5c9f70fb65a5586f06eeaeda5fc39c038f88358a"
-    },
-    {
-      "path": "public/openocti/avatars/deerflow-studio-producer.svg",
-      "kind": "text",
-      "sha256": "da513fbea2424c7e237a5b609ddab8821c7007c5bd2891038cd86e4879fe3775"
-    },
-    {
-      "path": "public/openocti/avatars/deerflow-deliverables-producer.svg",
-      "kind": "text",
-      "sha256": "cd0b2d5a5f9302f3951bcec6fe6f1c28fb83ad6213c7aa204da8a974af9fc482"
-    },
-    {
-      "path": "docs/releases/1.2.3.md",
-      "kind": "text",
-      "sha256": "6124ca53ee2d094999bb534f9675116ea866b403900c7c48bdb9070863707f39"
-    }
-  ,
-    {
-      "path": "app/harness/HarnessSupport.js",
-      "kind": "text",
-      "sha256": "b3c79d18d14be5cd6fdd0c287eb17a2a9548b02a5302c2650a4d393ea808d9ca"
-    },
-    {
-      "path": "__tests__/harnessSupport.test.jsx",
-      "kind": "text",
-      "sha256": "42316f764e68826a2ada265a69e44f6305e42ae66a9be42daef2f52ccb4a2f16"
-    },
-    {
-      "path": "__tests__/mediaSavedOpenAiKey.test.js",
-      "kind": "text",
-      "sha256": "cf078404126daf4b4ce6253234910b5f5785169db17a58299960b4b70d616749"
-    },
-    {
-      "path": "__tests__/stripeConfiguration.test.js",
-      "kind": "text",
-      "sha256": "51e9c75cdec44315548a535766019b88246284337dbbc978b2e0cfd23df67182"
-    },
-    {
-      "path": "__tests__/stripeClientRefresh.test.jsx",
-      "kind": "text",
-      "sha256": "e63b18315035599973c1e9f3d2c4c2115c9dfaf1ea714bc89464f6bd48f8d967"
-    },
-    {
-      "path": "__tests__/shipDeskPublicBoundary.test.jsx",
-      "kind": "text",
-      "sha256": "4fc7615c3a32cf08a547e7f4c1ebedaaf39c28072ffcca4fe627cbfd2270d543"
-    },
-    {
-      "path": "lib/stripe-configuration.js",
-      "kind": "text",
-      "sha256": "3a0ce6e3a08e3d2239c1c8598ed189af199c64041f20ddfc5f08614e94b7a312"
-    },
-    {
-      "path": "lib/use-stripe-client.js",
-      "kind": "text",
-      "sha256": "64029d2b97cc9a912d9929795babc380ecd949ffaafa58c4acababff5616d5f0"
-    },
-    {
-      "path": "app/api/openocti/stripe/route.js",
-      "kind": "text",
-      "sha256": "4c7b33f2f3415063e73fe5906a343f25cf7bc140b1725678e8def3c46825d663"
-    },
-    {
-      "path": "app/api/payments/config/route.js",
-      "kind": "text",
-      "sha256": "0621604edde51aa94bf3225391a0aeeda0b6d612f3db579f602cc776c4936dfc"
-    },
-    {
-      "path": "app/settings/StripeSettings.js",
-      "kind": "text",
-      "sha256": "356ffd83270df5210732547b5000678796425e3599a86c743d9e5acbd80cdecd"
-    },
-    {
-      "path": "docs/guides/stripe-setup.md",
-      "kind": "text",
-      "sha256": "d57df77d14039106e9179f6025c039f234a035dadd5c09c44b0dc3d1db365cdd"
-    },
-    {
-      "path": "lib/use-workspace-layout.js",
-      "kind": "text",
-      "sha256": "e17b1053c109e3bf1c17d5386296496d1496e9bdaf6990a4113ab0de3782167a"
-    },
-    {
-      "path": "app/components/WorkspaceLayoutSettings.js",
-      "kind": "text",
-      "sha256": "c787027e0a2f9a0129b4d18d693ad8fc60549f570a4ee3cbcd782f864cb60c4a"
-    },
-    {
-      "path": "__tests__/workspaceLayout.test.jsx",
-      "kind": "text",
-      "sha256": "cd4f912d0e508fe68882975a714da64d00abd13a273cc87945fc855714f98d7d"
-    },
-    {
-      "path": "lib/realtime-audio.js",
-      "kind": "text",
-      "sha256": "22e97db287982b822cbfe24fa52776c87d3619b926bd2e019e4ab5d1c10d8de2"
-    },
-    {
-      "path": "__tests__/realtimeAudio.test.js",
-      "kind": "text",
-      "sha256": "90e13c49db832920fc2907a1c7faa94480b1b9858926317542b1bfcaada4eb07"
-    },
-    {
-      "path": "__tests__/opsPublicBoundary.test.jsx",
-      "kind": "text",
-      "sha256": "815f76ff0ec28fcf39489595cbee8f261e243680166a73d2d37d5a017b2b0c45"
-    }
-  ,
-    {
-      "path": "__tests__/harnessReleaseAvailability.test.js",
-      "kind": "text",
-      "sha256": "a71f1ee2cd169116610dfeefb55d3e5d902b6eacaa8a7c3fcf13bf2116225951"
-    }
-  ,
-    {
-      "path": "lib/openclaw-dashboard.js",
-      "kind": "text",
-      "sha256": "e912c06c79db2e7a0ca2c32a82e8843257139d00fcd0d88e2c8db64068c2efd1"
-    },
-    {
-      "path": "deploy/openclaw-dashboard-proxy.mjs",
-      "kind": "text",
-      "sha256": "8368b0989382f74b89d263f399aac6ca75d7fda05452f155317cd31f6e93a610"
-    },
-    {
-      "path": "deploy/openocti-server.mjs",
-      "kind": "text",
-      "sha256": "1a097df57f1055bee1fe3cda8b4c6e0ec91bc9b63ec7f2d1fa77e0d46102d906"
-    },
-    {
-      "path": "app/api/harness/openclaw/authorize/route.js",
-      "kind": "text",
-      "sha256": "a4b68421cb70711e11bb797efe03a92c80b6a01563bb3dd65495ea827e43dd40"
-    },
-    {
-      "path": "__tests__/openclawDashboard.test.js",
-      "kind": "text",
-      "sha256": "3b05c54d6979d81a5d98dd3ba1b61697aecd074ccf30d18b5be340e9b938f9d8"
-    },
-    {
-      "path": "lib/postiz-config.js",
-      "kind": "text",
-      "sha256": "4ded77ab6d1b8295e2506fc2311381dc3675dc3274c1f61ae7cf9c00b2c27354"
-    },
-    {
-      "path": "__tests__/postizConnection.test.js",
-      "kind": "text",
-      "sha256": "c0d384c9786cd686e695ce39255c9830002013d7a52174c3eeafec459703d297"
-    },
-    {
-      "path": "docs/guides/postiz-setup.md",
-      "kind": "text",
-      "sha256": "5898215c8c6d756eff15a2be40288955b53249b998ad3554afe15a2f2f50c84b"
-    },
-    {
-      "path": "docs/releases/1.2.4.md",
-      "kind": "text",
-      "sha256": "b2c72032f58a22eb6ddf6f9f6dc10aa86e82ecee625d8458c5f44343c3b3aa76"
     }
   ]
 }

@@ -8,6 +8,7 @@ import ComponentSettings, { useComponentSettings } from '../components/Component
 import ViewModeToggle from '../components/ViewModeToggle'
 import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
 import { isOpenOcti } from '@/lib/edition'
+import ClientAccountSetup, { ClientSetupAction } from '../accounts/ClientAccountSetup'
 
 function api(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()) }
 
@@ -386,7 +387,7 @@ function PipelineManagerModal({ pipelines, accounts = [], onSaved, onClose }) {
   )
 }
 
-function OpportunityForm({ opportunity, accounts, pipelines, currentPipeline, onSave, onClose, onDelete, onNavigate }) {
+function OpportunityForm({ opportunity, accounts, pipelines, currentPipeline, onSave, onClose, onDelete, onNavigate, onClientSetup }) {
   const [f, setF] = useState(opportunity || {
     name: '', accountId: '', pipelineId: currentPipeline?.id || '', stageId: currentPipeline?.stages?.[0]?.id || '',
     value: '', probability: '', expectedClose: '', notes: '',
@@ -405,6 +406,10 @@ function OpportunityForm({ opportunity, accounts, pipelines, currentPipeline, on
   return (
     <Modal title={opportunity?.id ? 'Edit Opportunity' : 'New Opportunity'} onClose={onClose} wide>
       {opportunity?.id && <OpportunityContactCard o={opportunity} onNavigate={onNavigate} onClose={onClose} />}
+      {opportunity?.id && <div className="rounded-lg p-3 mb-4 flex items-center justify-between gap-3" style={{ background: 'var(--accent-soft)', border: '1px solid var(--border)' }}>
+        <div><strong className="text-sm">{isOpenOcti() ? 'Client account' : 'Client account & portal access'}</strong><p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{isOpenOcti() ? 'Convert the prospect to a client at any pipeline stage.' : 'Set up complimentary or pay-as-you-go access at any pipeline stage.'}</p></div>
+        {opportunity.accountId ? <ClientSetupAction accountName={opportunity.accountName} onClick={event => onClientSetup?.(opportunity, event)} /> : <span className="text-xs">Select an account below and save first.</span>}
+      </div>}
       <Field label="Opportunity Name *"><input style={inp} value={f.name} onChange={e => u('name', e.target.value)} placeholder="e.g. ACME Sponsorship Deal" autoFocus /></Field>
       <Field label="Account *">
         <ThemedSelect style={inp} value={f.accountId} onChange={e => u('accountId', e.target.value)}>
@@ -504,6 +509,15 @@ function isProspectOpportunity(o) {
   return Boolean(o?.accountId) && opportunityAccountType(o) === 'prospect'
 }
 
+function AccountAccessStatus({ opportunity: o }) {
+  if (isOpenOcti()) return <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{!o.accountId ? 'Account link needed' : isProspectOpportunity(o) ? 'Prospect' : 'Client'}</span>
+  const enabled = o.accountPortalStatus === 'active'
+  const ready = enabled && o.accountLoginReady
+  const label = !o.accountId ? 'Account link needed' : ready ? o.accountPortalComplimentary ? 'Comp portal ready' : 'Portal ready'
+    : enabled ? 'Sign-in email needed' : `${isProspectOpportunity(o) ? 'Prospect' : 'Client'} · Portal ${o.accountPortalStatus === 'disabled' ? 'disabled' : 'not enabled'}`
+  return <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: ready ? 'var(--green-soft)' : 'var(--amber-soft)', color: ready ? 'var(--green)' : 'var(--amber)' }}>{label}</span>
+}
+
 function Column({ stage, stages, opps, onDrop, onEdit, selectedIds, onToggleSelected, onPromote, idleCfg }) {
   const [over, setOver] = useState(false)
   const value = opps.reduce((s, o) => s + (Number(o.value) || 0), 0)
@@ -551,24 +565,13 @@ function Column({ stage, stages, opps, onDrop, onEdit, selectedIds, onToggleSele
               {stage.terminal && o.closeReason && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0" title={o.closeNote || o.closeReason} style={{ background: stage.terminal === 'won' ? 'var(--green-soft)' : 'var(--red-soft)', color: stage.terminal === 'won' ? 'var(--green)' : 'var(--red)', border: `1px solid ${stage.terminal === 'won' ? 'var(--green)' : 'var(--red)'}` }}>{stage.terminal === 'won' ? '✓' : '✗'} {o.closeReason}</span>
               )}
-              {isProspectOpportunity(o) && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'var(--amber-soft)', color: 'var(--amber)', border: '1px solid var(--amber)' }}>Prospect</span>
-              )}
+              <AccountAccessStatus opportunity={o} />
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm font-mono font-bold" style={{ color: 'var(--green)' }}>{fmtUSD(o.value)}</span>
               {o.probability > 0 && <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{o.probability}%</span>}
             </div>
-            {isProspectOpportunity(o) && (
-              <button
-                type="button"
-                className="w-full mt-2 py-1.5 rounded-lg text-[11px] font-semibold"
-                style={{ background: 'var(--green-soft)', color: 'var(--green)', border: '1px solid var(--green)' }}
-                onClick={e => onPromote(o, e)}
-              >
-                Promote to Client Account
-              </button>
-            )}
+            {o.accountId && <div className="mt-2 flex justify-end"><ClientSetupAction accountName={o.accountName} onClick={e => onPromote(o, e)} /></div>}
             <ThemedSelect
               className="board-card-move mt-2"
               value=""
@@ -610,6 +613,7 @@ export default function PipelinesManager({ onNavigate }) {
   const [loading, setLoading] = useState(true)
   const [activePipelineId, setActivePipelineId] = useState(null)
   const [editing, setEditing] = useState(null)
+  const [clientSetup, setClientSetup] = useState(null)
   const [adding, setAdding] = useState(false)
   const [managingPipelines, setManagingPipelines] = useState(false)
   const [view, setView] = useState('list')
@@ -742,37 +746,10 @@ export default function PipelinesManager({ onNavigate }) {
     }
   }
 
-  const promoteToClient = async (opp, event) => {
+  const promoteToClient = (opp, event) => {
     event?.stopPropagation?.()
     if (!opp?.accountId) return
-    const ok = confirm(`Promote ${opp.accountName || 'this prospect'} to a client account? Use this only when they have become a real client through a signed agreement, payment, or onboarding decision.`)
-    if (!ok) return
-    const result = await api('/api/accounts', {
-      action: 'promote_to_client',
-      accountId: opp.accountId,
-      opportunityId: opp.id,
-      note: `Promoted from opportunity: ${opp.name}`,
-    })
-    if (result.error) {
-      alert(result.error)
-      return
-    }
-    await refresh()
-  }
-
-  const promoteAccountForOpportunity = async (opp) => {
-    if (!opp?.accountId) return false
-    const result = await api('/api/accounts', {
-      action: 'promote_to_client',
-      accountId: opp.accountId,
-      opportunityId: opp.id,
-      note: `Promoted when opportunity moved to won: ${opp.name}`,
-    })
-    if (result.error) {
-      alert(result.error)
-      return false
-    }
-    return true
+    setClientSetup(opp)
   }
 
   // Deal being closed -> win/loss reason modal ({ opp, stage, reasonOnly? })
@@ -785,10 +762,6 @@ export default function PipelinesManager({ onNavigate }) {
     await api('/api/opportunities', { action: 'update', opportunity: patch })
     await refresh()
     if (stage?.terminal === 'won') {
-      if (isProspectOpportunity(opp) && confirm(`${opp.name} moved to ${stage.label}. Promote ${opp.accountName || 'this prospect'} to a client account now?`)) {
-        await promoteAccountForOpportunity(opp)
-        await refresh()
-      }
       if (confirm(`${opp.name} moved to ${stage.label}. Create a Project for this deal?`)) {
         await api('/api/projects', {
           action: 'add',
@@ -803,6 +776,7 @@ export default function PipelinesManager({ onNavigate }) {
         })
         alert('Project created. Check Projects tab.')
       }
+      if (opp.accountId) setClientSetup(opp)
     }
   }
 
@@ -982,15 +956,13 @@ export default function PipelinesManager({ onNavigate }) {
                   <ContactLine o={o} />
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{o.accountName || 'No account'}</div>
-                    {isProspectOpportunity(o) && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'var(--amber-soft)', color: 'var(--amber)', border: '1px solid var(--amber)' }}>Prospect</span>}
+                    <AccountAccessStatus opportunity={o} />
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 min-w-0"><span className="text-xs font-medium" style={{ color: stage?.color || 'var(--text-muted)' }}>{stage?.label || o.stageId || 'Stage'}</span>{stage?.terminal && o.closeReason && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold truncate" title={o.closeNote || o.closeReason} style={{ background: stage.terminal === 'won' ? 'var(--green-soft)' : 'var(--red-soft)', color: stage.terminal === 'won' ? 'var(--green)' : 'var(--red)' }}>{o.closeReason}</span>}</div>
                 <span className="text-sm font-mono font-bold" style={{ color: 'var(--green)' }}>{fmtUSD(o.value)}</span>
                 <div className="flex items-center gap-2 justify-end">
-                  {isProspectOpportunity(o) && (
-                    <button type="button" onClick={e => promoteToClient(o, e)} className="px-2 py-1 rounded-lg text-[11px] font-semibold" style={{ background: 'var(--green-soft)', color: 'var(--green)', border: '1px solid var(--green)' }}>Promote</button>
-                  )}
+                  {o.accountId && <ClientSetupAction accountName={o.accountName} onClick={e => promoteToClient(o, e)} />}
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{o.expectedClose ? new Date(o.expectedClose).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No close date'}</span>
                 </div>
               </div>
@@ -1020,7 +992,7 @@ export default function PipelinesManager({ onNavigate }) {
                     <ContactLine o={o} size={12} />
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{o.accountName || 'No account'}</div>
-                      {isProspectOpportunity(o) && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'var(--amber-soft)', color: 'var(--amber)', border: '1px solid var(--amber)' }}>Prospect</span>}
+                      <AccountAccessStatus opportunity={o} />
                     </div>
                   </div>
                   <span className="text-[10px] px-2 py-1 rounded-full font-medium" style={{ background: 'var(--surface2)', color: stage?.color || 'var(--text-muted)' }}>{stage?.label || o.stageId || 'Stage'}</span>
@@ -1031,9 +1003,7 @@ export default function PipelinesManager({ onNavigate }) {
                     <div className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{o.probability ? `${o.probability}% probability` : 'No probability set'}</div>
                   </div>
                   <div className="text-xs text-right" style={{ color: 'var(--text-muted)' }}>
-                    {isProspectOpportunity(o) && (
-                      <button type="button" onClick={e => promoteToClient(o, e)} className="mb-2 px-2 py-1 rounded-lg text-[11px] font-semibold" style={{ background: 'var(--green-soft)', color: 'var(--green)', border: '1px solid var(--green)' }}>Promote to Client</button>
-                    )}
+                    {o.accountId && <ClientSetupAction accountName={o.accountName} onClick={e => promoteToClient(o, e)} />}
                     <div>{o.expectedClose ? new Date(o.expectedClose).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No close date'}</div>
                   </div>
                 </div>
@@ -1068,8 +1038,11 @@ export default function PipelinesManager({ onNavigate }) {
 
       {adding && <OpportunityForm accounts={accounts} pipelines={pipelines} currentPipeline={activePipeline} onSave={save} onClose={() => setAdding(false)} />}
       {editing && (
-        <OpportunityForm opportunity={editing} accounts={accounts} pipelines={pipelines} currentPipeline={activePipeline} onSave={save} onClose={() => setEditing(null)} onDelete={del} onNavigate={onNavigate} />
+        <OpportunityForm opportunity={editing} accounts={accounts} pipelines={pipelines} currentPipeline={activePipeline} onSave={save} onClose={() => setEditing(null)} onDelete={del} onNavigate={onNavigate} onClientSetup={promoteToClient} />
       )}
+      {clientSetup && <ClientAccountSetup accountId={clientSetup.accountId} accountName={clientSetup.accountName} opportunityId={clientSetup.id}
+        onClose={() => setClientSetup(null)} onChanged={refresh}
+        onOpenAccount={account => openWithSearch(onNavigate, 'accounts', account.name)} />}
 
       {closingDeal && (
         <CloseReasonModal

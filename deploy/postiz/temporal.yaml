@@ -1,0 +1,4 @@
+# Postiz uses long workflow IDs. Keep the upstream-supported ID limit.
+limit.maxIDLength:
+  - value: 255
+    constraints: {}

@@ -1,4 +1,5 @@
 'use client'
+import { isOpenOcti } from '@/lib/edition'
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { getSectionAgent, resolveWizardAgentSection } from '../../lib/section-agents'
@@ -399,6 +400,10 @@ export default function ChatPanel() {
     const handler = event => {
       if (BRAND_ASSETS.openOcti) return
       const prompt = String(event.detail?.prompt || '')
+      if (isOpenOcti()) {
+        window.location.assign(`/help${prompt ? `?topic=${encodeURIComponent(prompt)}` : ''}`)
+        return
+      }
       setGuideMode(true)
       setWizardSectionOverride('settings')
       setOpen(true)

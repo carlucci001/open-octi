@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
 import { getProductCatalog, normalizeProduct, saveProductCatalog } from '@/lib/productCatalog'
+import { copyCatalogItem } from '@/lib/productCatalogEditing'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -19,6 +20,15 @@ export async function POST(request) {
     const body = await request.json()
     const action = body.action || 'save'
     const catalog = getProductCatalog()
+
+    if (action === 'copy-item') {
+      const target = catalog.products.find(product => product.id === body.targetProductId)
+      if (!target) throw new Error('Target product not found')
+      const source = normalizeProduct(body.sourceProduct || {})
+      const copied = copyCatalogItem(source, target, body.kind, body.itemId)
+      const saved = saveProductCatalog({ ...catalog, products: catalog.products.map(product => product.id === target.id ? copied : product) })
+      return NextResponse.json({ ok: true, catalog: saved })
+    }
 
     if (action === 'replace-catalog') {
       const saved = saveProductCatalog(body.catalog || {})

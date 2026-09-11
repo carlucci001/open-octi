@@ -47,6 +47,7 @@ export async function POST(request) {
     const id = body.id || body.accountId
     const account = findById('accounts', id)
     if (!account) return NextResponse.json({ error: 'not found' }, { status: 404 })
+    if (account.type === 'client') return NextResponse.json({ ok: true, account })
     const rec = update('accounts', id, {
       type: 'client',
       stage: body.stage || account.stage || 'active',

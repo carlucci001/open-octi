@@ -7,6 +7,9 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { transformWithOxc } from 'vite';
 import path from 'path';
+import fs from 'node:fs';
+
+const publicPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')).name === 'openocti';
 
 const jsAsJsx = {
   name: 'fcc-js-as-jsx',
@@ -32,6 +35,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      ...(publicPackage ? {
+        '../../platforms/PlatformAdminWorkspace': path.resolve(__dirname, 'lib/openocti/closed-module-stub.cjs'),
+        '@/lib/octiccCatalog': path.resolve(__dirname, 'lib/openocti/closed-module-stub.cjs'),
+      } : {}),
       '@': path.resolve(__dirname, '.'),
       '@closed/research-page': path.resolve(__dirname, 'app/research/page.js'),
     },

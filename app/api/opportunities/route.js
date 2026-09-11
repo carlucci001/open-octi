@@ -1,17 +1,30 @@
 import { NextResponse } from 'next/server'
 import { loadAll, create, update, remove, removeMany, findById, logActivity } from '@/lib/entityStore'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
+import { readData } from '@/lib/dataStore'
+import { isComplimentaryLease } from '@/lib/portal-provisioning'
+import { isOpenOcti } from '@/lib/edition'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // Read-model fields attached by enrichWithNames(). They describe linked
 // records and must never be written back onto the opportunity itself.
-const DERIVED_CONTACT_FIELDS = ['contactName', 'contactTitle', 'contactPhone', 'contactEmail']
+const DERIVED_CONTACT_FIELDS = ['contactName', 'contactTitle', 'contactPhone', 'contactEmail', 'accountPortalStatus', 'accountPortalComplimentary', 'accountLoginReady']
 
 function enrichWithNames(opps) {
   const accounts = loadAll('accounts')
   const accountsById = new Map(accounts.map(a => [a.id, a]))
+  const leases = isOpenOcti() ? [] : (readData('leases.json') || {}).leases || []
+  const activeByAccount = new Map()
+  for (const lease of leases) {
+    if (lease.status === 'active' && (!activeByAccount.has(lease.clientAccountId) || lease.portalAccess !== 'disabled')) activeByAccount.set(lease.clientAccountId, lease)
+  }
+  const emailCounts = new Map()
+  for (const account of accounts) {
+    const email = String(account.email || '').trim().toLowerCase()
+    if (email) emailCounts.set(email, (emailCounts.get(email) || 0) + 1)
+  }
   // The person behind the deal. Qualifying a lead creates a Contact and
   // stores only its id on the opportunity; without the name, phone and
   // email in hand the deal cannot be worked from the pipeline.
@@ -25,10 +38,16 @@ function enrichWithNames(opps) {
   }
   return opps.map(o => {
     const contact = contactsById.get(o.contactId) || primaryByAccount.get(o.accountId) || null
+    const account = accountsById.get(o.accountId)
+    const lease = activeByAccount.get(o.accountId)
+    const email = String(account?.email || '').trim().toLowerCase()
     return {
       ...o,
       accountName: accountsById.get(o.accountId)?.name || '(no account)',
       accountType: accountsById.get(o.accountId)?.type || null,
+      accountPortalStatus: lease ? lease.portalAccess === 'disabled' ? 'disabled' : 'active' : 'none',
+      accountPortalComplimentary: lease ? isComplimentaryLease(lease) : false,
+      accountLoginReady: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && emailCounts.get(email) === 1,
       contactName: contact?.name || '',
       contactTitle: contact?.title || '',
       contactPhone: contact?.phone || '',

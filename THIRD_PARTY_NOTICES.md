@@ -53,6 +53,7 @@ This inventory was generated from `npm ls --prod --json --long --all`.
 ## Runtime services
 
 - OpenClaw 2026.6.34 — separate agent-runtime service; see its published package for license terms.
+- Postiz 2.23.0 — separate publishing service with PostgreSQL, Redis, Temporal, and Elasticsearch. Their upstream licenses remain in force; see deploy/postiz/UPSTREAM.md and LICENSE.upstream.txt.
 - DeerFlow — optional, disabled-by-default research profile; distributed separately under its upstream license.
 
 Review the corresponding package or upstream repository for complete license text and attribution requirements.

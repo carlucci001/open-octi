@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, expect, it, vi } from 'vitest'
-const router = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn() }))
-vi.mock('next/navigation', () => ({ useRouter: () => router }))
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+const location = { replace: vi.fn() }
 import FirstRunAccountSetup from '@/app/login/FirstRunAccountSetup'
-beforeEach(() => { vi.clearAllMocks(); global.fetch = vi.fn() })
+beforeEach(() => { vi.clearAllMocks(); global.fetch = vi.fn(); vi.stubGlobal('location', location) })
+afterEach(() => { vi.unstubAllGlobals() })
 function fill(password, confirmPassword = password) {
   fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'demo-owner' } })
   fireEvent.change(screen.getByLabelText(/^Password/), { target: { value: password } })
@@ -26,6 +26,6 @@ it('shows a first-load status after account creation while opening the workspace
   render(<FirstRunAccountSetup local />)
   fill('test-demo-password')
   fireEvent.submit(screen.getByRole('button', { name: 'Create account and get started' }).closest('form'))
-  await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'))
+  await waitFor(() => expect(location.replace).toHaveBeenCalledWith('/'))
   expect(screen.getByRole('status')).toHaveTextContent('first load may take a minute')
 })

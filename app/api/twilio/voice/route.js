@@ -109,7 +109,7 @@ async function handle(request) {
 
   const confName = conf || ('ff-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6))
 
-  const baseUrl = getTunnelBaseUrl() || `${url.protocol}//${url.host}`
+  const baseUrl = process.env.PUBLIC_APP_URL?.trim().replace(/\/$/, '') || getTunnelBaseUrl() || `${url.protocol}//${url.host}`
 
   void dialDestinationIntoConference({ target, confName, baseUrl, requestedFrom: normalize(fromNumber) })
 
