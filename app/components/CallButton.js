@@ -1,7 +1,10 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import { getCallMode, subscribeCallMode, telHref } from '@/lib/callMode'
 
-// In-browser Twilio Voice SDK call button.
+// In-browser Twilio Voice SDK call button — or, when the user's global
+// "My phone (Phone Link)" preference is on, a plain tel: link that hands
+// the number to this computer's OS-level phone handler instead.
 // Audio routes through the user's computer speakers and mic — no external phone.
 // Drop-in replacement for tel: or gvCallUrl anchor tags across the CRM.
 // Conference-based under the hood so Hold/Resume with Twilio's default music works natively.
@@ -20,6 +23,15 @@ export default function CallButton({
   const deviceRef = useRef(null)
   const callRef = useRef(null)
   const confRef = useRef(null)
+
+  // 'twilio' (default) initially so server and first client render agree —
+  // avoids a hydration mismatch. Flipped to the real preference after mount.
+  const [callMode, setCallModeState] = useState('twilio')
+  useEffect(() => {
+    setCallModeState(getCallMode())
+    const unsub = subscribeCallMode((mode) => setCallModeState(mode))
+    return unsub
+  }, [])
 
   const endCall = (e) => {
     if (stopPropagation && e) e.stopPropagation()
@@ -57,6 +69,7 @@ export default function CallButton({
   }
 
   const call = async (e) => {
+    if (callMode === 'device') return // safety guard — device mode never wires up Twilio
     if (stopPropagation && e) e.stopPropagation()
     setErrorMsg('')
     setState('connecting')
@@ -112,6 +125,24 @@ export default function CallButton({
     window.__fccPhoneCallActive = isActive
     return () => { window.__fccPhoneCallActive = false }
   }, [isActive])
+
+  if (callMode === 'device') {
+    // Same outward appearance as the idle Twilio state — same icon/label,
+    // className, style and inline handling — just a tel: link so the OS
+    // (e.g. Windows Phone Link) takes the call instead of the browser.
+    const idleText = customLabelNode ? displayLabel : `${prefix}${displayLabel}`
+    return (
+      <a
+        href={telHref(phone)}
+        onClick={(e) => { if (stopPropagation) e.stopPropagation() }}
+        className={className}
+        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)', ...style }}
+        title="Calls from your phone (Phone Link)"
+      >
+        {idleText}
+      </a>
+    )
+  }
 
   return (
     <span className="inline-flex items-center gap-2" style={{ width: style?.width }}>

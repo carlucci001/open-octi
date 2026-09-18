@@ -62,11 +62,19 @@ function resolveAgent(requestedId) {
   if (requestedId === 'matilda' || requestedId === 'main-default') {
     return { agentId: defaultCfg.agentId, voiceName: defaultCfg.voiceName, name: defaultCfg.name || 'Matilda', firstName: 'Matilda', jobDescription: agentsFile.agents?.matilda?.jobDescription || '' }
   }
-  // Roster lookup by CRM agent id
-  const r = roster[requestedId]
+  // Preserve exact IDs, then accept a unique display name (Doreen -> receptionist).
+  // Voice names and partial matches are not identities and can belong to multiple agents.
+  const name = requestedId.trim().toLowerCase()
+  const matches = Object.entries(roster).filter(([, agent]) =>
+    [agent?.firstName, agent?.name].some(value => value && String(value).trim().toLowerCase() === name)
+  )
+  const rosterId = Object.hasOwn(roster, requestedId)
+    ? requestedId
+    : matches.length === 1 ? matches[0][0] : ''
+  const r = roster[rosterId]
   if (r) {
-    const local = agentsFile.agents?.[requestedId] || {}
-    return { agentId: r.agentId, voiceName: r.voiceName, name: r.name, firstName: r.firstName, jobDescription: local.jobDescription || '' }
+    const local = agentsFile.agents?.[rosterId] || {}
+    return { crmAgentId: rosterId, agentId: r.agentId, voiceName: r.voiceName, name: r.name, firstName: r.firstName, jobDescription: local.jobDescription || '' }
   }
   return null
 }
@@ -77,7 +85,8 @@ export async function GET(request) {
 
   const url = new URL(request.url)
   const requestedId = url.searchParams.get('agent') || ''
-  const preset = PRESET_BY_ID[requestedId]
+  const resolved = resolveAgent(requestedId)
+  const preset = PRESET_BY_ID[requestedId] || PRESET_BY_ID[resolved?.crmAgentId]
   if (preset?.runtimeProvider === 'deerflow-hetzner') {
     return NextResponse.json({
       error: `${preset.name || requestedId} uses DeerFlow with Gemini Chirp and is not routed through ElevenLabs signed URLs.`,
@@ -89,7 +98,6 @@ export async function GET(request) {
   const cred = getCred('elevenlabs') || getCred('eleven')
   if (!cred?.key) return NextResponse.json({ error: 'No ElevenLabs API key in vault' }, { status: 400 })
 
-  const resolved = resolveAgent(requestedId)
   if (!resolved) return NextResponse.json({ error: `Unknown voice agent: ${requestedId}` }, { status: 404 })
   if (!resolved.agentId) return NextResponse.json({ error: 'No voice-agent.json — run the agent setup first' }, { status: 400 })
 

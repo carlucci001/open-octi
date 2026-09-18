@@ -351,6 +351,7 @@ function matchesAutomation(automation, query) {
 
 export default function AutomationsManager() {
   const [list, setList] = useState([])
+  const [outreachMaxStep, setOutreachMaxStep] = useState(null)
   const [loading, setLoading] = useState(true)
   const [scopeFilter, setScopeFilter] = useState('all')
   const [query, setQuery] = useState('')
@@ -371,6 +372,7 @@ export default function AutomationsManager() {
       const r = await fetch('/api/automations', { cache: 'no-store' }).then(r => r.json())
       if (!r.ok) throw new Error(r.error || 'Load failed')
       setList(r.automations || [])
+      setOutreachMaxStep(r.outreachMaxStep ?? null)
     } catch (e) { flash(e.message, 'err') } finally { setLoading(false) }
   }, [flash])
 
@@ -548,6 +550,7 @@ export default function AutomationsManager() {
         <>
         {viewMode === 'list' ? (
           <AutomationList
+            outreachMaxStep={outreachMaxStep}
             automations={paginated}
             runningIds={runningIds}
             selectedAutomations={selectedAutomations}
@@ -562,6 +565,7 @@ export default function AutomationsManager() {
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
             {paginated.map(a => (
               <AutomationCard key={a.id} a={a}
+                outreachMaxStep={outreachMaxStep}
                 compact={false} running={runningIds.includes(a.id)}
                 checked={selectedAutomations.has(a.id)}
                 onCheck={() => setSelectedAutomations(s => { const n = new Set(s); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n })}
@@ -743,7 +747,12 @@ function AutomationProviderMark({ provider, compact = false }) {
   )
 }
 
-function AutomationList({ automations, runningIds, selectedAutomations, onCheck, onToggle, onRun, onClone, onEdit, onDelete }) {
+function OutreachFollowUp({ automation, maxStep }) {
+  if (automation.templateId !== 'outreach-sequence-v1' || maxStep === null) return null
+  return <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Follow-up: {maxStep >= 2 ? 'on' : 'off'} (max step {maxStep})</div>
+}
+
+function AutomationList({ automations, outreachMaxStep, runningIds, selectedAutomations, onCheck, onToggle, onRun, onClone, onEdit, onDelete }) {
   return (
     <div className="automation-list-shell" role="region" aria-label="Automation list">
       <div className="automation-list-grid automation-list-head" role="row">
@@ -784,11 +793,12 @@ function AutomationList({ automations, runningIds, selectedAutomations, onCheck,
                     {running && <RunSignal compact />}
                   </div>
                   {a.description && <div className="automation-list-description">{a.description}</div>}
+                  <OutreachFollowUp automation={a} maxStep={outreachMaxStep} />
                 </div>
               </div>
               <div><span style={a.scope === 'client' ? scopeClient : scopeInhouse}>{a.scope === 'client' ? (a.clientName || 'Client') : 'In-house'}</span></div>
               <div>
-                <button onClick={() => onToggle(a)} className="automation-list-status" style={{ color: a.enabled ? 'var(--accent)' : 'var(--text-muted)' }}>
+                <button onClick={() => onToggle(a)} aria-label={a.templateId === 'outreach-sequence-v1' ? 'Pause outreach' : undefined} role={a.templateId === 'outreach-sequence-v1' ? 'switch' : undefined} aria-checked={a.templateId === 'outreach-sequence-v1' ? !a.enabled : undefined} className="automation-list-status" style={{ color: a.enabled ? 'var(--accent)' : 'var(--text-muted)' }}>
                   <span aria-hidden="true" className={a.enabled ? 'is-enabled' : ''} />
                   {a.enabled ? 'Active' : 'Paused'}
                 </button>
@@ -817,7 +827,7 @@ function AutomationList({ automations, runningIds, selectedAutomations, onCheck,
   )
 }
 
-function AutomationCard({ a, compact = false, running = false, checked = false, onCheck, onToggle, onRun, onClone, onEdit, onDelete }) {
+function AutomationCard({ a, outreachMaxStep = null, compact = false, running = false, checked = false, onCheck, onToggle, onRun, onClone, onEdit, onDelete }) {
   const trig = TRIGGERS.find(t => t.id === a.trigger?.type)
   const channels = a.delivery?.channels?.length ? a.delivery.channels.join(', ') : (a.delivery?.method || 'Not set')
   const latestRun = Array.isArray(a.runHistory) && a.runHistory.length ? a.runHistory[0] : null
@@ -896,12 +906,13 @@ function AutomationCard({ a, compact = false, running = false, checked = false, 
         </div>
       )}
 
+      <OutreachFollowUp automation={a} maxStep={outreachMaxStep} />
       <div className={`automation-card-footer flex items-center justify-between gap-2 ${compact ? '' : 'pt-1'}`} style={{ borderTop: compact ? 'none' : '1px solid var(--border)' }}>
-        <button onClick={onToggle} className="flex items-center gap-1.5" style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px 0' }}>
+        <button onClick={onToggle} aria-label={a.templateId === 'outreach-sequence-v1' ? 'Pause outreach' : undefined} role={a.templateId === 'outreach-sequence-v1' ? 'switch' : undefined} aria-checked={a.templateId === 'outreach-sequence-v1' ? !a.enabled : undefined} className="flex items-center gap-1.5" style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px 0' }}>
           <span style={{ width: 30, height: 17, borderRadius: 9, background: a.enabled ? 'var(--accent)' : 'var(--surface3, var(--border))', position: 'relative', transition: 'background .15s', display: 'inline-block' }}>
             <span style={{ position: 'absolute', top: 2, left: a.enabled ? 15 : 2, width: 13, height: 13, borderRadius: 7, background: '#fff', transition: 'left .15s' }} />
           </span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: a.enabled ? 'var(--accent)' : 'var(--text-muted)' }}>{a.enabled ? 'Active' : 'Paused'}</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: a.enabled ? 'var(--accent)' : 'var(--text-muted)' }}>{a.templateId === 'outreach-sequence-v1' ? (a.enabled ? 'Pause outreach' : 'Outreach paused') : a.enabled ? 'Active' : 'Paused'}</span>
         </button>
         <div className="flex gap-1.5">
           <button type="button" onClick={onRun} title="Run guarded proof" aria-label={`Run ${a.name}`} style={btnIconSm}>

@@ -1,5 +1,5 @@
 // Minimal service worker: installability without stale API/login responses.
-const FCC_SW_VERSION = '2026-09-09-campaign-drawers'
+const FCC_SW_VERSION = '2026-09-17-agent-approvals-v1'
 
 async function clearOldCaches() {
   if (!self.caches) return

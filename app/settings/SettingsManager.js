@@ -15,6 +15,7 @@ import { isOpenOcti } from '@/lib/edition'
 import OpenOctiModelsSettings from './OpenOctiModelsSettings'
 import IntegrationsSettings from './IntegrationsSettings'
 import MonitoringSettings from './MonitoringSettings'
+import AgentApprovalsSettings from './AgentApprovalsSettings'
 import SupportAccessSettings from './SupportAccessSettings'
 import StripeSettings from './StripeSettings'
 
@@ -25,6 +26,7 @@ const SUB_TABS = [
   ...(OPENOCTI ? [{ id: 'stripe', label: 'Stripe' }] : []),
   { id: 'integrations', label: 'Integrations' },
   { id: 'monitoring', label: 'Monitoring' },
+  { id: 'agent-approvals', label: 'Agent Approvals' },
   ...(!OPENOCTI ? [{ id: 'support-access', label: 'Support Access' }] : []),
   { id: 'components', label: 'Screens' },
   { id: 'control-services', label: OPENOCTI ? 'Services' : 'Control Services' },
@@ -115,6 +117,7 @@ export default function SettingsManager({ initialSub = 'control-services' }) {
       {sub === 'components' && <ComponentSettingsHub />}
       {sub === 'integrations' && <IntegrationsSettings />}
       {sub === 'monitoring' && <MonitoringSettings />}
+      {sub === 'agent-approvals' && <AgentApprovalsSettings />}
       {!OPENOCTI && sub === 'support-access' && me?.role === 'owner' && <SupportAccessSettings />}
       {sub === 'stripe' && OPENOCTI && me?.role === 'owner' && <StripeSettings />}
       {sub === 'models' && me && ['owner', 'admin'].includes(me.role) && <OpenOctiModelsSettings />}

@@ -1222,8 +1222,8 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
         <div className="rounded-lg p-4 mb-4" role="status" style={{ background: 'var(--amber-soft)', border: '1px solid var(--amber)', color: 'var(--text)' }}>
           <div className="font-semibold">E-signature is not configured</div>
           <div className="text-sm mt-1">{isOpenOcti()
-            ? <OpenOctiConfigurationLinks needs={['SIGNING_PUBLIC_URL', 'RESEND_API_KEY']} prefix="Open settings for" />
-            : <>Add <code>SIGNING_PUBLIC_URL</code> and <code>RESEND_API_KEY</code> to enable e-signature.</>}</div>
+            ? <OpenOctiConfigurationLinks needs={eSignConfig.missing} prefix="Open settings for" />
+            : eSignConfig.message}</div>
         </div>
       )}
 

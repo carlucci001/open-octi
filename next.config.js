@@ -52,6 +52,16 @@ const closedModuleRequests = [
   '@/lib/VideoHub/webhook',
   '@/lib/ContentStudio-web-agent',
   '@/lib/newsroom-director',
+  // Portal helpers for the closed provisioning capability (WO-9): the shared
+  // agent execute route imports them, so OpenOcti builds resolve them to the stub.
+  '@/lib/client-onboarding',
+  '@/lib/portal-cheryl-usage',
+  // New-business outreach engine: not reviewed for public release, so shared
+  // automation files resolve it to the stub in OpenOcti builds.
+  './outreach-runner',
+  '@/lib/outreach-runner',
+  './outreach-store',
+  '@/lib/outreach-store',
 ]
 
 // Build stamp shown in the sidebar footer as "Version 2.1.<build> · <commit>".

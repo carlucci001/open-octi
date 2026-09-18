@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Maps → Command Center — Settings</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 24px;
+      width: 380px;
+    }
+    h1 {
+      font-size: 16px;
+      margin: 0 0 4px;
+      color: #f8fafc;
+    }
+    p.sub {
+      color: #94a3b8;
+      font-size: 12px;
+      margin: 0 0 18px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 14px 0 4px;
+      color: #cbd5e1;
+    }
+    select, input[type="text"], input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f1f5f9;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 13px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    button {
+      flex: 1;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 9px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #334155;
+    }
+    button:hover {
+      opacity: 0.92;
+    }
+    #status {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #cbd5e1;
+      min-height: 16px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <h1>Maps → Command Center</h1>
+  <p class="sub">Configure where leads sent from Google Maps go.</p>
+
+  <label for="baseUrlSelect">CRM environment</label>
+  <select id="baseUrlSelect">
+    <option value="http://localhost:3000">Local (localhost:3000)</option>
+    <option value="custom">Custom URL…</option>
+  </select>
+
+  <div id="customUrlWrap" style="display:none;">
+    <label for="customUrl">Custom base URL</label>
+    <input type="text" id="customUrl" placeholder="https://example.com" />
+  </div>
+
+  <label for="token">API token (optional)</label>
+  <input type="password" id="token" placeholder="Only needed if session cookie auth isn't available" />
+
+  <div class="row">
+    <button id="saveBtn">Save</button>
+    <button id="testBtn" class="secondary">Test connection</button>
+  </div>
+
+  <div id="status"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>

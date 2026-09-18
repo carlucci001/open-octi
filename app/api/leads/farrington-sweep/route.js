@@ -7,6 +7,8 @@ import { resolveLeadListForDestination } from '@/lib/lead-list-routing'
 import { loadLeadLists } from '@/lib/leadLists'
 import { requireCrmWrite } from '@/lib/permissions'
 import { resolveLeadSources } from '@/lib/lead-signals/resolver'
+import { getAutomation, recordScheduledRun } from '@/lib/automations-store'
+import { NEW_BUSINESS_AUTOMATION_ID } from '@/lib/new-business-daily'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -43,6 +45,9 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
   }
 
+  const automation = body.automationId === NEW_BUSINESS_AUTOMATION_ID ? getAutomation(NEW_BUSINESS_AUTOMATION_ID) : null
+  if (automation) body = { ...body, ...automation.dataSource }
+
   const category = String(body.category || body.verticalId || '').trim()
   if (!category) {
     return NextResponse.json({ ok: false, error: 'Category is required' }, { status: 400 })
@@ -61,11 +66,11 @@ export async function POST(request) {
     ),
   }
   const destination = String(body.spec?.destination || body.form?.destination || 'farrington_dev').trim()
-  const provenOnly = body.provenOnly === true
+  const provenOnly = body.provenOnly === true || category === 'new-businesses'
   let provenResolution = null
   if (provenOnly) {
     const requestedSourceIds = [...new Set((Array.isArray(body.provenSourceIds) ? body.provenSourceIds : []).map(String).filter(Boolean))]
-    if (!requestedSourceIds.length) {
+    if (!requestedSourceIds.length && category !== 'new-businesses') {
       return NextResponse.json({ ok: false, error: 'At least one proven source is required' }, { status: 400 })
     }
     provenResolution = resolveLeadSources({ leadType: category, location: body.location || 'United States' })
@@ -74,7 +79,7 @@ export async function POST(request) {
     if (rejected.length) {
       return NextResponse.json({ ok: false, error: `Source is not proven for this lead type and jurisdiction: ${rejected.join(', ')}` }, { status: 400 })
     }
-    provenResolution.sources = requestedSourceIds.map(id => allowed.get(id))
+    if (requestedSourceIds.length) provenResolution.sources = requestedSourceIds.map(id => allowed.get(id))
   }
   const selectedLeadList = resolveLeadListForDestination({
     destination,
@@ -94,6 +99,8 @@ export async function POST(request) {
     leadListId: selectedLeadList?.id || undefined,
     spec: body.spec,
     signalOptions: body.signalOptions && typeof body.signalOptions === 'object' ? body.signalOptions : body.form?.signalOptions,
+    ...(body.signalSince ? { signalSince: body.signalSince } : {}),
+    ...(provenOnly ? { provenOnly: true } : {}),
     // Per-run vendor choice: { provider: 'apollo' } sources named decision-makers
     // from Apollo instead of businesses from Google Places. Omitted, the
     // env default (apify/Places) applies exactly as before.
@@ -111,7 +118,7 @@ export async function POST(request) {
       location: dataSource.location,
       limit: dataSource.limit,
       campaign: body.campaign || null,
-      provider: dataSource.vendor?.provider || 'apify',
+      provider: category === 'new-businesses' ? 'public-record' : dataSource.vendor?.provider || 'apify',
       maxPaidBatches: dataSource.vendor?.maxPaidBatches || 1,
       clientRequestId: clientRequestId || null,
       // Replay metadata: the exact Leads Lab form state behind this run, so
@@ -132,6 +139,7 @@ export async function POST(request) {
   // farrington-crm.service), so the promise outlives the response; every
   // outcome, including a throw, lands in the run record.
   runFarringtonLeadSweep({
+    ...(automation || {}),
     dataSource,
     delivery: { recipients: body.recipientEmail ? [body.recipientEmail] : [] },
   }, {
@@ -144,11 +152,13 @@ export async function POST(request) {
     onProgress: update => reportSweepProgress(run.id, update),
   })
     .then(result => {
+      if (automation) recordScheduledRun(automation.id, { startedAt: run.createdAt, ok: true, summary: `${result.created} new business owners created.` })
       const finished = finishSweepRun(run.id, { status: 'completed', result })
       console.log(`[leads-lab] completed request=${clientRequestId || 'none'} run=${run.id} kind=vertical created=${Number(result?.created || 0)} returned=${Number(result?.returned || 0)} persisted=${Boolean(finished)}`)
       return finished
     })
     .catch(err => {
+      if (automation) recordScheduledRun(automation.id, { startedAt: run.createdAt, ok: false, error: err?.message || 'Lead sweep failed' })
       const message = err?.message || 'Lead sweep failed'
       const finished = finishSweepRun(run.id, { status: 'failed', error: message })
       console.error(`[leads-lab] failed request=${clientRequestId || 'none'} run=${run.id} kind=vertical persisted=${Boolean(finished)} error=${message}`)

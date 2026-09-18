@@ -1,0 +1,109 @@
+#maps-to-cc-panel {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  width: 280px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 13px;
+  padding: 12px;
+  border: 1px solid #1e293b;
+}
+
+#maps-to-cc-panel * {
+  box-sizing: border-box;
+}
+
+#maps-to-cc-panel .mcc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #f8fafc;
+}
+
+#maps-to-cc-panel .mcc-header .mcc-badge {
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+#maps-to-cc-panel .mcc-close {
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+#maps-to-cc-panel .mcc-close:hover {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+#maps-to-cc-panel button.mcc-btn {
+  width: 100%;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+#maps-to-cc-panel button.mcc-btn:hover {
+  background: #1d4ed8;
+}
+#maps-to-cc-panel button.mcc-btn:disabled {
+  background: #334155;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+#maps-to-cc-panel button.mcc-btn.mcc-secondary {
+  background: #334155;
+}
+#maps-to-cc-panel button.mcc-btn.mcc-secondary:hover {
+  background: #475569;
+}
+
+#maps-to-cc-panel .mcc-status {
+  margin-top: 6px;
+  min-height: 16px;
+  line-height: 1.4;
+  color: #cbd5e1;
+  word-break: break-word;
+}
+
+#maps-to-cc-panel .mcc-status a {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+#maps-to-cc-panel .mcc-counter {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #1e293b;
+  color: #94a3b8;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+}
+
+#maps-to-cc-panel .mcc-hint {
+  color: #64748b;
+  font-size: 10.5px;
+  margin-top: 4px;
+}

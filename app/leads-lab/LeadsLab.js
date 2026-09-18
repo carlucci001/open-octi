@@ -6,11 +6,13 @@ import { formatVerticalSweepResult } from '@/lib/lead-sweep-outcome'
 import { DEFAULT_APOLLO_PAID_SEARCHES, buildLeadVendorRequest, normalizeApolloPaidSearches, paidSearchLimitFromConfig } from '@/lib/lead-paid-search-limit'
 import PageHeader from '../components/PageHeader'
 import ThemedSelect from '../components/ThemedSelect'
-import { FlaskConical } from 'lucide-react'
+import { FlaskConical, Play } from 'lucide-react'
+import { NEW_BUSINESS_AUTOMATION_ID, NEW_BUSINESS_LIST_ID } from '@/lib/new-business-daily'
 import { buildFarringtonLeadQuery, FARRINGTON_LEAD_VERTICALS } from '@/lib/farrington-lead-verticals'
 import { useCachedData } from '@/lib/useCachedData'
 import { defaultLeadListForDestination, leadListBelongsToDestination } from '@/lib/lead-list-routing'
 import LeadSourcesPanel from './LeadSourcesPanel'
+import OutreachPanel from './OutreachPanel'
 import CampaignSignalsPanel from './CampaignSignalsPanel'
 import { isOpenOcti } from '@/lib/edition'
 
@@ -273,11 +275,13 @@ export default function LeadsLab({ onNavigate }) {
   const leadCategoriesQ = useCachedData('/api/lead-categories', { extract: j => j?.leadCategories || [] })
   const presetsQ = useCachedData('/api/lead-run-presets', { extract: j => j || {} })
   const sourcesQ = useCachedData('/api/lead-signals/sources', { extract: j => j?.sources || [] })
+  const automationsQ = useCachedData('/api/automations', { extract: j => j?.automations || [] })
+  const dailyAutomation = automationsQ.data?.find(item => item.id === NEW_BUSINESS_AUTOMATION_ID)
   const leadLists = leadListsQ.data || []
   const users = usersQ.data || []
   const customCategories = leadCategoriesQ.data || []
   const [mode, setMode] = useState('organization')
-  const [category, setCategory] = useState(FARRINGTON_LEAD_VERTICALS[0]?.id || 'home-services')
+  const [category, setCategory] = useState('home-services')
   const [count, setCount] = useState(10)
   const [location, setLocation] = useState('United States')
   const [destination, setDestination] = useState(DESTINATIONS[0].id)
@@ -354,8 +358,9 @@ export default function LeadsLab({ onNavigate }) {
   const resolvedSourcesQ = useCachedData(`/api/lead-signals/resolve?type=${encodeURIComponent(vertical.id || vertical.label || '')}&location=${encodeURIComponent(runLocation)}`, { extract: j => j || { sources: [] } })
   const organizationCampaign = ORGANIZATION_CAMPAIGNS.find(c => c.id === organizationPreset) || ORGANIZATION_CAMPAIGNS[0]
   const requestedLeadCount = Math.max(1, Number(count) || 10)
+  const newBusinessMode = mode === 'vertical' && vertical.id === 'new-businesses'
   const hasProvenPublicRecords = (sourcesQ.data || []).some(source => source.proving?.status === 'proven')
-  const activeSourceTools = mode === 'organization' ? ORGANIZATION_SOURCE_TOOLS : VERTICAL_SOURCE_TOOLS.map(tool => tool.id === 'public-records' ? { ...tool, status: hasProvenPublicRecords ? 'active' : 'queued' } : tool)
+  const activeSourceTools = mode === 'organization' ? ORGANIZATION_SOURCE_TOOLS : newBusinessMode ? [{ id: 'public-records', label: 'Official business records', status: 'active' }, { id: 'crm-suppression', label: 'CRM suppression list', status: 'active' }] : VERTICAL_SOURCE_TOOLS.map(tool => tool.id === 'public-records' ? { ...tool, status: hasProvenPublicRecords ? 'active' : 'queued' } : tool)
   const selectedDestination = DESTINATIONS.find(d => d.id === destination) || DESTINATIONS[0]
   const destinationBrandContext = CRM_DESTINATION_BRANDS.has(destination) ? destination : organizationCampaign.brandContext
   const destinationCampaignType = campaignTypeForDestination(destinationBrandContext, organizationCampaign.campaignType)
@@ -817,6 +822,7 @@ export default function LeadsLab({ onNavigate }) {
           leadListId: selectedLeadList?.id || undefined,
           signalOptions: contractorSignalOptions || undefined,
           vendor: buildLeadVendorRequest(leadSource, maxPaidBatches),
+          ...(newBusinessMode ? { provenOnly: true, signalSince: '-3d', campaign: 'fd-new-business-daily', leadListId: selectedLeadList?.id || NEW_BUSINESS_LIST_ID } : {}),
           spec: {
             destination,
             sourceTool,
@@ -838,6 +844,19 @@ export default function LeadsLab({ onNavigate }) {
     }
   }
 
+  async function runDailySweep() {
+    if (running || !dailyAutomation) return
+    setRunning(true)
+    try {
+      const data = await startTrackedLeadRun({ url: '/api/leads/farrington-sweep', payload: { ...dailyAutomation.dataSource, automationId: dailyAutomation.id } })
+      setActiveRunId(data.run.id)
+      setResult({ kind: 'working', text: data.run.phaseLabel || 'Starting daily sweep...', runId: data.run.id })
+    } catch (error) {
+      setResult({ kind: 'error', text: error.message || 'Daily sweep failed' })
+      setRunning(false)
+    }
+  }
+
   const fieldStyle = {
     width: '100%',
     background: 'var(--surface2)',
@@ -850,7 +869,7 @@ export default function LeadsLab({ onNavigate }) {
   }
   const runSummary = mode === 'organization'
     ? `${requestedLeadCount} requested | ${selectedLeadList?.name || 'No lead list'} | ${organizationCampaign.label} | ${organizationScope}`
-    : `${count} leads | ${selectedLeadList?.name || 'No lead list'} | ${vertical.label} | ${location} | ${DESTINATIONS.find(d => d.id === destination)?.label}${leadSource === 'apollo' ? ` | up to ${maxPaidBatches} paid ${maxPaidBatches === 1 ? 'search' : 'searches'}` : ''}`
+    : `${count} ${newBusinessMode ? 'per source' : 'leads'} | ${selectedLeadList?.name || 'No lead list'} | ${vertical.label} | ${location} | ${DESTINATIONS.find(d => d.id === destination)?.label}${!newBusinessMode && leadSource === 'apollo' ? ` | up to ${maxPaidBatches} paid ${maxPaidBatches === 1 ? 'search' : 'searches'}` : ''}`
   const runDisabled = running
     || (mode === 'organization' && !selectedLeadList)
     || (mode === 'vertical' && vertical.custom && !trimmedDraftLabel)
@@ -863,6 +882,12 @@ export default function LeadsLab({ onNavigate }) {
         subtitle="Build lead specs, test categories, control quality rules, and promote winners into the right lead workflows."
         actions={<button className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'var(--surface2)', color: 'var(--accent)', border: '1px solid var(--border)' }} onClick={() => onNavigate?.('leads')}>Open Leads</button>}
       />
+
+      {!OPENOCTI && <OutreachPanel />}
+      {!OPENOCTI && dailyAutomation && <section aria-label="New business daily automation" className="rounded-lg p-4 mb-4 flex items-center justify-between gap-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div><div className="text-sm font-semibold">{dailyAutomation.name}</div><div className="text-xs" style={{ color: 'var(--text-muted)' }}>{dailyAutomation.enabled ? 'Daily at 8 AM Eastern' : 'Schedule paused'} · Proven states nationwide · {dailyAutomation.dataSource.limit} per source · New business owners list</div></div>
+        <button type="button" title="Run today's sweep now" aria-label="Run today's sweep now" disabled={running} onClick={runDailySweep} className="h-9 w-9 rounded-lg inline-flex items-center justify-center" style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--accent)' }}><Play size={16} /></button>
+      </section>}
 
       <div className="flex gap-2 mb-4" role="tablist" aria-label="Leads Lab workspace">
         {[['build', 'Build run'], ['sources', 'Sources']].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={workspaceTab === id} onClick={() => setWorkspaceTab(id)} className="rounded-lg px-3 py-2 text-xs font-semibold" style={{ background: workspaceTab === id ? 'var(--accent-soft)' : 'var(--surface2)', border: `1px solid ${workspaceTab === id ? 'var(--accent)' : 'var(--border)'}`, color: workspaceTab === id ? 'var(--accent)' : 'var(--text-muted)' }}>{label}</button>)}
@@ -891,7 +916,7 @@ export default function LeadsLab({ onNavigate }) {
               </ThemedSelect>
             ) : (
               <ThemedSelect style={{ ...fieldStyle, marginTop: 6 }} value={category} onChange={e => setCategory(e.target.value)}>
-                <optgroup label="Top 10 categories">
+                <optgroup label="Business categories">
                   {FARRINGTON_LEAD_VERTICALS.map(v => <option key={v.id} value={v.id}>{v.rank}. {v.label}</option>)}
                 </optgroup>
                 {customCategories.length > 0 && (
@@ -905,7 +930,7 @@ export default function LeadsLab({ onNavigate }) {
               </ThemedSelect>
             )}
           </label>
-          <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>{mode === 'organization' ? 'Lead Count' : 'Count'}
+          <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>{mode === 'organization' ? 'Lead Count' : newBusinessMode ? 'Count per source' : 'Count'}
             <ThemedSelect style={{ ...fieldStyle, marginTop: 6 }} value={count} onChange={e => setCount(Number(e.target.value))}>
               {[5, 10, 15, 25].map(value => <option key={value} value={value}>{value}</option>)}
             </ThemedSelect>
@@ -919,19 +944,19 @@ export default function LeadsLab({ onNavigate }) {
           )}
           <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>{mode === 'organization' ? 'Area' : 'Geography'}
             <input style={{ ...fieldStyle, marginTop: 6 }} value={location} onChange={e => setLocation(e.target.value)} placeholder={mode === 'organization' ? 'Southeast, North Carolina, or United States' : 'United States'} />
-            {mode === 'vertical' && leadSource === 'apollo' && (
+            {mode === 'vertical' && !newBusinessMode && leadSource === 'apollo' && (
               <span className="block mt-1 font-normal">City + state usually keeps this to one paid search.</span>
             )}
           </label>
           {mode === 'vertical' && (
             <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>What comes back
-              <ThemedSelect style={{ ...fieldStyle, marginTop: 6 }} value={leadSource} onChange={e => setLeadSource(e.target.value)}>
+              {newBusinessMode ? <div className="mt-2 text-sm font-normal" style={{ color: 'var(--text)' }}>Official business records</div> : <ThemedSelect style={{ ...fieldStyle, marginTop: 6 }} value={leadSource} onChange={e => setLeadSource(e.target.value)}>
                 <option value="apify">Businesses — Google Maps (no owner name or email)</option>
                 <option value="apollo">Decision-makers — name, title, work email</option>
-              </ThemedSelect>
+              </ThemedSelect>}
             </label>
           )}
-          {mode === 'vertical' && leadSource === 'apollo' && (
+          {mode === 'vertical' && !newBusinessMode && leadSource === 'apollo' && (
             <label className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Maximum paid searches
               <ThemedSelect style={{ ...fieldStyle, marginTop: 6 }} value={maxPaidBatches} onChange={e => setMaxPaidBatches(normalizeApolloPaidSearches(e.target.value))}>
                 <option value={1}>1 — lowest cost</option>
@@ -1076,7 +1101,7 @@ export default function LeadsLab({ onNavigate }) {
             <div className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
               {(resolvedSourcesQ.data?.sources || []).length
                 ? resolvedSourcesQ.data.sources.map(source => `${source.name} — ${source.reason}`).join(' · ')
-                : 'No proven public-record source matches this lead type and location yet. Prove a source in the Sources tab; Places remains the shortfall finder.'}
+                : newBusinessMode ? 'No proven business source matches this location yet. Prove a source in the Sources tab.' : 'No proven public-record source matches this lead type and location yet. Prove a source in the Sources tab; Places remains the shortfall finder.'}
             </div>
           </div>
         )}
@@ -1141,7 +1166,7 @@ export default function LeadsLab({ onNavigate }) {
           <div className="text-xs mt-1 mb-3" style={{ color: 'var(--text-muted)' }}>{runSummary}</div>
           <button type="button" className="w-full px-4 py-3 rounded-lg text-sm font-semibold" disabled={runDisabled} onClick={runSweep}
             style={{ background: runDisabled ? 'var(--surface2)' : 'var(--accent)', color: runDisabled ? 'var(--text-muted)' : 'var(--accent-text)', border: '1px solid var(--border)', cursor: running ? 'wait' : runDisabled ? 'default' : 'pointer' }}>
-            {running ? (mode === 'organization' ? 'Generating...' : leadSource === 'apollo' ? 'Finding decision-makers...' : 'Getting businesses...') : mode === 'organization' ? `Generate ${requestedLeadCount} leads` : leadSource === 'apollo' ? `Find ${count} decision-makers` : `Get ${count} businesses`}
+            {running ? (mode === 'organization' ? 'Generating...' : !newBusinessMode && leadSource === 'apollo' ? 'Finding decision-makers...' : 'Getting businesses...') : mode === 'organization' ? `Generate ${requestedLeadCount} leads` : newBusinessMode ? `Get ${count} businesses per source` : leadSource === 'apollo' ? `Find ${count} decision-makers` : `Get ${count} businesses`}
           </button>
           {result && (
             <div aria-live="polite" role="status" className="mt-3 rounded-lg p-3 text-xs" style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: result.kind === 'error' ? 'var(--red)' : result.kind === 'success' ? 'var(--green)' : 'var(--text-muted)' }}>

@@ -1,5 +1,66 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { getCallMode, setCallMode } from '@/lib/callMode'
+
+function OutboundCallingSettings() {
+  const [mode, setMode] = useState('twilio')
+
+  useEffect(() => { setMode(getCallMode()) }, [])
+
+  const choose = (m) => {
+    setCallMode(m)
+    setMode(m)
+  }
+
+  const OPTIONS = [
+    {
+      id: 'twilio',
+      title: 'Twilio (browser)',
+      desc: 'Calls dial out over Twilio and the audio runs through this computer’s mic and speakers.',
+    },
+    {
+      id: 'device',
+      title: 'My phone (Phone Link)',
+      desc: 'Hands the number to this computer’s phone handler — on Windows, Phone Link dials from your cell.',
+    },
+  ]
+
+  return (
+    <div className="rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: 20, marginBottom: 20 }}>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+        Outbound calling
+      </div>
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+        {OPTIONS.map(opt => {
+          const active = mode === opt.id
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => choose(opt.id)}
+              className="text-left rounded-xl transition"
+              style={{
+                padding: 16,
+                background: active ? 'var(--accent-soft)' : 'var(--surface2)',
+                border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                cursor: 'pointer',
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{opt.title}</div>
+                {active && <span style={{ color: 'var(--accent)', fontSize: 18, lineHeight: 1 }}>✓</span>}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>{opt.desc}</div>
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12 }}>
+        This setting is saved on this computer, because it depends on the phone app installed here.
+      </div>
+    </div>
+  )
+}
 
 export default function VoiceSettings() {
   const [loading, setLoading] = useState(true)
@@ -63,8 +124,18 @@ export default function VoiceSettings() {
     }
   }
 
-  if (loading) return <div style={{ color: 'var(--text-muted)', padding: 24 }}>Loading voices…</div>
-  if (error) return <div style={{ color: '#dc2626', padding: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10 }}>{error}</div>
+  if (loading) return (
+    <div>
+      <OutboundCallingSettings />
+      <div style={{ color: 'var(--text-muted)', padding: 24 }}>Loading voices…</div>
+    </div>
+  )
+  if (error) return (
+    <div>
+      <OutboundCallingSettings />
+      <div style={{ color: '#dc2626', padding: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10 }}>{error}</div>
+    </div>
+  )
 
   const q = filter.trim().toLowerCase()
   const filtered = q
@@ -74,6 +145,7 @@ export default function VoiceSettings() {
 
   return (
     <div>
+      <OutboundCallingSettings />
       <div className="rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: 20, marginBottom: 20 }}>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
           Current Voice · {agentName}

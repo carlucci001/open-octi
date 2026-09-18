@@ -3,13 +3,17 @@
 // browser UI and voice agents (via webhook tools) share it.
 //
 // State shape:
-//   { accountId, accountName, sessionStartedAt, accumulatedMs, runStartedAt | null,
-//     status: 'idle' | 'running' | 'paused', note: string }
+//   { accountId, accountName, projectId, projectName, sessionStartedAt, accumulatedMs,
+//     runStartedAt | null, status: 'idle' | 'running' | 'paused', note: string }
+//
+// projectId/projectName are optional — a timer state written before this field existed
+// (an in-flight session across a deploy) simply has them undefined, which every read
+// below treats the same as "no project".
 //
 // Endpoints:
 //   GET  /api/timer            → current state
 //   POST /api/timer            → { action: 'start' | 'pause' | 'resume' | 'stop' | 'note',
-//                                  clientName?, accountId?, note? }
+//                                  clientName?, accountId?, projectId?, projectName?, note? }
 //
 // On stop, we log through the shared time-tracking helper so the activity is
 // recorded and the account's trackedSeconds is bumped.
@@ -18,11 +22,12 @@ import { NextResponse } from 'next/server'
 import { readData, writeData } from '@/lib/dataStore'
 import { logTimeTrackingSession } from '@/lib/timeTracking'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
+import { configuredMachineSecret, machineSecretMatches } from '@/lib/machine-secret'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const DEFAULT_STATE = { accountId: null, accountName: null, sessionStartedAt: null, accumulatedMs: 0, runStartedAt: null, status: 'idle', note: '' }
+const DEFAULT_STATE = { accountId: null, accountName: null, projectId: null, projectName: null, sessionStartedAt: null, accumulatedMs: 0, runStartedAt: null, status: 'idle', note: '' }
 
 function loadState() {
   return readData('timer-state.json') || { ...DEFAULT_STATE }
@@ -54,6 +59,32 @@ function findAccount(query) {
   return m || null
 }
 
+// Resolve a project belonging to a specific account, by id or by name. Name matching
+// mirrors findAccount's spirit but stays conservative about ambiguity: an exact
+// (case-insensitive) name match always wins; a partial match is only used when it is
+// the single project it could mean — multiple partial matches are ignored rather than
+// guessed at, so a vague project name just leaves the session unattributed instead of
+// landing on the wrong project.
+function findProjectForAccount(accountId, { id, name } = {}) {
+  if (!accountId) return null
+  const projectsFile = readData('projects.json') || { projects: [] }
+  const list = (projectsFile.projects || []).filter(p => p.accountId === accountId)
+  if (id) {
+    const m = list.find(p => p.id === id)
+    if (m) return m
+  }
+  if (name) {
+    const q = String(name).toLowerCase().trim()
+    if (q) {
+      const exact = list.find(p => (p.name || '').toLowerCase() === q)
+      if (exact) return exact
+      const partial = list.filter(p => (p.name || '').toLowerCase().includes(q))
+      if (partial.length === 1) return partial[0]
+    }
+  }
+  return null
+}
+
 function liveElapsedMs(state) {
   let total = state.accumulatedMs || 0
   if (state.status === 'running' && state.runStartedAt) {
@@ -70,9 +101,25 @@ function fmt(secs) {
   return `${s}s`
 }
 
+
+// Voice agents (ElevenLabs webhook tools) cannot carry a CRM session cookie, so they
+// authenticate with the same machine key /api/agent/execute accepts. Without this the
+// timer is browser-only and every voice timer command fails 401 silently.
+function hasMachineKey(request) {
+  const allowed = [
+    configuredMachineSecret(process.env.AGENT_API_KEY),
+    configuredMachineSecret(process.env.OPENCLAW_API_KEY),
+  ].filter(Boolean)
+  if (!allowed.length) return false
+  const header = request.headers.get('x-agent-key') || request.headers.get('x-api-key')
+  return allowed.some(secret => machineSecretMatches(header, secret))
+}
+
 export async function GET(request) {
-  const { error } = await requireCrmRead(request)
-  if (error) return error
+  if (!hasMachineKey(request)) {
+    const { error } = await requireCrmRead(request)
+    if (error) return error
+  }
   const state = loadState()
   const elapsedMs = liveElapsedMs(state)
   return NextResponse.json({
@@ -84,8 +131,10 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const { error } = await requireCrmWrite(request)
-  if (error) return error
+  if (!hasMachineKey(request)) {
+    const { error } = await requireCrmWrite(request)
+    if (error) return error
+  }
   let body
   try { body = await request.json() } catch { return NextResponse.json({ ok: false, error: 'Bad JSON' }, { status: 400 }) }
   const action = String(body.action || '').toLowerCase()
@@ -109,10 +158,33 @@ export async function POST(request) {
       }, { status: 409 })
     }
 
+    // Pick the project (optional): explicit projectId wins, else lookup by name within
+    // this account's projects. If a hint was given but didn't resolve to anything, drop
+    // it rather than failing the whole start — the account-level timer still works. If
+    // no hint was given and this is a continuation of a running/paused session for the
+    // same account (e.g. a voice "note" or restart before stop), keep whatever project
+    // was already set.
+    const projectIdHint = body.projectId || body.project_id
+    const projectNameHint = body.projectName || body.project_name
+    let project = null
+    if (projectIdHint) project = findProjectForAccount(account.id, { id: projectIdHint })
+    if (!project && projectNameHint) project = findProjectForAccount(account.id, { name: projectNameHint })
+    let projectId = null
+    let projectName = null
+    if (project) {
+      projectId = project.id
+      projectName = project.name || null
+    } else if (!projectIdHint && !projectNameHint && state.status !== 'idle' && state.accountId === account.id) {
+      projectId = state.projectId || null
+      projectName = state.projectName || null
+    }
+
     const now = new Date().toISOString()
     state = {
       accountId: account.id,
       accountName: account.name,
+      projectId,
+      projectName,
       sessionStartedAt: state.sessionStartedAt || now,
       accumulatedMs: state.accumulatedMs || 0,
       runStartedAt: now,
@@ -120,7 +192,7 @@ export async function POST(request) {
       note: body.note || state.note || '',
     }
     saveState(state)
-    return NextResponse.json({ ok: true, state, message: `Timer started for ${account.name}.` })
+    return NextResponse.json({ ok: true, state, message: `Timer started for ${account.name}${projectName ? ` (${projectName})` : ''}.` })
   }
 
   if (action === 'pause') {
@@ -151,6 +223,8 @@ export async function POST(request) {
     const stoppedAt = new Date().toISOString()
     const accountId = state.accountId
     const accountName = state.accountName
+    const projectId = state.projectId || null
+    const projectName = state.projectName || null
     const stopNote = String(body.note || '').trim()
     const note = stopNote || state.note
 
@@ -159,14 +233,14 @@ export async function POST(request) {
 
     let j
     try {
-      j = logTimeTrackingSession({ accountId, startedAt: sessionStartedAt, stoppedAt, durationSeconds, note })
+      j = logTimeTrackingSession({ accountId, projectId, projectName, startedAt: sessionStartedAt, stoppedAt, durationSeconds, note })
     } catch (e) {
       return NextResponse.json({ ok: false, error: `Stop OK but log failed: ${e.message}` }, { status: 502 })
     }
 
     return NextResponse.json({
       ok: true,
-      message: `Logged ${j.sessionLogged.durationHumanReadable} for ${accountName}. Total tracked for them: ${j.account.trackedHumanReadable}.`,
+      message: `Logged ${j.sessionLogged.durationHumanReadable} for ${accountName}${j.sessionLogged.projectName ? ` (${j.sessionLogged.projectName})` : ''}. Total tracked for them: ${j.account.trackedHumanReadable}.`,
       logged: j,
     })
   }

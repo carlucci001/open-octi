@@ -95,6 +95,8 @@ app/api/account/route.js
 app/api/accounts/route.js
 app/api/accounts/wallet/route.js
 app/api/activities/route.js
+app/api/admin/agent-approval-settings/route.js
+app/api/admin/agent-approvals/route.js
 app/api/admin/credit-grants/route.js
 app/api/admin/portal-login-as/route.js
 app/api/admin/stripe-catalog-sync/route.js
@@ -203,6 +205,7 @@ app/api/lead-signals/resolve/route.js
 app/api/lead-signals/sources/route.js
 app/api/leads/farrington-sweep/route.js
 app/api/leads/inbound/route.js
+app/api/leads/maps-intake/route.js
 app/api/leads/organization-campaign/route.js
 app/api/leads/route.js
 app/api/leads/save-from-chat/route.js
@@ -379,6 +382,7 @@ app/comms/CommsInbox.js
 app/communications/CommunicationsOperations.js
 app/communications/MessagesHub.js
 app/components/ActiveVideoCall.js
+app/components/AgentApprovals.js
 app/components/BoardWorkbench.js
 app/components/BulkActionsMenu.js
 app/components/CallButton.js
@@ -471,6 +475,7 @@ app/layout.js
 app/leads-lab/CampaignSignalsPanel.js
 app/leads-lab/LeadSourcesPanel.js
 app/leads-lab/LeadsLab.js
+app/leads-lab/OutreachPanel.js
 app/leads/LeadsManager.js
 app/leads/QualifyWizard.js
 app/login/FirstRunAccountSetup.js
@@ -516,6 +521,7 @@ app/projects/ProjectsManager.js
 app/provisioning-lab/ProvisionedTwilioLines.jsx
 app/provisioning-lab/ProvisioningLab.js
 app/settings/AIKeysSettings.js
+app/settings/AgentApprovalsSettings.js
 app/settings/ComponentSettingsHub.js
 app/settings/ControlServicesSettings.js
 app/settings/InboundChannelsSettings.js
@@ -727,6 +733,7 @@ docs/releases/1.2.1.md
 docs/releases/1.2.3.md
 docs/releases/1.2.4.md
 docs/releases/1.3.0.md
+docs/releases/1.4.0.md
 docs/screenshots/README.md
 docs/screenshots/agent-widget.jpg
 docs/screenshots/agents.jpg
@@ -762,12 +769,14 @@ knowledge/agents/social-media.md
 knowledge/agents/social-media.voice.md
 knowledge/vault/Welcome.md
 lib/active-record.js
+lib/agent-approvals.js
 lib/agent-channels.js
 lib/agent-chat-selection.js
 lib/agent-creds.js
 lib/agent-handoff.js
 lib/agent-presets.js
 lib/agent-sandbox-catalog.js
+lib/agent-tool-risk-catalog.js
 lib/agent-tools.js
 lib/agentOfficeConduct.js
 lib/agents-store.js
@@ -794,6 +803,7 @@ lib/builderHandoff.js
 lib/builderProjectVault.js
 lib/calendarBooking.js
 lib/calendarEvents.js
+lib/callMode.js
 lib/campaign-publish-runner.js
 lib/campaign-publish-scheduler.js
 lib/campaign-studio.js
@@ -853,6 +863,7 @@ lib/lead-list-routing.js
 lib/lead-name-enrichment.js
 lib/lead-paid-search-limit.js
 lib/lead-run-client.js
+lib/lead-selection.js
 lib/lead-signals/adapters/arcgis.js
 lib/lead-signals/adapters/bulk-file.js
 lib/lead-signals/adapters/common.js
@@ -895,6 +906,7 @@ lib/monitoring/manifest.js
 lib/monitoring/runtime.js
 lib/monitoring/status.js
 lib/networkMode.js
+lib/new-business-daily.js
 lib/notifications.js
 lib/ntfy.js
 lib/obsidianVaults.js
@@ -945,6 +957,7 @@ lib/opsDeploy.js
 lib/orca-handoff.js
 lib/orchestration-engine.js
 lib/outbound-email.js
+lib/outreach-config.js
 lib/ownerInbox.js
 lib/paymentLedger.js
 lib/permissions.js
@@ -1207,6 +1220,17 @@ templates/platform-admin-sdk/src/manifest.js
 templates/platform-admin-sdk/src/routes.js
 templates/platform-admin-sdk/test/contract.test.js
 templates/platform-admin-sdk/vitest.config.js
+tools/maps-to-command-center/README.md
+tools/maps-to-command-center/background.js
+tools/maps-to-command-center/content.css
+tools/maps-to-command-center/content.js
+tools/maps-to-command-center/icons/icon128.png
+tools/maps-to-command-center/icons/icon16.png
+tools/maps-to-command-center/icons/icon48.png
+tools/maps-to-command-center/manifest.json
+tools/maps-to-command-center/options.html
+tools/maps-to-command-center/options.js
+tools/maps-to-command-center/parser.js
 tsconfig.build.json
 tsconfig.json
 vault/lead-sources/city/asheville-homestay.md

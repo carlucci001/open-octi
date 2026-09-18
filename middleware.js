@@ -14,6 +14,9 @@ const PUBLIC_PREFIXES = [
   '/api/twilio/',
   '/api/voice/',
   '/api/leads/inbound',
+  // Google Maps browser-extension intake. The route enforces its own auth
+  // (CRM session OR FCC_MAPS_INTAKE_TOKEN bearer) and returns 401 otherwise.
+  '/api/leads/maps-intake',
   '/api/stripe/',
   // Privacy.com transaction webhooks are server-to-server advice messages.
   // Keep the Finance API protected, but let Privacy POST lifecycle events here.
@@ -51,6 +54,10 @@ const PUBLIC_PREFIXES = [
   // of them broke every voice agent's tool dispatch.
   '/api/agent/',
   '/api/agents/',
+  // Work timer — Maggie's control_timer webhook tool posts here. The route itself
+  // requires either the machine key (x-agent-key) or a CRM session with crm:write,
+  // so it fails closed on its own; the cookie gate here only ever blocked the agent.
+  '/api/timer',
   // OpenClaw plugin's CRM bridge — the OpenClaw runtime calls these routes
   // to read leads/clients/credentials/etc. and to dispatch actions back to
   // the CRM. Required for the OpenClaw integration to work at all.
@@ -88,6 +95,8 @@ const PUBLIC_EXACT = [
   // Tokenized CAN-SPAM opt-out links must work without a CRM login. The route
   // consumes one-time tokens and exposes no contact or campaign data.
   '/api/press/unsubscribe',
+  '/api/outreach/unsubscribe',
+  '/api/outreach/webhook',
   // Public platform capability manifest used for registration and discovery.
   '/.well-known/farrington-platform.json',
   // Sanitized public status surface; incident publication remains Carl-only.
