@@ -14,9 +14,14 @@ import VideoMeetButton from '../components/VideoMeetButton'
 import LeadCallScripts from '../components/LeadCallScripts'
 import EmailTemplateEditor from '../components/EmailTemplateEditor'
 import ItemActionsMenu from '../components/ItemActionsMenu'
-import { BookOpen, CheckCircle2, ExternalLink, Globe, Mail, Phone, Plus, Sprout, Trash2, Upload, Video, XCircle } from 'lucide-react'
+import { BookOpen, CheckCircle2, ExternalLink, Globe, Mail, MailX, Phone, Plus, Sprout, Trash2, Upload, Video, XCircle } from 'lucide-react'
 import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
 import { isOpenOcti } from '@/lib/edition'
+import { OUTREACH_LIST, outreachLabel } from '@/lib/outreach-config'
+import {
+  toggleSelection, selectRange, selectAllVisible,
+  isAllVisibleSelected, isPartiallySelected, clearSelection,
+} from '@/lib/lead-selection'
 
 const OPENOCTI = isOpenOcti()
 
@@ -146,6 +151,12 @@ const normalizeLeadViewMode = (mode = '') => {
 // the UI just never surfaced it. Fall back to the same aliases dedupe checks.
 const leadWebsite = (lead = {}) => String(lead.website || lead.web || lead.url || lead.domain || '').trim()
 const leadWebsiteHref = (url = '') => (/^https?:\/\//i.test(url) ? url : `https://${url}`)
+const normalizeTelHref = (phone = '') => {
+  const raw = String(phone || '').trim()
+  const hasPlus = raw.startsWith('+')
+  const digits = raw.replace(/\D+/g, '')
+  return hasPlus ? `+${digits}` : digits
+}
 const contractorSignal = (lead = {}) => lead.signal?.sourceId === 'cslb-ca-contractors' ? lead.signal : null
 const contractorSignalSummary = (lead = {}) => {
   const signal = contractorSignal(lead)
@@ -248,6 +259,56 @@ function Modal({ title, onClose, children, wide }) {
 
 function Field({ label, children }) {
   return <div className="mb-3"><label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>{label}</label>{children}</div>
+}
+
+// Selection checkbox used on every lead row/card and every select-all header
+// (WO-LB1). Controlled purely by `checked`/`indeterminate` props; the actual
+// selection logic lives in the onClick handler passed in by the caller so a
+// shift-click can be detected before state updates. stopPropagation keeps the
+// click from also opening the lead editor or firing a card/row's own handlers.
+function LeadCheckbox({ checked, indeterminate, onClick, label }) {
+  const ref = useRef(null)
+  useEffect(() => { if (ref.current) ref.current.indeterminate = !!indeterminate }, [indeterminate])
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      onChange={() => {}}
+      onClick={e => { e.stopPropagation(); onClick(e) }}
+      onPointerDown={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
+      aria-label={label}
+      style={{ width: 18, height: 18, minWidth: 18, minHeight: 18, cursor: 'pointer', accentColor: 'var(--accent)' }}
+    />
+  )
+}
+
+// Sticky bar shown whenever one or more leads are selected, in every view
+// (list / grid / grouped / kanban). Delete confirms once, calls bulk_delete,
+// and reports partial removal when some ids were not permitted. Move uses
+// the batched bulk_move action so N leads cost one request, not N.
+function BulkActionBar({ count, leadLists, onDelete, onMove, onClear, busy, notice }) {
+  const barSel = { background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 10px', borderRadius: 6, fontSize: 12, outline: 'none' }
+  return (
+    <div className="sticky top-0 z-20 flex items-center gap-3 flex-wrap rounded-lg px-3 py-2 mb-3" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
+      <span className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>{count} selected</span>
+      <button type="button" disabled={busy} onClick={onDelete} className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: 'var(--red)', color: '#fff', opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' }}>Delete</button>
+      <ThemedSelect
+        style={barSel}
+        disabled={busy}
+        value=""
+        aria-label="Move selected leads to list"
+        onChange={e => { const id = e.target.value; if (id) onMove(id) }}
+      >
+        <option value="">Move to list…</option>
+        <option value="__none__">— No lead list —</option>
+        {leadLists.map(list => <option key={list.id} value={list.id}>{list.name}</option>)}
+      </ThemedSelect>
+      <button type="button" disabled={busy} onClick={onClear} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: 'var(--surface2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>Clear</button>
+      {notice && <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{notice}</span>}
+    </div>
+  )
 }
 
 function inferBrand(lead = {}) {
@@ -554,6 +615,14 @@ export default function LeadsManager({ onNavigate }) {
   const [qualifying, setQualifying] = useState(null)
   const [showNewList, setShowNewList] = useState(false)
 
+  // Bulk selection (WO-LB1). selectAnchorId is the last-clicked checkbox,
+  // used as the shift-click range start. Both live outside localStorage -
+  // a selection never survives a reload or a tab switch.
+  const [selectedIds, setSelectedIds] = useState(() => clearSelection())
+  const [selectAnchorId, setSelectAnchorId] = useState(null)
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkNotice, setBulkNotice] = useState('')
+
   useEffect(() => {
     const detail = editing
       ? { type: 'lead', id: editing.id, name: editing.name || editing.email || 'Lead' }
@@ -566,11 +635,14 @@ export default function LeadsManager({ onNavigate }) {
 
   useEffect(() => {
     let leadId = ''
-    try { leadId = sessionStorage.getItem('fcc.leads.openId') || '' } catch {}
+    try { leadId = new URLSearchParams(window.location.search).get('leadId') || sessionStorage.getItem('fcc.leads.openId') || '' } catch {}
     if (!leadId) return
     const lead = leads.find(item => item.id === leadId)
     if (!lead) return
     setEditing(lead)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('leadId')
+    window.history.replaceState(window.history.state, '', url)
     try { sessionStorage.removeItem('fcc.leads.openId') } catch {}
   }, [leads])
 
@@ -658,6 +730,13 @@ export default function LeadsManager({ onNavigate }) {
   }
   const del = async (id) => { if (!confirm('Delete this lead?')) return; await api('/api/leads', { action: 'delete', id }); await leadsQ.refresh() }
   const setStatus = async (lead, status) => { await api('/api/leads', { action: 'update', lead: { id: lead.id, status } }); await leadsQ.refresh() }
+  const dontEmail = async (lead) => {
+    try {
+      const response = await fetch('/api/outreach/suppress', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: lead.id }) })
+      if (!response.ok) throw new Error('Could not save email suppression')
+      await leadsQ.refresh()
+    } catch (error) { alert(error.message) }
+  }
 
   const filtered = useMemo(() => {
     let out = leads
@@ -728,6 +807,69 @@ export default function LeadsManager({ onNavigate }) {
   const { page, setPage, pageSize, setPageSize, paginated } = usePagination(filtered, _ls().pageSize || 50)
   const changePageSize = size => { userTouchedListPrefs.current = true; setPageSize(size) }
 
+  // Bulk selection wiring (WO-LB1). filteredIds is the full ordered id list a
+  // shift-click range walks - using the filtered order (not just the current
+  // page) means a range still makes sense across a page boundary.
+  const filteredIds = useMemo(() => filtered.map(l => l.id), [filtered])
+  const onLeadCheckboxClick = useCallback((e, leadId) => {
+    if (e.shiftKey && selectAnchorId) {
+      setSelectedIds(ids => selectRange(ids, filteredIds, selectAnchorId, leadId))
+    } else {
+      setSelectedIds(ids => toggleSelection(ids, leadId))
+    }
+    setSelectAnchorId(leadId)
+  }, [selectAnchorId, filteredIds])
+  const toggleSelectAllScope = useCallback((scopeIds) => {
+    setSelectedIds(ids => selectAllVisible(ids, scopeIds, !isAllVisibleSelected(ids, scopeIds)))
+    setSelectAnchorId(null)
+  }, [])
+  const selectAllMatching = useCallback(() => {
+    setSelectedIds(ids => selectAllVisible(ids, filteredIds, true))
+    setSelectAnchorId(null)
+  }, [filteredIds])
+  const clearBulkSelection = useCallback(() => {
+    setSelectedIds(clearSelection())
+    setSelectAnchorId(null)
+  }, [])
+  const bulkDeleteSelected = async () => {
+    const ids = [...selectedIds]
+    if (!ids.length || bulkBusy) return
+    if (!confirm(`Delete ${ids.length} leads? This cannot be undone.`)) return
+    setBulkBusy(true)
+    try {
+      const result = await api('/api/leads', { action: 'bulk_delete', ids })
+      const removed = Number(result?.removed) || 0
+      setBulkNotice(removed < ids.length
+        ? `Deleted ${removed} of ${ids.length} (${ids.length - removed} not permitted)`
+        : `Deleted ${removed} lead${removed === 1 ? '' : 's'}`)
+      clearBulkSelection()
+      await leadsQ.refresh()
+    } catch {
+      setBulkNotice('Bulk delete failed. Try again.')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+  const bulkMoveSelected = async (leadListId) => {
+    const ids = [...selectedIds]
+    if (!ids.length || bulkBusy) return
+    const targetId = leadListId === '__none__' ? null : leadListId
+    setBulkBusy(true)
+    try {
+      const result = await api('/api/leads', { action: 'bulk_move', ids, leadListId: targetId })
+      const moved = Number(result?.moved) || 0
+      setBulkNotice(moved < ids.length
+        ? `Moved ${moved} of ${ids.length} (${ids.length - moved} not permitted)`
+        : `Moved ${moved} lead${moved === 1 ? '' : 's'}`)
+      clearBulkSelection()
+      await leadsQ.refresh()
+    } catch {
+      setBulkNotice('Bulk move failed. Try again.')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
   // Component configuration layer: configured defaults apply only where this
   // device has no last-used value saved in localStorage.
   const listPrefs = useComponentSettings('leads.list')
@@ -754,6 +896,30 @@ export default function LeadsManager({ onNavigate }) {
     }
   }, [filterBrand, filterCategory])
   useEffect(() => { setPage(1) }, [search, filterBrand, filterCategory, filterStatus, filterSource, sortBy, sortDir, view, setPage])
+  // A hidden lead must never stay selected - clear the selection whenever the
+  // visible set can change, so bulk actions can only ever touch what's on
+  // screen (WO-LB1, scope item 1).
+  useEffect(() => {
+    setSelectedIds(clearSelection())
+    setSelectAnchorId(null)
+  }, [search, filterBrand, filterCategory, filterStatus, filterSource, filterLeadList, sortBy, sortDir, activeView])
+  // Escape clears the current selection (WO-LB1 scope item 3), without
+  // interfering with any modal that's open - LeadForm/QualifyWizard etc.
+  // handle their own Escape/close behavior independently.
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape' || selectedIds.size === 0) return
+      setSelectedIds(clearSelection())
+      setSelectAnchorId(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedIds])
+  useEffect(() => {
+    if (!bulkNotice) return
+    const t = setTimeout(() => setBulkNotice(''), 5000)
+    return () => clearTimeout(t)
+  }, [bulkNotice])
   useEffect(() => { localStorage.setItem('leads-ui', JSON.stringify({ search, filterBrand, filterCategory, filterStatus, filterSource, sortBy, sortDir, view, page, pageSize })) }, [page, pageSize])
   const changeSourceFilter = (value) => {
     userTouchedListPrefs.current = true
@@ -796,7 +962,7 @@ export default function LeadsManager({ onNavigate }) {
     <div
       data-lead-actions={l.id}
       className="flex items-center justify-end gap-1.5 flex-nowrap"
-      style={{ width: 114, minWidth: 114, minHeight: 34 }}
+      style={{ width: l.leadListId === OUTREACH_LIST && l.email ? 152 : 114, minWidth: l.leadListId === OUTREACH_LIST && l.email ? 152 : 114, minHeight: 34 }}
       onClick={e => e.stopPropagation()}
       onPointerDown={e => e.stopPropagation()}
     >
@@ -824,6 +990,7 @@ export default function LeadsManager({ onNavigate }) {
           style={{ ...leadIconActionStyle, ...leadIconTone.purple }}
         />
       )}
+      {l.leadListId === OUTREACH_LIST && l.email && <button type="button" title="Don't email" aria-label={`Don't email ${l.businessName || l.name}`} disabled={['suppressed', 'bounced'].includes(l.outreach?.status)} onClick={() => dontEmail(l)} style={{ ...leadIconActionStyle, background: 'var(--surface)', color: 'var(--text-muted)' }}>{iconOnly(MailX)}</button>}
       <ItemActionsMenu label={`Actions for ${l.businessName || l.name || 'lead'}`} actions={leadMenuActions(l)} />
     </div>
   )
@@ -845,6 +1012,13 @@ export default function LeadsManager({ onNavigate }) {
   const renderLeadCard = (l, compact = false) => (
     <div key={l.id} onClick={() => setEditing(l)} className="rounded-lg p-3 cursor-pointer" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
       <div className="flex items-start gap-2">
+        <div className="pt-0.5" onClick={e => e.stopPropagation()}>
+          <LeadCheckbox
+            checked={selectedIds.has(l.id)}
+            onClick={e => onLeadCheckboxClick(e, l.id)}
+            label={`Select ${l.businessName || l.name || 'lead'}`}
+          />
+        </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold leading-snug truncate" style={{ color: 'var(--text)' }}>{l.businessName || l.name}</div>
           {l.name && l.businessName && <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{l.name}</div>}
@@ -864,6 +1038,48 @@ export default function LeadsManager({ onNavigate }) {
         <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px] leading-snug" style={{ background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
           <div><span style={{ color: 'var(--accent)', fontWeight: 700 }}>CSLB:</span> {contractorSignalSummary(l)}</div>
           {l.phone && <div><span style={{ color: 'var(--green)', fontWeight: 700 }}>Phone:</span> {l.phone}</div>}
+        </div>
+      )}
+      {l.maps && (
+        <div className="mt-2 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+          {l.maps.rating != null && <>★ {l.maps.rating}{l.maps.reviewCount != null ? ` (${l.maps.reviewCount})` : ''}</>}
+          {l.maps.category && <> · {l.maps.category}</>}
+        </div>
+      )}
+      {(l.phone || leadWebsite(l)) && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]" onClick={e => e.stopPropagation()}>
+          {l.phone && (
+            <a
+              href={`tel:${normalizeTelHref(l.phone)}`}
+              onClick={() => { if (l.status === 'new') setStatus(l, 'contacted') }}
+              className="truncate"
+              style={{ color: 'var(--accent)', fontWeight: 600 }}
+            >
+              {l.phone}
+            </a>
+          )}
+          {leadWebsite(l) && (
+            <a
+              href={leadWebsiteHref(leadWebsite(l))}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="truncate"
+              style={{ color: 'var(--accent)', fontWeight: 600 }}
+            >
+              Website
+            </a>
+          )}
+          {l.maps?.mapsUrl && (
+            <a
+              href={l.maps.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="truncate"
+              style={{ color: 'var(--text-muted)', fontWeight: 600 }}
+            >
+              Maps
+            </a>
+          )}
         </div>
       )}
       {(leadListNameForLead(l) || opportunityPipelineNameForLead(l) || l.opportunityId) && (
@@ -895,6 +1111,7 @@ export default function LeadsManager({ onNavigate }) {
         </div>
       )}
       <div className="mt-3 flex justify-end flex-nowrap" style={{ minHeight: 34 }}>
+        {l.leadListId === OUTREACH_LIST && <span className="text-xs mr-auto" data-outreach-status={l.id}>Outreach: {outreachLabel(l)}</span>}
         {renderLeadActions(l)}
       </div>
     </div>
@@ -997,6 +1214,18 @@ export default function LeadsManager({ onNavigate }) {
         <button style={{ ...sel, cursor: 'pointer', minWidth: 32 }} onClick={() => { userTouchedListPrefs.current = true; setSortDir(d => d === 'asc' ? 'desc' : 'asc') }}>{sortDir === 'asc' ? '↑' : '↓'}</button>
       </div>
 
+      {(selectedIds.size > 0 || bulkNotice) && (
+        <BulkActionBar
+          count={selectedIds.size}
+          leadLists={leadLists}
+          busy={bulkBusy}
+          notice={bulkNotice}
+          onDelete={bulkDeleteSelected}
+          onMove={bulkMoveSelected}
+          onClear={clearBulkSelection}
+        />
+      )}
+
       {firstLoad ? <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}><span className="inline-block w-3 h-3 rounded-full mr-2 animate-pulse" style={{ background: 'var(--accent)' }}></span>Fetching leads…</div>
         : filtered.length === 0 ? (
           leads.length === 0 && isOpenOcti() ? <OpenOctiEmptyState objectType="leads" title="Start your lead pipeline" description="Import prospects here, then qualify them into accounts, contacts, and opportunities." /> : <div className="text-center py-16">
@@ -1005,6 +1234,20 @@ export default function LeadsManager({ onNavigate }) {
           </div>
         ) : activeView === 'grid' ? (
           <>
+          <div className="flex items-center gap-2 px-1 mb-2">
+            <LeadCheckbox
+              checked={isAllVisibleSelected(selectedIds, paginated.map(l => l.id))}
+              indeterminate={isPartiallySelected(selectedIds, paginated.map(l => l.id))}
+              onClick={() => toggleSelectAllScope(paginated.map(l => l.id))}
+              label="Select all leads on this page"
+            />
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Select all {paginated.length} on this page</span>
+            {filtered.length > paginated.length && !isAllVisibleSelected(selectedIds, filteredIds) && (
+              <button type="button" onClick={selectAllMatching} className="text-xs font-semibold" style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                Select all {filtered.length} matching
+              </button>
+            )}
+          </div>
           <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
             {paginated.map(l => renderLeadCard(l))}
           </div>
@@ -1012,6 +1255,20 @@ export default function LeadsManager({ onNavigate }) {
           </>
         ) : activeView === 'list' ? (
           <>
+          <div className="flex items-center gap-2 px-1 mb-2">
+            <LeadCheckbox
+              checked={isAllVisibleSelected(selectedIds, paginated.map(l => l.id))}
+              indeterminate={isPartiallySelected(selectedIds, paginated.map(l => l.id))}
+              onClick={() => toggleSelectAllScope(paginated.map(l => l.id))}
+              label="Select all leads on this page"
+            />
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Select all {paginated.length} on this page</span>
+            {filtered.length > paginated.length && !isAllVisibleSelected(selectedIds, filteredIds) && (
+              <button type="button" onClick={selectAllMatching} className="text-xs font-semibold" style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                Select all {filtered.length} matching
+              </button>
+            )}
+          </div>
           <div className="rounded-xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             {paginated.map((l, i) => {
               const stMeta = statusMeta(l.status)
@@ -1020,6 +1277,13 @@ export default function LeadsManager({ onNavigate }) {
                   onClick={() => setEditing(l)}
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = '' }}>
+                  <div onClick={e => e.stopPropagation()} className="shrink-0">
+                    <LeadCheckbox
+                      checked={selectedIds.has(l.id)}
+                      onClick={e => onLeadCheckboxClick(e, l.id)}
+                      label={`Select ${l.businessName || l.name || 'lead'}`}
+                    />
+                  </div>
                   <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0" style={{ background: stMeta.bg, color: stMeta.color }}>{initials(l.businessName || l.name)}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-nowrap overflow-hidden">
@@ -1042,6 +1306,7 @@ export default function LeadsManager({ onNavigate }) {
                       {l.status === 'converted' && l.convertedToAccountName && <span style={{ color: 'var(--green)', fontWeight: 700 }}>&rarr; {l.convertedToAccountName}</span>}
                     </div>
                   </div>
+                  {l.leadListId === OUTREACH_LIST && <div className="text-xs shrink-0 w-24" data-outreach-status={l.id}><div style={{ color: 'var(--text-muted)' }}>Outreach</div><div>{outreachLabel(l)}</div></div>}
                   {renderLeadActions(l)}
                 </div>
               )
@@ -1054,9 +1319,19 @@ export default function LeadsManager({ onNavigate }) {
           <div className="flex gap-3 overflow-x-auto pb-3">
             {leadListGroups.map(group => (
               <div key={group.id} className="flex-shrink-0 w-80 rounded-xl p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <div className="flex items-center justify-between mb-3 px-1">
-                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>{group.label}</span>
-                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{group.leads.length}</span>
+                <div className="flex items-center gap-2 justify-between mb-3 px-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {group.leads.length > 0 && (
+                      <LeadCheckbox
+                        checked={isAllVisibleSelected(selectedIds, group.leads.map(l => l.id))}
+                        indeterminate={isPartiallySelected(selectedIds, group.leads.map(l => l.id))}
+                        onClick={() => toggleSelectAllScope(group.leads.map(l => l.id))}
+                        label={`Select all leads in ${group.label}`}
+                      />
+                    )}
+                    <span className="text-xs font-bold uppercase tracking-wider truncate" style={{ color: 'var(--accent)' }}>{group.label}</span>
+                  </div>
+                  <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>{group.leads.length}</span>
                 </div>
                 <div className="space-y-2">
                   {group.leads.map(l => renderLeadCard(l, true))}
@@ -1073,65 +1348,22 @@ export default function LeadsManager({ onNavigate }) {
               return (
                 <div key={s.id} className="flex-shrink-0 w-72 rounded-xl p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                   <div className="flex items-center justify-between mb-3 px-1">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: s.color }}>{s.label}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {colLeads.length > 0 && (
+                        <LeadCheckbox
+                          checked={isAllVisibleSelected(selectedIds, colLeads.map(l => l.id))}
+                          indeterminate={isPartiallySelected(selectedIds, colLeads.map(l => l.id))}
+                          onClick={() => toggleSelectAllScope(colLeads.map(l => l.id))}
+                          label={`Select all ${s.label} leads`}
+                        />
+                      )}
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color }} />
+                      <span className="text-xs font-bold uppercase tracking-wider truncate" style={{ color: s.color }}>{s.label}</span>
                     </div>
-                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{colLeads.length}</span>
+                    <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>{colLeads.length}</span>
                   </div>
                   <div className="space-y-2">
-                    {colLeads.map(l => {
-                      return (
-                      <div key={l.id} onClick={() => setEditing(l)} className="rounded-lg p-3 cursor-pointer" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-semibold leading-snug truncate" style={{ color: 'var(--text)' }}>{l.businessName || l.name}</div>
-                            {l.name && l.businessName && <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{l.name}</div>}
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              <LeadTimestamp lead={l} compact />
-                              <LastTouchPill lead={l} compact />
-                            </div>
-                          </div>
-                          <LeadSignalBars lead={l} />
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {l.source && <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>{sourceLabel(l.source)}</span>}
-                          {serviceLabelForLead(l) && <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'var(--amber-soft)', color: 'var(--amber)', border: '1px solid var(--amber)' }}>{categoryLabel(serviceLabelForLead(l), l.brandContext || inferBrand(l))}</span>}
-                        </div>
-                        {(leadListNameForLead(l) || opportunityPipelineNameForLead(l) || l.opportunityId) && (
-                          <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px] leading-snug" style={{ background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-                            {leadListNameForLead(l) && <div><span style={{ color: 'var(--green)', fontWeight: 700 }}>Lead List:</span> {leadListNameForLead(l)}</div>}
-                            {opportunityPipelineNameForLead(l) && <div><span style={{ color: 'var(--accent)', fontWeight: 700 }}>Sales Pipeline:</span> {opportunityPipelineNameForLead(l)}</div>}
-                            {l.opportunityId && <div><span style={{ color: 'var(--accent)', fontWeight: 700 }}>Opportunity:</span> {opportunitiesById.get(l.opportunityId)?.name || 'Linked'}</div>}
-                          </div>
-                        )}
-                        <div className="mt-3" onClick={e => e.stopPropagation()}>
-                          <ThemedSelect
-                            style={cardSelectStyle}
-                            value={l.status || 'new'}
-                            onPointerDown={stopCardOpen}
-                            onMouseDown={stopCardOpen}
-                            onClick={stopCardOpen}
-                            onChange={e => { e.stopPropagation(); setStatus(l, e.target.value) }}
-                            aria-label={`Move ${l.businessName || l.name || 'lead'} status`}
-                          >
-                            {STATUS.map(status => <option key={status.id} value={status.id}>Move to {status.label}</option>)}
-                          </ThemedSelect>
-                        </div>
-                        {l.status === 'converted' && l.convertedToAccountName && (
-                          <div className="mt-3" onClick={e => e.stopPropagation()}>
-                            <span className='text-[11px] font-semibold px-2 py-1 rounded-lg' title='This lead became an account'
-                              style={{ background: 'var(--green-soft)', color: 'var(--green)', border: '1px solid var(--green)' }}>
-                              &rarr; {l.convertedToAccountName}
-                            </span>
-                          </div>
-                        )}
-                        <div className="mt-3 flex justify-end flex-nowrap" style={{ minHeight: 34 }}>
-                          {renderLeadActions(l)}
-                        </div>
-                      </div>
-                      )
-                    })}
+                    {colLeads.map(l => renderLeadCard(l, true))}
                     {colLeads.length === 0 && <div className="text-[11px] text-center py-4" style={{ color: 'var(--text-muted)' }}>No leads</div>}
                   </div>
                 </div>

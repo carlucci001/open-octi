@@ -82,7 +82,7 @@ function leadStatusPatch(existing = {}, incoming = {}) {
   return patch
 }
 
-function leadCreatePayload(incoming = {}) {
+export function leadCreatePayload(incoming = {}) {
   const receivedAt = incoming.receivedAt || incoming.createdAt || incoming.inboundReceivedAt || incoming.submittedAt || incoming.importedAt || incoming.legacy?.ts || new Date().toISOString()
   return {
     name: '',
@@ -224,6 +224,25 @@ export async function POST(request) {
     })
     const removed = removeMany('leads', ids)
     return NextResponse.json({ ok: true, removed })
+  }
+
+  // Bulk re-assignment to a lead list. One request instead of N per-lead
+  // `update` calls from the UI's "Move to list..." bulk action (WO-LB1).
+  if (body.action === 'bulk_move') {
+    const leadLists = loadLeadLists()
+    const leadListId = body.leadListId || null
+    if (leadListId && !leadLists.some(list => list.id === leadListId)) {
+      return NextResponse.json({ error: 'lead list not found' }, { status: 404 })
+    }
+    const requestedIds = Array.isArray(body.ids) ? body.ids : []
+    let moved = 0
+    for (const id of requestedIds) {
+      const lead = findById('leads', id)
+      if (!lead || !userCanAccessLead(user, lead, leadLists)) continue
+      update('leads', id, { leadListId, suggestedPipelineId: null })
+      moved += 1
+    }
+    return NextResponse.json({ ok: true, moved, requested: requestedIds.length })
   }
 
   if (body.action === 'dedupe_check') {

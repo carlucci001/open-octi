@@ -5,6 +5,7 @@ import {
   listAutomationTemplates, createAutomationFromTemplate,
 } from '@/lib/automations-store'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
+import { outreachMaxStep } from '@/lib/outreach-config'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,6 +21,7 @@ export async function GET(request) {
       ok: true,
       automations: listAutomations({ scope, tenantId }),
       templates: listAutomationTemplates(),
+      outreachMaxStep: outreachMaxStep(process.env.OUTREACH_MAX_STEP),
     })
   } catch (e) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })

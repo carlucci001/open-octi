@@ -32,7 +32,8 @@ export async function GET() {
       groupRank: group.rank,
       proving: {
         ...source.proving,
-        status: needsKey ? 'needs-key' : (jobStatus || validation?.status || source.proving?.status || 'candidate'),
+        status: source.proving?.status === 'excluded-from-build' ? 'excluded-from-build' : needsKey ? 'needs-key' : (jobStatus || (validation?.status === 'rejected' ? 'candidate' : validation?.status) || source.proving?.status || 'candidate'),
+        verdict: validation?.status || source.proving?.verdict,
         score: validation?.score ?? source.proving?.score ?? null,
         job: job ? { id: job.id, status: job.status, progress: job.progress, error: job.error } : null,
       },

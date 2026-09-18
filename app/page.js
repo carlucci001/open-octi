@@ -16,6 +16,7 @@ import Feed from './feed/Feed'
 import ChatPanel from './components/ChatPanel'
 import CommandPalette, { CommandPaletteTrigger } from './components/CommandPalette'
 import OperatorPromptBar from './components/OperatorPromptBar'
+import AgentApprovals from './components/AgentApprovals'
 import OperatorContextRail from './components/OperatorContextRail'
 import WorkspaceLayoutSettings from './components/WorkspaceLayoutSettings'
 import { useWorkspaceLayout } from '@/lib/use-workspace-layout'
@@ -2481,7 +2482,7 @@ export default function Page() {
       <div className="flex flex-col flex-1 overflow-hidden">
       <header className="desktop-toolbar hidden lg:flex shrink-0 items-center justify-end px-5 py-2.5 z-30 gap-2" style={{ height: topChromeHeight, boxSizing: 'border-box', background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         {OPENOCTI && <OpenOctiAskButton />}
-        {OPENOCTI && <GestureMode placement="header" />}
+        <GestureMode placement="header" />
         {isAdmin && (
           <SettingsGearButton size={32} onNavigate={handleNavTo} />
         )}
@@ -2626,10 +2627,10 @@ export default function Page() {
           }}
         />
       )}
+      {isAdmin && <AgentApprovals />}
       <ChatPanel />
       {isOwner && <ApiSpendMonitor mode="floating" />}
       <CommandPalette />
-      {!OPENOCTI && <GestureMode />}
     </div>
   )
 }

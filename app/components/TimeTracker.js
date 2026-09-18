@@ -7,6 +7,11 @@
 //
 // Persists running state in localStorage so a page navigation or refresh doesn't
 // lose the timer.
+//
+// If the selected client has 2+ projects, a project dropdown appears so time can be
+// attributed to the right one (optional — "No project" is always a valid choice, and
+// it still logs to the account). A client with 0 or 1 project shows no extra step at
+// all, on purpose — this is daily-use friction we're not allowed to add.
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 
@@ -37,6 +42,9 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
   const [accounts, setAccounts] = useState([])
   const [accountId, setAccountId] = useState('')
   const [search, setSearch] = useState('')
+  const [projects, setProjects] = useState([])       // this account's projects (fetched when accountId changes)
+  const [projectId, setProjectId] = useState('')     // '' = no project selected
+  const [projectName, setProjectName] = useState('') // resolved display name, kept in sync with server state
   const [running, setRunning] = useState(false)        // is the clock currently ticking?
   const [paused, setPaused] = useState(false)          // is there an active session that's currently paused?
   const [accumulatedMs, setAccumulatedMs] = useState(0) // total ms recorded in this session before the latest tick
@@ -78,11 +86,32 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
       .catch(() => {})
   }, [])
 
+  // Load the selected account's projects whenever it changes — this is what decides
+  // whether the project picker shows at all (2+ projects) or stays out of the way
+  // (0 or 1). Does not touch the current projectId selection: that's set explicitly by
+  // the account picker (on a fresh pick), by restore-from-localStorage, or by adopting
+  // server state, never as a side effect of this fetch.
+  useEffect(() => {
+    if (!accountId) { setProjects([]); return }
+    let cancelled = false
+    fetch(`/api/projects?accountId=${encodeURIComponent(accountId)}`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(j => {
+        if (cancelled) return
+        const list = Array.isArray(j.projects) ? j.projects : []
+        setProjects(list)
+      })
+      .catch(() => { if (!cancelled) setProjects([]) })
+    return () => { cancelled = true }
+  }, [accountId])
+
   // Restore state from localStorage on mount
   useEffect(() => {
     const s = loadState()
     if (!s) return
     setAccountId(s.accountId || '')
+    setProjectId(s.projectId || '')
+    setProjectName(s.projectName || '')
     setNote(s.note || '')
     setAccumulatedMs(s.accumulatedMs || 0)
     setSessionStartedAt(s.sessionStartedAt || null)
@@ -121,6 +150,8 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
         if (serverActive && (!localActive || accountChanged || statusChanged)) {
           // Adopt server state
           setAccountId(s.accountId || '')
+          setProjectId(s.projectId || '')
+          setProjectName(s.projectName || '')
           setNote(s.note || '')
           setSessionStartedAt(s.sessionStartedAt || null)
           setAccumulatedMs(s.accumulatedMs || 0)
@@ -136,6 +167,7 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
           // Voice stopped/discarded — reset local
           setRunning(false); setPaused(false)
           setAccumulatedMs(0); setTickStartedAt(null); setSessionStartedAt(null); setNote('')
+          setProjectId(''); setProjectName('')
         }
         lastSeenStatus = s.status
         lastSeenAccountId = s.accountId
@@ -150,9 +182,9 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
   useEffect(() => {
     if (!running && !paused) { saveState(null); return }
     saveState({
-      accountId, note, accumulatedMs, tickStartedAt, sessionStartedAt, running, paused,
+      accountId, projectId, projectName, note, accumulatedMs, tickStartedAt, sessionStartedAt, running, paused,
     })
-  }, [running, paused, accountId, note, accumulatedMs, tickStartedAt, sessionStartedAt])
+  }, [running, paused, accountId, projectId, projectName, note, accumulatedMs, tickStartedAt, sessionStartedAt])
 
   // Tick the display while running
   useEffect(() => {
@@ -195,7 +227,7 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
     setBusy(true)
     try {
       const noteToSend = note.trim() || undefined
-      const j = await callTimer({ action: 'start', account_id: accountId, note: noteToSend })
+      const j = await callTimer({ action: 'start', account_id: accountId, project_id: projectId || undefined, note: noteToSend })
       if (!j.ok) throw new Error(j.error || 'Start failed')
       // Server state now authoritative — the poll loop will sync UI within ~2s,
       // but set local state immediately for snappier feel
@@ -203,6 +235,8 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
       setSessionStartedAt(j.state.sessionStartedAt || new Date(now).toISOString())
       setTickStartedAt(j.state.runStartedAt ? new Date(j.state.runStartedAt).getTime() : now)
       setTickNow(now)
+      setProjectId(j.state.projectId || '')
+      setProjectName(j.state.projectName || '')
       setRunning(true); setPaused(false)
     } catch (e) {
       flash(`Start failed: ${e.message}`, true)
@@ -244,6 +278,7 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
       flash(j.message || 'Logged.')
       setRunning(false); setPaused(false)
       setAccumulatedMs(0); setTickStartedAt(null); setSessionStartedAt(null); setNote('')
+      setProjectId(''); setProjectName('')
     } catch (e) {
       flash(`Stop failed: ${e.message}`, true)
     } finally { setBusy(false) }
@@ -256,6 +291,7 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
       await callTimer({ action: 'discard' })
       setRunning(false); setPaused(false)
       setAccumulatedMs(0); setTickStartedAt(null); setSessionStartedAt(null); setNote('')
+      setProjectId(''); setProjectName('')
     } catch {} finally { setBusy(false) }
   }
 
@@ -389,7 +425,7 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
               {filteredAccounts.map(a => (
                 <button
                   key={a.id}
-                  onClick={() => { setAccountId(a.id); setSearch('') }}
+                  onClick={() => { setAccountId(a.id); setSearch(''); setProjectId(''); setProjectName('') }}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
                     width: '100%', textAlign: 'left',
@@ -415,9 +451,37 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
           <div style={{ padding: '8px 10px', background: 'var(--surface2, #f1f5f9)', borderRadius: 8, fontSize: 14 }}>
             <strong>{account?.name || accountId}</strong>
             <span style={{ float: 'right', fontSize: 12, color: 'var(--text-muted)' }}>Stop or cancel to switch</span>
+            {projectName && (
+              <div style={{ clear: 'both', marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>Project: {projectName}</div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Project picker — only appears when the selected client has 2+ projects to
+          choose between. 0 or 1 project: nothing renders here, matching today's flow
+          exactly. "No project" is always the default and a valid choice — the session
+          still logs against the account either way. Locked once a session has started,
+          same as the client picker above. */}
+      {!sessionStartedAt && projects.length >= 2 && (
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)' }}>Project</label>
+          <select
+            value={projectId}
+            onChange={e => {
+              const id = e.target.value
+              setProjectId(id)
+              setProjectName(projects.find(p => p.id === id)?.name || '')
+            }}
+            style={{ width: '100%', padding: '8px 10px', minHeight: 36, fontSize: 14, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface, #fff)', color: 'var(--text)' }}
+          >
+            <option value="">No project (track to account only)</option>
+            {projects.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Note (optional) */}
       <div style={{ marginBottom: 12 }}>

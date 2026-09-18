@@ -55,6 +55,18 @@ import { getVaults, pickVault, resolveVaultFile, walkVaultMd } from '@/lib/obsid
 import { createContentJob, listContentJobs, updateContentJob, deleteContentJob } from '@/lib/content-lab'
 import { normalizeImageGenerationPreference } from '@/lib/image-generation-preferences'
 import { getCreditWallet, issuePrepaidCredits } from '@/lib/credit-wallet'
+import { CREDITS_PER_USD } from '@/lib/credit-topup-amounts'
+import {
+  fingerprintAction,
+  createOrReuseRequest,
+  findUsableApproval,
+  consumeApproval,
+  activeWindowForRisk,
+  notifyApprovalPending,
+} from '@/lib/agent-approvals'
+import { enablePortalForAccount, activeLeaseForAccount, isComplimentaryLease } from '@/lib/portal-provisioning'
+import { clientLoginDetails } from '@/lib/client-onboarding'
+import { resolveCherylVoicePolicy } from '@/lib/portal-cheryl-usage'
 import { stripeBillingCatalogHash } from '@/lib/stripe-billing-catalog.mjs'
 import { getRuntimeStripeBillingCatalogDefinitions } from '@/lib/stripe-billing-catalog-source'
 import { commitOpenOctiImport, detectImportMapping, previewOpenOctiImport } from '@/lib/openocti-import'
@@ -70,6 +82,16 @@ export const dynamic = 'force-dynamic'
 
 const DOCUMENT_TEMPLATES_DIR = path.join(process.cwd(), 'data', 'document-templates')
 const PRESS_CONTACTS_FILE = 'press-contacts.json'
+
+
+// Server-to-server calls this route makes back into the app (the timer, for one)
+// must carry the machine key, or they arrive anonymous and are refused. Without
+// this, control_timer answered "unauthorized" through the agent endpoint while
+// the same action worked from the agent's own webhook tool.
+function internalMachineHeaders() {
+  const key = configuredMachineSecret(process.env.AGENT_API_KEY) || configuredMachineSecret(process.env.OPENCLAW_API_KEY)
+  return key ? { 'x-agent-key': key } : {}
+}
 
 function ok(result) { return NextResponse.json({ ok: true, result }) }
 function fail(error, status = 400) { return NextResponse.json({ ok: false, error }, { status }) }
@@ -158,8 +180,170 @@ const TOOL_RISK_POLICIES = {
   copy_subscription_plan: { risk: 'billing_catalog_change', approvalRequired: true, reason: 'creates a new subscription plan copy' },
   delete_subscription_plan: { risk: 'billing_catalog_delete', approvalRequired: true, reason: 'deletes a subscription plan' },
   issue_client_credits: { risk: 'credit_ledger_change', approvalRequired: true, reason: 'issues real service credits to a client wallet' },
+  enable_portal: { risk: 'portal_access_change', approvalRequired: true, reason: 'enables client portal access, possibly with complimentary status' },
+  grant_cheryl_voice: { risk: 'portal_access_change', approvalRequired: true, reason: 'changes a client\'s Cheryl voice entitlement on an active lease' },
+  add_account_credit: { risk: 'credit_ledger_change', approvalRequired: true, reason: 'issues real service credits to a client wallet' },
   import_commit: { risk: 'crm_bulk_write', approvalRequired: true, reason: 'creates a batch of CRM records' },
+
+  // Added under the 2026-09-17 allow-by-default -> deny-by-default inversion.
+  // Every tool below was previously ungated (absent from this map, so
+  // enforceAgentToolPolicy let it run with no approval); each is now
+  // explicit and RISKY rather than left to the implicit "undeclared"
+  // fallback in agentToolPolicy, so it fails __tests__/agentToolPolicyCoverage.test.js
+  // if it is ever accidentally dropped from this map without a replacement.
+  delete_account: { risk: 'destructive', approvalRequired: true, reason: 'permanently deletes a CRM account record' },
+  delete_contact: { risk: 'destructive', approvalRequired: true, reason: 'permanently deletes a CRM contact record' },
+  delete_opportunity: { risk: 'destructive', approvalRequired: true, reason: 'permanently deletes a CRM opportunity record' },
+  delete_project: { risk: 'destructive', approvalRequired: true, reason: 'permanently deletes a CRM project record' },
+  delete_task: { risk: 'destructive', approvalRequired: true, reason: 'permanently deletes a CRM task record' },
+  deerflow_studio_produce: { risk: 'paid_generation', approvalRequired: true, reason: 'spends real money against the Gemini key producing DeerFlow Studio media (~$1/clip, ~$0.13/image)' },
+  fcc_press_campaign_send: { risk: 'external_send', approvalRequired: true, reason: 'can send a real press release campaign email to outside journalists' },
+  newsroom_generate_draft: { risk: 'external_write', approvalRequired: true, reason: 'writes generated draft article content into the Newsroom AIOS third-party platform' },
+  newsroom_edit_draft: { risk: 'external_write', approvalRequired: true, reason: 'writes edited draft article content into the Newsroom AIOS third-party platform' },
 }
+
+// SAFE_TOOLS — the default-deny allowlist for unattended agent execution.
+// Membership here is an explicit declaration by a human reviewer that this
+// tool is safe to run WITHOUT Carl's approval: it is a read, a navigation/UI
+// action, or an internal CRM write that stays inside the CRM and is
+// reversible (accounts, contacts, leads, opportunities, projects, tasks,
+// notes, activities, drafts, memory/vault notes, timers). Anything that
+// leaves the building (email/SMS/calls/signatures/social/third-party writes),
+// touches money or entitlements, is destructive (deletes), or spends on a
+// paid provider must NOT be added here — see TOOL_RISK_POLICIES instead, or
+// let it fall through to the "undeclared" default in agentToolPolicy below.
+// Every key in the TOOLS registry must appear in exactly one of SAFE_TOOLS or
+// TOOL_RISK_POLICIES (enforced by __tests__/agentToolPolicyCoverage.test.js).
+const SAFE_TOOLS = new Set([
+  'ai_edit_template',
+  'api_spend_monitor',
+  'backup_status',
+  'capability_status',
+  'check_domain_availability',
+  'complete_task',
+  'control_timer',
+  'create_account',
+  'create_contact',
+  'create_content_draft',
+  'create_invoice',
+  'create_lead',
+  'create_openclaw_plugin_spec',
+  'create_opportunity',
+  'create_pipeline',
+  'create_plugin_change_request',
+  'create_project',
+  'create_task',
+  'dashboard_summary',
+  'dedupe_check',
+  'deep_research_dossier',
+  'deerflow_get_assistant',
+  'deerflow_get_assistant_graph',
+  'deerflow_get_assistant_schemas',
+  'deerflow_get_custom_agent',
+  'deerflow_get_custom_skill',
+  'deerflow_get_model',
+  'deerflow_health',
+  'deerflow_list_custom_agents',
+  'deerflow_list_custom_skills',
+  'deerflow_list_models',
+  'deerflow_list_readonly_tools',
+  'deerflow_list_skills',
+  'deerflow_mcp_config',
+  'deerflow_memory_config',
+  'deerflow_memory_status',
+  'draft_legal_document',
+  'fcc_press_campaign_create',
+  'fcc_press_campaign_report',
+  'fcc_press_contact_explain',
+  'fcc_press_list_save',
+  'fcc_press_query',
+  'fcc_press_suppress',
+  'finance_due_items',
+  'finance_summary',
+  'find_client',
+  'forget_memory',
+  'generate_image',
+  'generate_opportunity_requirements',
+  'get_account',
+  'get_contact',
+  'get_document',
+  'get_media',
+  'get_product',
+  'get_template',
+  'handoff_to_orca',
+  'import_start',
+  'list_accounts',
+  'list_activities',
+  'list_agent_memory',
+  'list_agents',
+  'list_calendar_events',
+  'list_client_billing',
+  'list_client_credit_wallets',
+  'list_contacts',
+  'list_content_drafts',
+  'list_documents',
+  'list_invoices',
+  'list_leads',
+  'list_media',
+  'list_media_folders',
+  'list_notes',
+  'list_opportunities',
+  'list_payments',
+  'list_pipelines',
+  'list_press_contacts',
+  'list_product_licenses',
+  'list_product_orders',
+  'list_products',
+  'list_projects',
+  'list_recurring_providers',
+  'list_saved_documents',
+  'list_subscription_plans',
+  'list_support_tickets',
+  'list_tasks',
+  'list_templates',
+  'list_vaults',
+  'log_activity',
+  'move_media',
+  'move_opportunity',
+  'navigate_to',
+  'newsroom_capabilities',
+  'newsroom_get_overview',
+  'newsroom_get_releases',
+  'newsroom_get_support',
+  'newsroom_list_papers',
+  'newsroom_plan_reporter_assignments',
+  'newsroom_preview_reporter_assignments',
+  'newsroom_search_images',
+  'newsroom_search_news',
+  'open_page',
+  'open_record',
+  'ops_status',
+  'portal_status',
+  'prepare_bill_payment',
+  'qualify_lead',
+  'read_note',
+  'recall_memory',
+  'recall_my_recent_work',
+  'remember_fact',
+  'repository_status',
+  'save_call_memory',
+  'save_document_to_account',
+  'scan_security',
+  'search',
+  'search_notes',
+  'stripe_catalog_status',
+  'subscription_workspace_report',
+  'take_note_for_client',
+  'update_account',
+  'update_contact',
+  'update_content_draft',
+  'update_opportunity',
+  'update_project',
+  'update_task',
+  'upsert_recurring_provider',
+  'verify_product_license',
+  'write_note',
+])
 
 function agentToolPolicy(toolName, args = {}) {
   if (toolName === 'generate_image') {
@@ -169,7 +353,9 @@ function agentToolPolicy(toolName, args = {}) {
       return { risk: 'paid_generation', approvalRequired: true, reason: `can spend paid image-generation credits via ${routedProvider}` }
     }
   }
-  return TOOL_RISK_POLICIES[toolName] || null
+  if (TOOL_RISK_POLICIES[toolName]) return TOOL_RISK_POLICIES[toolName]
+  if (SAFE_TOOLS.has(toolName)) return null
+  return { risk: 'undeclared', approvalRequired: true, reason: 'tool is not declared safe to run unattended' }
 }
 
 function summarizeGuardrailArgs(args = {}) {
@@ -205,31 +391,110 @@ function logAgentGuardrailEvent(event) {
 function enforceAgentToolPolicy(toolName, args = {}, context = {}) {
   const policy = agentToolPolicy(toolName, args)
   if (!policy) return { ok: true }
+  if (!policy.approvalRequired) return { ok: true, policy }
+
+  const tenantId = context.tenantContext?.tenantId || 'unknown'
+  const agentId = context.tenantContext?.agentId || null
+  const leaseId = context.tenantContext?.leaseId || null
+  const approvalPrincipal = context.principal?.kind || 'none'
+  const argsSummary = summarizeGuardrailArgs(args)
+
   // Tool arguments are generated by agents on both machine-key and browser-session
-  // paths. A boolean inside those arguments is not proof of human approval.
-  // Fail closed until a separate, action-bound, single-use approval artifact exists.
-  const approved = false
-  const event = {
+  // paths. A boolean inside those arguments is never proof of human approval —
+  // no branch below reads args.approvedByCarl (or anything like it) to decide
+  // this gate. The only ways through are a consumed, action-bound approval
+  // record or an open admin-approval window, and both are created only by a
+  // verified admin session through /api/admin/agent-approvals.
+  const fingerprint = fingerprintAction({ tool: toolName, args, tenantId })
+
+  const usableApproval = findUsableApproval(fingerprint)
+  const consumed = usableApproval ? consumeApproval(usableApproval.id) : null
+  if (consumed) {
+    logAgentGuardrailEvent({
+      tool: toolName,
+      risk: policy.risk,
+      approved: true,
+      via: 'approval',
+      approvalId: consumed.id,
+      approvalPrincipal,
+      blocked: false,
+      reason: policy.reason,
+      tenantId,
+      agentId,
+      leaseId,
+      args: argsSummary,
+    })
+    return { ok: true, policy }
+  }
+
+  const window = activeWindowForRisk(policy.risk)
+  if (window) {
+    logAgentGuardrailEvent({
+      tool: toolName,
+      risk: policy.risk,
+      approved: true,
+      via: 'window',
+      windowId: window.id,
+      approvalPrincipal,
+      blocked: false,
+      reason: policy.reason,
+      tenantId,
+      agentId,
+      leaseId,
+      args: argsSummary,
+    })
+    return { ok: true, policy }
+  }
+
+  const request = createOrReuseRequest({
     tool: toolName,
     risk: policy.risk,
-    approved,
-    approvalPrincipal: context.principal?.kind || 'none',
-    blocked: !approved && policy.approvalRequired,
     reason: policy.reason,
-    tenantId: context.tenantContext?.tenantId || 'unknown',
-    agentId: context.tenantContext?.agentId || null,
-    leaseId: context.tenantContext?.leaseId || null,
-    args: summarizeGuardrailArgs(args),
-  }
-  logAgentGuardrailEvent(event)
-  if (policy.approvalRequired && !approved) {
-    return {
+    args,
+    argsSummary,
+    tenantId,
+    requestedByAgent: agentId || approvalPrincipal,
+  })
+
+  // Fire-and-forget: fires whichever channels the Agent Approvals settings
+  // screen has enabled (push via ntfy, email via Resend) — see
+  // notifyApprovalPending() in lib/agent-approvals.js. A missing settings
+  // file reproduces the old always-push, never-email behavior exactly.
+  notifyApprovalPending({
+    tool: toolName,
+    reason: policy.reason,
+    argsSummary,
+    requestedByAgent: agentId || approvalPrincipal,
+    expiresAt: request.expiresAt,
+  })
+
+  logAgentGuardrailEvent({
+    tool: toolName,
+    risk: policy.risk,
+    approved: false,
+    via: 'none',
+    approvalId: request.id,
+    approvalPrincipal,
+    blocked: true,
+    reason: policy.reason,
+    tenantId,
+    agentId,
+    leaseId,
+    args: argsSummary,
+  })
+
+  return {
+    ok: false,
+    status: 202,
+    body: {
       ok: false,
-      status: 403,
-      error: `${toolName} blocked by agent guardrails: ${policy.reason}. This route does not accept approval claims embedded in agent arguments.`,
-    }
+      status: 'awaiting_approval',
+      approvalId: request.id,
+      tool: toolName,
+      expiresAt: request.expiresAt,
+      error: `Waiting for Carl's approval for ${toolName}. Tell Carl out loud that you are waiting on his approval and that nothing has been sent or changed yet. Do NOT report success.`,
+    },
   }
-  return { ok: true, policy }
 }
 
 function normalizeInvoiceItems(args = {}) {
@@ -257,6 +522,37 @@ function resolveAccountByName(name) {
     || accounts.find(a => (a.name || '').toLowerCase().includes(lc))
     || accounts.find(a => (a.name || '').toLowerCase().split(' ')[0] === lc.split(' ')[0])
     || null
+}
+
+// Shared account resolver for the portal/voice/credit agent tools below. Resolves by
+// accountId first, then account email, then account name (exact, then substring) —
+// throwing a clear, listable error on no match or an ambiguous match so a voice agent
+// never silently acts on the wrong client.
+function resolvePortalAccount(args = {}) {
+  const accountId = String(args.accountId || '').trim()
+  if (accountId) {
+    const account = findById('accounts', accountId)
+    if (!account) throw new Error(`No account found with id "${accountId}"`)
+    return account
+  }
+  const email = String(args.email || '').trim().toLowerCase()
+  const clientName = String(args.clientName || args.accountName || args.name || '').trim()
+  if (!clientName && !email) throw new Error('clientName, accountId, or email is required to identify the account')
+  const accounts = loadAll('accounts')
+  let candidates = []
+  if (email) {
+    candidates = accounts.filter(a => String(a.email || '').trim().toLowerCase() === email)
+  }
+  if (!candidates.length && clientName) {
+    const lc = clientName.toLowerCase()
+    candidates = accounts.filter(a => (a.name || '').toLowerCase() === lc)
+    if (!candidates.length) candidates = accounts.filter(a => (a.name || '').toLowerCase().includes(lc))
+  }
+  if (!candidates.length) throw new Error(`No account found matching "${clientName || email}"`)
+  if (candidates.length > 1) {
+    throw new Error(`Multiple accounts match "${clientName || email}": ${candidates.map(a => a.name || a.id).join(', ')}. Specify accountId.`)
+  }
+  return candidates[0]
 }
 
 const UI_RECORD_META = {
@@ -2734,18 +3030,18 @@ const TOOLS = {
 
   // ─── Time tracking (singleton timer; state in data/timer-state.json) ─────────────
   control_timer: {
-    description: 'Control the work timer. Args: { action: "start"|"pause"|"resume"|"stop"|"note"|"status", clientName?, accountId?, note? }. start begins timing on a client (rejects if a different client timer is running). pause/resume toggle. stop logs the session as a time_tracked activity against the account and bumps trackedSeconds. note appends a note to the running session. status returns the current state. The timer is a singleton — one Carl, one running timer.',
+    description: 'Control the work timer. Args: { action: "start"|"pause"|"resume"|"stop"|"note"|"status", clientName?, accountId?, projectName?, note? }. start begins timing on a client (rejects if a different client timer is running); optional projectName resolves to one of that client\'s projects by exact or unambiguous partial name match — ignored (not an error) if it does not resolve to exactly one. pause/resume toggle. stop logs the session as a time_tracked activity against the account (and project, if one was set) and bumps trackedSeconds. note appends a note to the running session. status returns the current state. The timer is a singleton — one Carl, one running timer.',
     run: async (args = {}) => {
       const action = String(args.action || 'status').toLowerCase()
       const base = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000'
       if (action === 'status' || action === 'get') {
-        const r = await fetch(`${base}/api/timer`, { cache: 'no-store' })
+        const r = await fetch(`${base}/api/timer`, { cache: 'no-store', headers: internalMachineHeaders() })
         return r.json()
       }
       const r = await fetch(`${base}/api/timer`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, clientName: args.clientName, accountId: args.accountId, note: args.note }),
+        headers: { 'Content-Type': 'application/json', ...internalMachineHeaders() },
+        body: JSON.stringify({ action, clientName: args.clientName, accountId: args.accountId, projectName: args.projectName, note: args.note }),
       })
       const j = await r.json()
       if (!r.ok) throw new Error(j.error || `timer ${action} failed (${r.status})`)
@@ -3584,6 +3880,235 @@ const TOOLS = {
       return issuePrepaidCredits({ tenantId: lease.tenantId, accountId: lease.clientAccountId, leaseId: lease.id, credits, reason: String(args.reason).trim(), issuedBy: 'Frank, Finance Manager', idempotencyKey: `agent-credit-grant:${lease.id}:${String(args.requestId || Date.now())}`, metadata: { source: 'finance-manager-agent' } })
     },
   },
+  portal_status: {
+    description: 'Read-only. Get a client\'s portal status in one call: whether the portal is enabled, complimentary status, sign-in email, Cheryl text/voice access, and credit wallet balance in dollars. Args: { clientName?, accountId?, email? } — at least one required. Cheap and safe to call anytime; never blocked by approval guardrails. If this call fails, say the exact failure out loud — never report success unless this returned ok.',
+    run: (args = {}) => {
+      const account = resolvePortalAccount(args)
+      const lease = activeLeaseForAccount(account.id)
+      if (!lease) {
+        return {
+          accountId: account.id,
+          accountName: account.name || '',
+          portalEnabled: false,
+          leaseId: null,
+          leaseStatus: null,
+          complimentary: false,
+          complimentaryExpiresAt: null,
+          loginEmail: account.email || '',
+          cherylTextAccess: false,
+          cherylVoiceEnabled: false,
+          cherylVoiceDailySeconds: 0,
+          creditsAvailable: 0,
+          creditsBalance: 0,
+          balanceUsd: 0,
+          lastPortalSignInAt: null,
+          summary: `${account.name || 'This account'} does not have portal access enabled.`,
+        }
+      }
+      const portalEnabled = lease.portalAccess !== 'disabled'
+      const complimentary = isComplimentaryLease(lease)
+      const voicePolicy = resolveCherylVoicePolicy(lease)
+      let wallet = { availableCredits: 0, balanceCredits: 0 }
+      try {
+        if (lease.tenantId && lease.clientAccountId) {
+          wallet = getCreditWallet({ tenantId: lease.tenantId, accountId: lease.clientAccountId })
+        }
+      } catch {}
+      const creditsAvailable = Number(wallet.availableCredits) || 0
+      const creditsBalance = Number(wallet.balanceCredits ?? wallet.availableCredits) || 0
+      const balanceUsd = Math.round((creditsAvailable / CREDITS_PER_USD) * 100) / 100
+      let lastPortalSignInAt = null
+      try {
+        const sessions = (readData('portal-sessions.json') || {}).sessions || {}
+        const times = Object.values(sessions)
+          .filter(s => s?.accountId === account.id)
+          .map(s => Number(s.createdAt))
+          .filter(Number.isFinite)
+        if (times.length) lastPortalSignInAt = new Date(Math.max(...times)).toISOString()
+      } catch {}
+      const portalDescriptor = !portalEnabled ? 'a disabled portal' : complimentary ? 'a complimentary portal' : 'an active paid portal'
+      const summary = `${account.name || 'This account'} has ${portalDescriptor} with $${balanceUsd.toFixed(2)} in credits and Cheryl voice ${voicePolicy.enabled ? 'enabled' : 'disabled'}.`
+      return {
+        accountId: account.id,
+        accountName: account.name || '',
+        portalEnabled,
+        leaseId: lease.id,
+        leaseStatus: lease.status,
+        complimentary,
+        complimentaryExpiresAt: lease.complimentaryExpiresAt || null,
+        loginEmail: account.email || '',
+        cherylTextAccess: portalEnabled,
+        cherylVoiceEnabled: voicePolicy.enabled,
+        cherylVoiceDailySeconds: voicePolicy.dailySeconds,
+        creditsAvailable,
+        creditsBalance,
+        balanceUsd,
+        lastPortalSignInAt,
+        summary,
+      }
+    },
+  },
+  enable_portal: {
+    description: 'Create or enable client portal access, complimentary or paid, and set the Cheryl voice entitlement. Args: { clientName?, accountId?, loginEmail?, complimentary? (bool, default true), complimentaryDuration? (\'never\'|\'30_days\'|\'custom\', default \'never\'), complimentaryReason?, cherylVoice? (bool, default true), dailyVoiceMinutes?, approvedByCarl }. One of clientName or accountId is required. Idempotent — if the account already has an active portal, no duplicate lease is created. If this call fails, say the exact failure out loud — never report success unless this returned ok.',
+    run: (args = {}) => {
+      const account = resolvePortalAccount(args)
+      const existing = activeLeaseForAccount(account.id)
+      if (existing && existing.portalAccess !== 'disabled') {
+        const voicePolicy = resolveCherylVoicePolicy(existing)
+        return {
+          ok: true,
+          accountId: account.id,
+          accountName: account.name || '',
+          leaseId: existing.id,
+          complimentary: isComplimentaryLease(existing),
+          loginEmail: account.email || '',
+          cherylVoiceEnabled: voicePolicy.enabled,
+          alreadyEnabled: true,
+          message: `${account.name || 'This account'} already has an active portal (lease ${existing.id}) — no changes were made.`,
+        }
+      }
+
+      const complimentary = args.complimentary !== false
+      const complimentaryDuration = String(args.complimentaryDuration || 'never')
+      let complimentaryReason = String(args.complimentaryReason || '').trim()
+      if (complimentary && complimentaryReason.length < 3) complimentaryReason = 'Complimentary access granted by Carl'
+      const cherylVoiceEnabled = args.cherylVoice !== false
+      const dailyVoiceMinutes = args.dailyVoiceMinutes !== undefined ? Number(args.dailyVoiceMinutes) : undefined
+      const conciergeVoice = cherylVoiceEnabled
+        ? { enabled: true, ...(Number.isFinite(dailyVoiceMinutes) && dailyVoiceMinutes > 0 ? { dailySeconds: Math.round(dailyVoiceMinutes * 60) } : {}) }
+        : { enabled: false }
+
+      const login = clientLoginDetails(account.id, args.loginEmail)
+      if (!login.ready) throw new Error(login.error || 'A valid sign-in email is required to enable the portal.')
+
+      const agentName = args.agentName || 'Maggie (voice)'
+      const result = enablePortalForAccount(account.id, {
+        enabledBy: agentName,
+        complimentary,
+        complimentaryDuration,
+        complimentaryReason,
+        conciergeVoice,
+      })
+      if (!result.ok) throw new Error(result.error || 'Portal access could not be enabled.')
+
+      try {
+        update('accounts', account.id, {
+          email: login.email,
+          ...(!account.contactName && login.contactName ? { contactName: login.contactName } : {}),
+        })
+      } catch (e) {
+        throw new Error(`Portal lease was created but the sign-in email could not be saved: ${e?.message || e}`)
+      }
+
+      const voicePolicy = resolveCherylVoicePolicy(result.lease)
+      return {
+        ok: true,
+        accountId: account.id,
+        accountName: account.name || '',
+        leaseId: result.lease.id,
+        complimentary: isComplimentaryLease(result.lease),
+        loginEmail: login.email,
+        cherylVoiceEnabled: voicePolicy.enabled,
+        message: `Portal enabled for ${account.name || 'the account'}${complimentary ? ', complimentary' : ''}, signed in as ${login.email}, with Cheryl voice ${voicePolicy.enabled ? 'on' : 'off'}.`,
+      }
+    },
+  },
+  grant_cheryl_voice: {
+    description: 'Turn Cheryl voice on or off on a client\'s existing active portal lease. Args: { clientName?, accountId?, enabled? (bool, default true), dailyVoiceMinutes? }. Requires an existing active portal lease — call enable_portal first if there is none. If this call fails, say the exact failure out loud — never report success unless this returned ok.',
+    run: (args = {}) => {
+      const account = resolvePortalAccount(args)
+      const lease = activeLeaseForAccount(account.id)
+      if (!lease) throw new Error(`No active portal lease for ${account.name || account.id} — enable the portal first.`)
+
+      const data = readData('leases.json') || { leases: [] }
+      const stored = (data.leases || []).find(item => item.id === lease.id)
+      if (!stored) throw new Error(`No active portal lease for ${account.name || account.id} — enable the portal first.`)
+
+      const rawVoice = stored.conciergeVoice && typeof stored.conciergeVoice === 'object' ? stored.conciergeVoice : {}
+      const enabled = args.enabled !== false
+      const dailyVoiceMinutes = args.dailyVoiceMinutes !== undefined ? Number(args.dailyVoiceMinutes) : undefined
+      const dailySeconds = Number.isFinite(dailyVoiceMinutes) && dailyVoiceMinutes > 0
+        ? Math.round(dailyVoiceMinutes * 60)
+        : (Number.isSafeInteger(rawVoice.dailySeconds) ? rawVoice.dailySeconds : 900)
+      const conciergeVoice = enabled
+        ? {
+            enabled: true,
+            dailySeconds,
+            maxSessionSeconds: Number.isSafeInteger(rawVoice.maxSessionSeconds) ? rawVoice.maxSessionSeconds : 600,
+            idleTimeoutSeconds: Number.isSafeInteger(rawVoice.idleTimeoutSeconds) ? rawVoice.idleTimeoutSeconds : 90,
+            ...(Array.isArray(rawVoice.warningThresholds) ? { warningThresholds: rawVoice.warningThresholds } : {}),
+          }
+        : { enabled: false }
+      stored.conciergeVoice = conciergeVoice
+      writeData('leases.json', data)
+
+      try {
+        logActivity({
+          type: 'account',
+          subject: enabled ? 'Cheryl voice enabled' : 'Cheryl voice disabled',
+          body: `Cheryl voice ${enabled ? 'enabled' : 'disabled'} by ${args.agentName || 'Maggie (voice)'}.`,
+          linkedTo: { accountId: account.id },
+          meta: { leaseId: lease.id, conciergeVoice },
+        })
+      } catch {}
+
+      return {
+        ok: true,
+        accountId: account.id,
+        accountName: account.name || '',
+        leaseId: lease.id,
+        cherylVoiceEnabled: conciergeVoice.enabled,
+        cherylVoiceDailySeconds: conciergeVoice.enabled ? conciergeVoice.dailySeconds : 0,
+        message: conciergeVoice.enabled
+          ? `Cheryl voice is now on for ${account.name || 'this account'}, with a daily allowance of ${Math.round(conciergeVoice.dailySeconds / 60)} minutes.`
+          : `Cheryl voice is now off for ${account.name || 'this account'}.`,
+      }
+    },
+  },
+  add_account_credit: {
+    description: 'Add prepaid service credits to a client\'s wallet, by dollar amount or by credit count. Args: { clientName?, accountId?, usd?, credits?, reason?, approvedByCarl }. Exactly one of usd or credits is required; usd converts at 1 credit = 1 cent. Requires an existing active portal lease — call enable_portal first if there is none. If this call fails, say the exact failure out loud — never report success unless this returned ok.',
+    run: (args = {}) => {
+      const account = resolvePortalAccount(args)
+      const lease = activeLeaseForAccount(account.id)
+      if (!lease) throw new Error(`No active portal lease for ${account.name || account.id} — enable the portal first.`)
+
+      const hasUsd = args.usd !== undefined && args.usd !== null && args.usd !== ''
+      const hasCredits = args.credits !== undefined && args.credits !== null && args.credits !== ''
+      if (hasUsd === hasCredits) throw new Error('Provide exactly one of usd or credits')
+      const credits = hasUsd ? Math.round(Number(args.usd) * CREDITS_PER_USD) : Number(args.credits)
+      if (!Number.isSafeInteger(credits) || credits < 1 || credits > 1_000_000) {
+        throw new Error('credits must resolve to a whole number between 1 and 1,000,000')
+      }
+      const reason = String(args.reason || '').trim() || 'Credit issued by Carl'
+      const issuedBy = args.agentName || 'Maggie (voice)'
+
+      const issued = issuePrepaidCredits({
+        tenantId: lease.tenantId,
+        accountId: lease.clientAccountId,
+        leaseId: lease.id,
+        credits,
+        reason,
+        issuedBy,
+        idempotencyKey: `agent-credit-grant:${lease.id}:${String(args.requestId || Date.now())}`,
+        metadata: { source: 'maggie-voice-agent' },
+      })
+      if (!issued?.ok) throw new Error('Credit issue did not complete')
+
+      const newAvailableCredits = Number(issued.wallet?.availableCredits) || 0
+      const newBalanceUsd = Math.round((newAvailableCredits / CREDITS_PER_USD) * 100) / 100
+      const usd = Math.round((credits / CREDITS_PER_USD) * 100) / 100
+      return {
+        ok: true,
+        accountName: account.name || '',
+        leaseId: lease.id,
+        creditsIssued: credits,
+        usd,
+        newAvailableCredits,
+        newBalanceUsd,
+        message: `Added $${usd.toFixed(2)} in credits to ${account.name || 'the account'}. New balance is $${newBalanceUsd.toFixed(2)}.`,
+      }
+    },
+  },
   stripe_catalog_status: {
     description: 'Report the controlled Stripe billing catalog definition count, hash, and last recorded sync run. Read-only and never changes Stripe.',
     run: () => { const definitions = getRuntimeStripeBillingCatalogDefinitions(); const state = readData('stripe-catalog-sync-runs.json') || {}; return { definitions: definitions.length, catalogHash: stripeBillingCatalogHash(definitions), lastRun: state.lastRun || state.updatedAt || null } },
@@ -4172,6 +4697,27 @@ function applyImageGenerationAgentPreference(args = {}, agentLookup = null) {
 // Handlers
 // =====================================================================================
 
+
+// Voice models sometimes flatten tool arguments to the top level of the body
+// instead of nesting them under `args` — the webhook schema declares `args` as a
+// free-form object with no properties, so nothing steers them. Before this,
+// { tool: "create_account", name: "Widget Co" } failed with a misleading
+// "name required" while the name sat right there in the body (Maggie, 2026-09-18).
+const RESERVED_BODY_KEYS = new Set(['tool', 'args', 'params', 'agentId', 'agentName', 'requestedBy'])
+
+function argsFromBody(body, args) {
+  if (args && typeof args === 'object' && !Array.isArray(args) && Object.keys(args).length) return args
+  const flattened = {}
+  for (const [key, value] of Object.entries(body || {})) {
+    if (!RESERVED_BODY_KEYS.has(key)) flattened[key] = value
+  }
+  if (Object.keys(flattened).length) {
+    console.warn(`[agent/execute] flattened args accepted for tool=${body?.tool} keys=${Object.keys(flattened).join(',')}`)
+    return flattened
+  }
+  return (args && typeof args === 'object' && !Array.isArray(args)) ? args : {}
+}
+
 export async function GET(request) {
   if (!(await authenticateAgentRequest(request))) return fail('auth required', 401)
   // Enumerate all available tools (for OpenClaw to discover what it can do)
@@ -4183,8 +4729,15 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const startedAt = Date.now()
   const principal = await authenticateAgentRequest(request)
-  if (!principal) return fail('auth required', 401)
+  if (!principal) {
+    // Logged loudly: a voice agent whose webhook tool is missing its key fails here
+    // silently forever otherwise (cost us a live demo on 2026-09-17).
+    const hadHeader = !!(request.headers.get('x-agent-key') || request.headers.get('x-api-key'))
+    console.warn(`[agent/execute] AUTH FAIL 401 — key header ${hadHeader ? 'present but wrong' : 'MISSING'} — ua=${String(request.headers.get('user-agent') || '').slice(0, 60)}`)
+    return fail('auth required', 401)
+  }
   let body
   try { body = await request.json() } catch { return fail('invalid JSON') }
   const { tool, args } = body || {}
@@ -4193,7 +4746,7 @@ export async function POST(request) {
   if (resolved.special === 'fcc_list_tools' || resolved.special === 'list_tools') {
     return NextResponse.json({ ok: true, tools: toolList(), count: Object.keys(TOOLS).length })
   }
-  let runArgs = args || {}
+  let runArgs = argsFromBody(body, args)
   if (resolved.special === 'fcc_call') {
     const nestedTool = args?.tool
     if (!nestedTool) return fail('fcc_call requires args.tool')
@@ -4207,7 +4760,10 @@ export async function POST(request) {
   }
   runArgs = normalizeToolArgs(resolved.name, runArgs)
   const def = TOOLS[resolved.name]
-  if (!def) return fail(`unknown tool: ${tool}. Call GET /api/agent/execute to enumerate.`)
+  if (!def) {
+    console.warn(`[agent/execute] UNKNOWN TOOL requested: ${String(tool).slice(0, 80)}`)
+    return fail(`unknown tool: ${tool}. Call GET /api/agent/execute to enumerate.`)
+  }
 
   // Resolve tenant context for this request — every activity logged during this run
   // will be tagged with this lease's tenantId so leased-agent actions are attributable.
@@ -4226,13 +4782,15 @@ export async function POST(request) {
 
   try {
     const guardrail = enforceAgentToolPolicy(resolved.name, runArgs, { tenantContext, principal })
-    if (!guardrail.ok) return fail(guardrail.error, guardrail.status || 403)
+    if (!guardrail.ok) {
+      if (guardrail.body) return NextResponse.json(guardrail.body, { status: guardrail.status || 403 })
+      return fail(guardrail.error, guardrail.status || 403)
+    }
     const result = await def.run(runArgs)
+    console.log(`[agent/execute] ok tool=${resolved.name} principal=${principal.kind} agent=${tenantContext.agentId || '-'} ${Date.now() - startedAt}ms`)
     return ok(result)
   } catch (e) {
-    if (/invoice/i.test(resolved.name || tool || '')) {
-      console.warn(`[agent-tool] ${resolved.name || tool} failed: ${String(e.message || e).slice(0, 200)}`)
-    }
+    console.warn(`[agent/execute] FAIL tool=${resolved.name} principal=${principal.kind} ${Date.now() - startedAt}ms — ${String(e.message || e).slice(0, 200)}`)
     return fail(e.message, 400)
   } finally {
     clearRequestTenantContext()

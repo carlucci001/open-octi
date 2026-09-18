@@ -35,13 +35,13 @@ describe('OpenOcti Linda documents and e-signature', () => {
   })
 
   it('reports the exact missing e-signature configuration without exposing values', () => {
-    expect(signingConfiguration({})).toEqual({
+    expect(signingConfiguration({ FCC_EDITION: 'openocti' })).toEqual({
       configured: false,
       status: 'not_configured',
       missing: ['SIGNING_PUBLIC_URL', 'RESEND_API_KEY'],
       message: 'Not configured — add SIGNING_PUBLIC_URL and RESEND_API_KEY to enable e-signature.',
     })
-    expect(signingConfiguration({ SIGNING_PUBLIC_URL: 'https://example.com', RESEND_API_KEY: 'test-only' })).toMatchObject({ configured: true, status: 'configured', missing: [] })
+    expect(signingConfiguration({ FCC_EDITION: 'openocti', SIGNING_PUBLIC_URL: 'https://example.com', RESEND_API_KEY: 'test-only' })).toMatchObject({ configured: true, status: 'configured', missing: [] })
   })
 
   it('gates both document and agent signing paths and renders the setup state', () => {
@@ -50,7 +50,7 @@ describe('OpenOcti Linda documents and e-signature', () => {
     const manager = fs.readFileSync(path.join(root, 'app/documents/DocumentsManager.js'), 'utf8')
     expect(documentsRoute).toContain('if (isOpenOcti() && !eSign.configured)')
     expect(agentRoute).toContain('if (isOpenOcti() && !eSign.configured) throw new Error(eSign.message)')
-    expect(manager).toContain('Add <code>SIGNING_PUBLIC_URL</code> and <code>RESEND_API_KEY</code> to enable e-signature.')
+    expect(manager).toContain('eSignConfig.message')
   })
 
   it('provides the first-run business and owner prompt on the dashboard', () => {

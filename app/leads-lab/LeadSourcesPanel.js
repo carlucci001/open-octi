@@ -70,8 +70,8 @@ export default function LeadSourcesPanel({ query, onRefresh, initialZip = '' }) 
   async function prove(source) {
     setResults(current => ({ ...current, [source.id]: null }))
     try {
-      const provingJurisdiction = source.level === 'state' && source.coverage?.[0]
-        ? { state: source.coverage[0] }
+      const provingJurisdiction = ['state', 'city'].includes(source.level) && source.coverage?.[0]
+        ? { state: source.coverage[0].slice(0, 2) }
         : { zip }
       const response = await fetch('/api/lead-signals/prove', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },

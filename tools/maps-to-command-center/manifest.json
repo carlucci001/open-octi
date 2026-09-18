@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Maps → Command Center",
+  "version": "1.0.0",
+  "description": "Send Google Maps business listings into Command Center CRM as leads with one click.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": [
+    "https://www.google.com/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Maps → Command Center (click to open settings)"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["https://www.google.com/maps*", "https://www.google.com/search*"],
+      "js": ["parser.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

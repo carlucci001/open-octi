@@ -167,7 +167,7 @@
   },
   "examples": {
     ".env.example": {
-      "sha256": "811be4717a92c6595c1867d376976de9afd54e3a367c3f5cb772d4bbcdb5a580",
+      "sha256": "87334c2a3f39108eb53b3e87e5acf47af0f3455375bb1fdd759ddacd2516317d",
       "kind": "text"
     },
     "config/monitoring/community.example.json": {
@@ -177,6 +177,9 @@
   },
   "opaqueAssets": {
     "public/help/images/postiz-first-admin.png": { "sha256": "9f9338d010ad0271a85466a08ba3ea0facba63ab0d29599bfe0804132c80c3aa", "kind": "binary" },
+    "tools/maps-to-command-center/icons/icon128.png": { "sha256": "2356f10a538f4ae4d1310c5ce5544ced8211f43fb624db9ed3abab1931875447", "kind": "binary" },
+    "tools/maps-to-command-center/icons/icon16.png": { "sha256": "40d167c02731c2cbaeacc70fae7e4e2f4b7c7b03cfd6243e054237be62da7b4a", "kind": "binary" },
+    "tools/maps-to-command-center/icons/icon48.png": { "sha256": "7bc358b207dd9abde94f418eb07540889a87192d73699a6776618a852e801e33", "kind": "binary" },
     "public/help/images/postiz-settings.png": { "sha256": "19930446619cd48c4c4ce1a44a40835a9b4bd98912b271a1f79c8e6ab44c619a", "kind": "binary" },
     "public/help/images/postiz-keyless-help.png": { "sha256": "523f3099125297c44df0f2edc47d33adb92586025a6682143bd5b8db42f8a48d", "kind": "binary" },
     "public/help/images/postiz-help-mobile.png": { "sha256": "42ea5fcb9922e27d6c254612a0acfbc1a3ceb37121c187481cdc28e052f712b1", "kind": "binary" },
