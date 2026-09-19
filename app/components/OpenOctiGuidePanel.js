@@ -8,11 +8,26 @@ import { resolveOpenOctiAssistant } from '@/lib/openocti-assistant'
 const control = { minHeight: 48, border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', background: 'var(--surface2)', color: 'var(--text)' }
 const PROGRESS_KEY = 'openocti-setup-reading-v1'
 const evidenceLabel = value => value === 'accepted' ? 'accepted by Postiz' : value === 'confirmed_by_user' ? 'confirmed by you' : 'not verified'
+function nextOpenOctiStep(profile, enabled) {
+  if (!profile) return null
+  if (!profile.complete) return 'workspace'
+  if (!enabled) return 'model'
+  if (!profile.firstRunVisitedAgentsAt) return 'agents'
+  return 'postiz'
+}
+
+function openModelsSettings(event) {
+  event.preventDefault()
+  try { sessionStorage.setItem('fcc-settings-sub-pending', 'models') } catch {}
+  window.dispatchEvent(new CustomEvent('fcc:set-tab', { detail: 'settings' }))
+}
 
 export default function OpenOctiGuidePanel({ compact = false, initialPrompt = '' }) {
   const [query, setQuery] = useState('')
+  const [topicsOpen, setTopicsOpen] = useState(false)
   const [reviewed, setReviewed] = useState([])
   const [diagnostics, setDiagnostics] = useState(null)
+  const [profile, setProfile] = useState(null)
   const [enabled, setEnabled] = useState(false)
   const [message, setMessage] = useState(initialPrompt)
   const [history, setHistory] = useState([])
@@ -22,16 +37,29 @@ export default function OpenOctiGuidePanel({ compact = false, initialPrompt = ''
   const [checking, setChecking] = useState(false)
   async function refresh() {
     setChecking(true)
+    let nextProfile = null
+    let nextEnabled = false
     try {
-      const response = await fetch('/api/openocti/postiz', { cache: 'no-store' })
+      const response = await fetch('/api/openocti/setup', { cache: 'no-store' })
       const data = await response.json()
-      setDiagnostics(response.ok && data.ok ? data.diagnostics : null)
-    } catch { setDiagnostics(null) }
+      nextProfile = response.ok && data.ok ? data.profile : null
+    } catch { nextProfile = null }
     try {
       const response = await fetch('/api/platform-admin/v1/capabilities', { cache: 'no-store' })
       const data = await response.json()
-      setEnabled(Boolean(resolveOpenOctiAssistant(data.capabilities || []).textProvider))
-    } catch { setEnabled(false) }
+      nextEnabled = Boolean(resolveOpenOctiAssistant(data.capabilities || []).textProvider)
+    } catch { nextEnabled = false }
+    setProfile(nextProfile)
+    setEnabled(nextEnabled)
+    if (nextOpenOctiStep(nextProfile, nextEnabled) === 'postiz') {
+      try {
+        const response = await fetch('/api/openocti/postiz', { cache: 'no-store' })
+        const data = await response.json()
+        setDiagnostics(response.ok && data.ok ? data.diagnostics : null)
+      } catch { setDiagnostics(null) }
+    } else {
+      setDiagnostics(null)
+    }
     setChecking(false)
   }
   useEffect(() => {
@@ -62,35 +90,42 @@ export default function OpenOctiGuidePanel({ compact = false, initialPrompt = ''
     finally { setBusy(false) }
   }
   const topics = searchSetupHelp(query)
+  const guideStep = nextOpenOctiStep(profile, enabled)
   return <section aria-labelledby="octi-help-heading" className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
     <h2 id="octi-help-heading" className="text-xl font-semibold">Ask Octi · Getting started</h2>
     <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>Built-in guidance works without an AI key. Follow one step, check its result, then continue.</p>
     <div className="mt-4 rounded-lg p-4" style={{ background: 'var(--surface2)' }}>
-      <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">Your next Postiz step</h3><button type="button" disabled={checking} onClick={refresh} style={control}>{checking ? 'Checking…' : 'Recheck setup'}</button></div>
-      <p className="mt-2" role="status">{diagnostics?.next || 'Sign in as an administrator to check this installation. You can read every help topic below without signing in.'}</p>
-      {diagnostics && <><p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>Service: {diagnostics.installed === 'bundled' ? 'included in Docker' : 'external or not yet checked'} · Configuration: {diagnostics.configured ? 'saved' : 'needed'} · Reachable: {diagnostics.reachable === null ? 'not checked' : diagnostics.reachable ? 'yes' : 'no'} · Enabled channels: {diagnostics.channelCount ?? 'not checked'} · Scheduled: {evidenceLabel(diagnostics.scheduled)} · Published: {evidenceLabel(diagnostics.published)}</p><Link className="mt-3 inline-flex items-center underline" style={{ minHeight: 48 }} href="/settings/postiz">Open Postiz settings</Link></>}
+      <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">{guideStep === 'postiz' ? 'Optional · Publishing with Postiz' : 'Your next step'}</h3><button type="button" disabled={checking} onClick={refresh} style={control}>{checking ? 'Checking…' : 'Recheck'}</button></div>
+      {guideStep === null && <p className="mt-2" role="status">Sign in as an administrator to check this installation. You can read every help topic below without signing in.</p>}
+      {guideStep === 'workspace' && <><p className="mt-2" role="status">Name your workspace so your agents and documents carry your business name.</p><Link className="mt-3 inline-flex items-center underline" style={{ minHeight: 48 }} href="/">Name your workspace</Link></>}
+      {guideStep === 'model' && <><p className="mt-2" role="status">Paste an OpenAI, Anthropic, Gemini, OpenRouter or OrcaRouter key and choose Save &amp; test. Your agents and Octi come alive with one key.</p><Link className="mt-3 inline-flex items-center underline" style={{ minHeight: 48 }} href="/?tab=settings&settings=models" onClick={openModelsSettings}>Open Models &amp; Keys</Link></>}
+      {guideStep === 'agents' && <><p className="mt-2" role="status">Meet your agents and see what each one does before you put them to work.</p><Link className="mt-3 inline-flex items-center underline" style={{ minHeight: 48 }} href="/?tab=agents&ask=octi">Meet your agents</Link></>}
+      {guideStep === 'postiz' && <><p className="mt-2" role="status">{diagnostics?.next || 'Connect Postiz when you are ready to schedule and publish posts.'}</p>{diagnostics && <><p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>Service: {diagnostics.installed === 'bundled' ? 'included in Docker' : 'external or not yet checked'} · Configuration: {diagnostics.configured ? 'saved' : 'needed'} · Reachable: {diagnostics.reachable === null ? 'not checked' : diagnostics.reachable ? 'yes' : 'no'} · Enabled channels: {diagnostics.channelCount ?? 'not checked'} · Scheduled: {evidenceLabel(diagnostics.scheduled)} · Published: {evidenceLabel(diagnostics.published)}</p><Link className="mt-3 inline-flex items-center underline" style={{ minHeight: 48 }} href="/settings/postiz">Open Postiz settings</Link></>}</>}
     </div>
     <form onSubmit={ask} className="mt-5">
       <h3 className="font-semibold">Conversational help <span className="text-sm font-normal">· model-generated answers</span></h3>
       <p className="text-sm mt-1">{enabled ? 'Answers use this version’s bundled guidance and sanitized Postiz checks. Keep API keys in settings.' : 'Add a supported provider in Models & Keys when you want conversational answers. You can search the built-in help now.'}</p>
-      <div className="mt-2 flex flex-wrap gap-2"><input aria-label="Question for Octi" maxLength={2000} value={message} onChange={event => setMessage(event.target.value)} placeholder="What should I do next?" style={{ ...control, flex: '1 1 230px' }} /><button disabled={!enabled || busy || !message.trim()} style={{ ...control, opacity: !enabled || busy ? .6 : 1 }}>{busy ? 'Asking…' : 'Ask Octi'}</button></div>
+      {enabled ? <div className="mt-2 flex flex-wrap gap-2"><input aria-label="Question for Octi" maxLength={2000} value={message} onChange={event => setMessage(event.target.value)} placeholder="What should I do next?" style={{ ...control, flex: '1 1 230px' }} /><button disabled={busy || !message.trim()} style={{ ...control, opacity: busy ? .6 : 1 }}>{busy ? 'Asking…' : 'Ask Octi'}</button></div> : <p className="mt-2">Conversational help needs a model key — add one in Models &amp; Keys and Octi will answer here.</p>}
       <div className="mt-3 grid gap-2" aria-label="Conversation with Octi">{history.map((item, index) => <p key={index} className="whitespace-pre-wrap rounded-lg p-3" style={{ background: 'var(--surface2)' }}><strong>{item.role === 'user' ? 'You: ' : 'Octi: '}</strong>{item.content}</p>)}</div>
       {answer && <p className="sr-only" role="status">{answer}</p>}
       {error && <p className="mt-3" role="alert">{error}</p>}
-      <Link href="/settings/models" className="inline-flex items-center underline text-sm" style={{ minHeight: 48 }}>Models &amp; Keys</Link>
+      <Link href="/?tab=settings&settings=models" onClick={openModelsSettings} className="inline-flex items-center underline text-sm" style={{ minHeight: 48 }}>Models &amp; Keys</Link>
     </form>
     <OpenOctiVoiceGuide />
-    <div className="mt-4"><label className="font-semibold" htmlFor="octi-help-search">Search built-in help</label><input id="octi-help-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Try Facebook, invalid key, image upload…" className="mt-2 w-full" style={control} /></div>
-    <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>{reviewed.length} of {SETUP_HELP.length} topics reviewed on this browser. Reading progress does not verify setup or publishing.</p>
-    <div className="mt-3 grid gap-3" style={compact ? { maxHeight: 440, overflowY: 'auto' } : undefined}>
-      {topics.map(topic => <details key={topic.id} className="rounded-lg p-3" style={{ border: '1px solid var(--border)' }}>
-        <summary className="font-semibold cursor-pointer py-3">{topic.title}{reviewed.includes(topic.id) ? ' · reviewed' : ''}</summary>
-        <ol className="list-decimal pl-6 grid gap-2 mt-2">{topic.steps.map(step => <li key={step}>{step}</li>)}</ol>
-        <p className="mt-3"><strong>Expected result: </strong>{topic.expected}</p>
-        <div className="mt-3 flex flex-wrap gap-3 items-center"><Link href={topic.href} className="underline inline-flex items-center" style={{ minHeight: 48 }}>Open related screen</Link><button type="button" aria-pressed={reviewed.includes(topic.id)} onClick={() => markReviewed(topic.id)} style={control}>{reviewed.includes(topic.id) ? 'Mark unread' : 'Mark topic reviewed'}</button></div>
-      </details>)}
-      {!topics.length && <p>No matching topic. Clear the search to see the full setup guide.</p>}
-    </div>
+    {compact && <button type="button" onClick={() => setTopicsOpen(open => !open)} aria-expanded={topicsOpen} className="mt-4" style={control}>{topicsOpen ? 'Hide setup topics' : 'Browse setup topics'}</button>}
+    {(!compact || topicsOpen) && <>
+      <div className="mt-4"><label className="font-semibold" htmlFor="octi-help-search">Search built-in help</label><input id="octi-help-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Try Facebook, invalid key, image upload…" className="mt-2 w-full" style={control} /></div>
+      <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>{reviewed.length} of {SETUP_HELP.length} topics reviewed on this browser. Reading progress does not verify setup or publishing.</p>
+      <div className="mt-3 grid gap-3" style={compact ? { maxHeight: 440, overflowY: 'auto' } : undefined}>
+        {topics.map(topic => <details key={topic.id} className="rounded-lg p-3" style={{ border: '1px solid var(--border)' }}>
+          <summary className="font-semibold cursor-pointer py-3">{topic.title}{reviewed.includes(topic.id) ? ' · reviewed' : ''}</summary>
+          <ol className="list-decimal pl-6 grid gap-2 mt-2">{topic.steps.map(step => <li key={step}>{step}</li>)}</ol>
+          <p className="mt-3"><strong>Expected result: </strong>{topic.expected}</p>
+          <div className="mt-3 flex flex-wrap gap-3 items-center"><Link href={topic.href} className="underline inline-flex items-center" style={{ minHeight: 48 }}>Open related screen</Link><button type="button" aria-pressed={reviewed.includes(topic.id)} onClick={() => markReviewed(topic.id)} style={control}>{reviewed.includes(topic.id) ? 'Mark unread' : 'Mark topic reviewed'}</button></div>
+        </details>)}
+        {!topics.length && <p>No matching topic. Clear the search to see the full setup guide.</p>}
+      </div>
+    </>}
     <p className="mt-4 text-sm"><a href="/help/getting-started.md" download className="underline">Download the written guide</a></p>
   </section>
 }

@@ -34,6 +34,6 @@ describe('OpenOcti welcome audio', () => {
     const source = fs.readFileSync(path.join(root, 'app/login/loginWelcomeAudio.js'), 'utf8')
     expect(source).toContain("openOctiWelcomeClipFor({ setupIncomplete: true })")
     expect(source).toContain("body: JSON.stringify({ action: 'complete-first-login' })")
-    expect(source).toContain("window.location.assign('/settings/models')")
+    expect(source).toContain("window.location.assign('/?tab=settings&settings=models')")
   })
 })

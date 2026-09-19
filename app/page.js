@@ -1100,7 +1100,7 @@ function UserAvatarMenu({ user, isAdmin, isOwner, theme, onThemeChange, networkM
               <AvatarQuickAction icon={<MenuIcon type="timer" />} label="Tasks" detail="Work queue" onClick={() => go('tasks')} />
               <AvatarQuickAction icon={<MenuIcon type="feed" />} label="Calendar" detail="Schedule" onClick={() => go('calendar')} />
               <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Credentials" detail="Keys" onClick={() => go('credentials')} />
-              {OPENOCTI && isAdmin && <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Models & Keys" detail="AI providers" onClick={() => { window.location.href = '/settings/models' }} />}
+              {OPENOCTI && isAdmin && <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Models & Keys" detail="AI providers" onClick={() => { try { sessionStorage.setItem('fcc-settings-sub-pending', 'models') } catch {} go('settings') }} />}
               {isAdmin && <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Admin" detail="Settings" onClick={() => go('settings')} />}
             </div>
             <div className="avatar-menu-status-strip" aria-label="System status">

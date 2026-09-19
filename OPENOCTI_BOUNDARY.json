@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "0fc2f760ddf83525348e29d2f9a310d1f4f0b646",
+  "sourceCommit": "f806481487ab8e3ef4882b928b3b3a458325f20c",
   "approvedPublicCommit": "d488f91548f57fd2f7c2198fc077a5828e47441e",
   "normalization": "utf8-lf-text/raw-binary",
   "files": [
@@ -77,17 +77,17 @@
     {
       "path": "OPENOCTI_FILELIST.txt",
       "kind": "text",
-      "sha256": "eaf2673187eb24745c69efbcf92b2fef909e49e13ae0e43fbaa9e07069b876de"
+      "sha256": "d4ec5b3e130d8f7bb800216019767fc3072149d0ca8df1fd1141d658005f1d7b"
     },
     {
       "path": "OPENOCTI_MANIFEST.json",
       "kind": "text",
-      "sha256": "e50019fdf85d865e98cb49a79238cdc0838694a4a1c16530d49b53ae11fb2963"
+      "sha256": "777137a5aebaa7678ff1751c1962622fc35e5bd009f55642f03401e24cb5ac2f"
     },
     {
       "path": "README.md",
       "kind": "text",
-      "sha256": "feee042c28feb84930f45eeeaa01b3415054612f9d28a7207ff7095bae3fe24f"
+      "sha256": "766a61bcca1ceeba96500438cdf78a6119df547c6f53f7ee242b6940b121a923"
     },
     {
       "path": "SECURITY.md",
@@ -102,7 +102,7 @@
     {
       "path": "VERSION.json",
       "kind": "text",
-      "sha256": "10e8b094dba410831191dde1a2839057329cdd60557b4991dd8e668d57bf3e0b"
+      "sha256": "574f1edacd6cd3668450f463e773a37def8935e27f5a2742ebc833e0dd5409d4"
     },
     {
       "path": "__tests__/CampaignStudioDrawer.test.jsx",
@@ -332,7 +332,7 @@
     {
       "path": "__tests__/openoctiSetupHelp.test.jsx",
       "kind": "text",
-      "sha256": "58ff15745c02d6b680519a18cfb3020c997d1b86281a3d4a36f15d7ca4837685"
+      "sha256": "b574b27b290441b52b2b8e879db8b5fa6414c094a0e31b642f6cd646cf5a877c"
     },
     {
       "path": "__tests__/openoctiStarterRuntime.test.js",
@@ -342,7 +342,7 @@
     {
       "path": "__tests__/openoctiWelcomeAudio.test.js",
       "kind": "text",
-      "sha256": "00dee27e663c3fe1e69cfef3c33b896a4664bc1112d05a8c3c5337b73577fc5d"
+      "sha256": "d400d1a415a9e4f75db2c6b7e86787494bfa9dacbc965dfde512708f11a44285"
     },
     {
       "path": "__tests__/opsPublicBoundary.test.jsx",
@@ -1762,7 +1762,7 @@
     {
       "path": "app/api/video/end-room/route.js",
       "kind": "text",
-      "sha256": "89c48e6b41036c23ff11dcfd446017012326b76e2f1722db326ed8980e86a7ba"
+      "sha256": "10713b91d77a9718077fc644cc77b494e5abbdfe23855bd9d12bf558092e9911"
     },
     {
       "path": "app/api/video/invite/route.js",
@@ -2082,7 +2082,7 @@
     {
       "path": "app/components/OpenOctiGuidePanel.js",
       "kind": "text",
-      "sha256": "cf063d5c7ebcf4d5ee6947db34bf0335d5898043381c642eb3e949907a11f88e"
+      "sha256": "452eeefd4c8eebe637a2631262d7d8b63b13df112dbc064b5425084bd11caa53"
     },
     {
       "path": "app/components/OpenOctiUnavailable.js",
@@ -2237,7 +2237,7 @@
     {
       "path": "app/dashboard/OpenOctiFirstRun.js",
       "kind": "text",
-      "sha256": "736ec6adb5076ef0dc0dc0f6e8c9de8bd1c441df7aa7628ad9824d010aceb04e"
+      "sha256": "4caf1447b23ab0bc236993d7b71ccccb87daf65a9b00a79f71b6ca924d98d246"
     },
     {
       "path": "app/dashboard/OpenOctiSampleChip.js",
@@ -2372,7 +2372,7 @@
     {
       "path": "app/help/page.js",
       "kind": "text",
-      "sha256": "77650ba5356ad4d457d6a0883f46f1574f689e910e43c6c22b5c9d3f67d13b2f"
+      "sha256": "ceca3358840e3f7ec671e3a8cb53e41fbca416a07d174d10923f7434ecdbe15f"
     },
     {
       "path": "app/invoice/[id]/paid/page.js",
@@ -2422,7 +2422,7 @@
     {
       "path": "app/login/loginWelcomeAudio.js",
       "kind": "text",
-      "sha256": "745d3bbe3d6cfa1594fca49e35328970f8b9c989c95030d2279d87d0c445dc99"
+      "sha256": "eb097cda01cd1743f8738377b6d17a22b09977d7d0ba86db0608a26045e10f8b"
     },
     {
       "path": "app/login/page.js",
@@ -2542,7 +2542,7 @@
     {
       "path": "app/page.js",
       "kind": "text",
-      "sha256": "0d4767996ac0c309fdc9e39ccc85ea5cf6508b41f42ccdee73d514eb4a00e8f5"
+      "sha256": "5ccc5b4a122297b388422ed3fa15166bfee2f624ebf361ad074ad0fea768ef1d"
     },
     {
       "path": "app/payments/PaymentTerminal.js",
@@ -2662,7 +2662,7 @@
     {
       "path": "app/settings/OpenOctiModelsSettings.js",
       "kind": "text",
-      "sha256": "1b57973b2e005716f25305347cf41ad06c69495395b1a7cb780da08a4e2acbab"
+      "sha256": "ec104f2f84b59a3cb5719d03c8a548d9b93f521937a36f4de592362c9d05c2fe"
     },
     {
       "path": "app/settings/RolesPermissionsSettings.js",
@@ -2727,7 +2727,7 @@
     {
       "path": "app/settings/models/page.js",
       "kind": "text",
-      "sha256": "7a1dc229ef3c3b94ffa2215f878ff21ed114e8cc4cd65af3fe45b688ec0e2537"
+      "sha256": "105914dc99ad0377250aaa089f1d421ae94a883df3d9bda0d85ecfb74189fe39"
     },
     {
       "path": "app/settings/page.js",
@@ -3177,7 +3177,7 @@
     {
       "path": "deploy/openclaw/seed/workspace/octi/knowledge/PACKAGE.md",
       "kind": "text",
-      "sha256": "6091cc1cdfcfe6b2800faa320451e68a027f18d9ea4e187acc1af3a016808c5a"
+      "sha256": "add3ea73edc9ed8a3ccd4c198d67df3e19cb72eb2eb6f210b1851cef91af6e2a"
     },
     {
       "path": "deploy/openclaw/seed/workspace/press-release-agent/AGENTS.md",
@@ -3460,6 +3460,11 @@
       "sha256": "d57df77d14039106e9179f6025c039f234a035dadd5c09c44b0dc3d1db365cdd"
     },
     {
+      "path": "docs/guides/system-map.html",
+      "kind": "text",
+      "sha256": "c078c9155d0d888f6140cac389cbf2cd39c114bf861d6302c4b32bd747af6ed5"
+    },
+    {
       "path": "docs/guides/truthdiff.md",
       "kind": "text",
       "sha256": "57bade81c761b3eb9c7e8e951e9b5748f9e5957f82d456e0d8769a09c4939b57"
@@ -3538,6 +3543,11 @@
       "path": "docs/releases/1.4.0.md",
       "kind": "text",
       "sha256": "7ff30a82201698f624393e6b5a4478d9e96cc74a248ef889d7e6a351a19f984e"
+    },
+    {
+      "path": "docs/releases/1.4.1.md",
+      "kind": "text",
+      "sha256": "6da9f575ff3bae01d24847a1a2bd6ca3d32ea8f960ae70500d8dca9854931914"
     },
     {
       "path": "docs/screenshots/README.md",
@@ -5167,12 +5177,12 @@
     {
       "path": "package-lock.json",
       "kind": "text",
-      "sha256": "462c2959b494313746f115b50dd956a3910ac3e2f7a9b385828e415935bca3db"
+      "sha256": "7fbf84ce935d70db79744e2526dbaad19fca717bc59d00b50391b9c8befeb9c7"
     },
     {
       "path": "package.json",
       "kind": "text",
-      "sha256": "e477d79b6529297543ffd01e420a58c8c9b1a1e1e1bee4588776dded0c7edea2"
+      "sha256": "897509856c96e96fd80f762b7fd1f9dea39111c4bc688079c1ddb95363cb0a14"
     },
     {
       "path": "postcss.config.js",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-18T16:26:56.550Z",
+  "generatedAt": "2026-09-19T00:36:26.157Z",
   "source": "OpenOcti export",
   "excludes": [
     ".git/**",
@@ -196,20 +196,20 @@
     "!scripts/kill-port.ps1",
     "public/avatars/cheryl*"
   ],
-  "fileCount": 1359,
-  "byteCount": 53952728,
-  "treeSha256": "bba66c7c9374ca1b46c65b888b5cc09dde62ef0518336d5e3e88af47817ad4ab",
+  "fileCount": 1361,
+  "byteCount": 54003789,
+  "treeSha256": "66ce9e106ce820356eadf8afe32b63f6b366ff3696487981ba36eb8e335363cb",
   "demoFileCount": 31,
   "thirdPartyPackageCount": 43,
   "scrubbedOccurrenceCount": 213,
-  "listedFileCount": 1358,
+  "listedFileCount": 1360,
   "productDenylist": "PASS (0 hits)",
   "gitleaks": "PASS (0 findings)",
   "starterAgentPack": "reviewed-public-constants",
   "octiKnowledge": {
     "knowledgeFiles": 5,
-    "docs": 26
+    "docs": 27
   },
-  "sourceCommit": "0fc2f760ddf83525348e29d2f9a310d1f4f0b646",
-  "approvedSourceFileCount": 1329
+  "sourceCommit": "f806481487ab8e3ef4882b928b3b3a458325f20c",
+  "approvedSourceFileCount": 1331
 }

@@ -718,6 +718,7 @@ docs/guides/postiz-setup.md
 docs/guides/public-release-boundary.md
 docs/guides/running-on-a-vps.md
 docs/guides/stripe-setup.md
+docs/guides/system-map.html
 docs/guides/truthdiff.md
 docs/guides/upgrading.md
 docs/guides/voice-receptionist.md
@@ -734,6 +735,7 @@ docs/releases/1.2.3.md
 docs/releases/1.2.4.md
 docs/releases/1.3.0.md
 docs/releases/1.4.0.md
+docs/releases/1.4.1.md
 docs/screenshots/README.md
 docs/screenshots/agent-widget.jpg
 docs/screenshots/agents.jpg

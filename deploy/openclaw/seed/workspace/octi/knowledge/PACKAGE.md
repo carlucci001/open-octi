@@ -116,6 +116,7 @@ Agents remain disabled until their required model, voice, channel, and tool conn
 - [E-signatures](docs/guides/e-sign.md)
 - [Run on a VPS](docs/guides/running-on-a-vps.md)
 - [Upgrade](docs/guides/upgrading.md)
+- [System map](docs/guides/system-map.html) — open it in a browser: every part of your install, what it needs, and what Octi CC adds
 - [Screenshot inventory](docs/screenshots/README.md)
 
 ## Support
@@ -941,6 +942,230 @@ This public build does not include in-app Stripe catalog provisioning, subscript
 If browser checkout is interrupted, check Stripe before retrying a charge. The current payment terminal does not have background recovery for a pending payment intent. Stripe is the source of truth for charges and subscriptions until the complete event-reconciliation integration is implemented and verified.
 
 Never describe entering keys as automatically creating products, prices, subscriptions, or a complete billing lifecycle. Connecting an account, creating an offer, completing checkout, and reconciling the result are separate steps.
+
+# Source: docs/guides/system-map.html
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenOcti System Map</title>
+<style>
+:root{
+  --ground:#eef2f1; --panel:#ffffff; --ink:#15212b; --soft:#4c5d69; --line:#cdd8d6;
+  --accent:#0d7567; --accent-ink:#ffffff; --accent-wash:#d9efeb;
+  --you:#1f3a5f; --you-ink:#ffffff;
+  --opt:#9a5b00; --opt-wash:#fbeccd;
+  --off-bg:#e3e8e7; --off-ink:#6b7a84; --off-line:#b4c0be;
+  --e1:#0d7567; --e2:#3b5bb5; --e4:#b0562a; --e5:#56656f;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#10181e; --panel:#19242c; --ink:#e9f0f2; --soft:#a3b3bd; --line:#2f3f4a;
+    --accent:#4cc3b1; --accent-ink:#06211d; --accent-wash:#16362f;
+    --you:#9cc0f0; --you-ink:#0c1a2b;
+    --opt:#f0b65a; --opt-wash:#3a2c12;
+    --off-bg:#141c22; --off-ink:#8493a0; --off-line:#3a4954;
+    --e1:#4cc3b1; --e2:#8fa8f2; --e4:#eda27a; --e5:#a3b3bd;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#10181e; --panel:#19242c; --ink:#e9f0f2; --soft:#a3b3bd; --line:#2f3f4a;
+  --accent:#4cc3b1; --accent-ink:#06211d; --accent-wash:#16362f;
+  --you:#9cc0f0; --you-ink:#0c1a2b;
+  --opt:#f0b65a; --opt-wash:#3a2c12;
+  --off-bg:#141c22; --off-ink:#8493a0; --off-line:#3a4954;
+  --e1:#4cc3b1; --e2:#8fa8f2; --e4:#eda27a; --e5:#a3b3bd;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 17px/1.5 Verdana,"Segoe UI",system-ui,sans-serif;padding-inline:16px;padding-block:18px 40px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;margin:0;text-wrap:balance;line-height:1.15}
+h1{font-size:clamp(26px,4vw,38px)} h2{font-size:clamp(21px,3vw,27px)} h3{font-size:18px}
+p{margin:0;max-width:62ch} .sub{color:var(--soft)}
+nav{display:flex;flex-wrap:wrap;gap:8px}
+nav button{font:700 16px/1 Verdana,"Segoe UI",sans-serif;padding:12px 16px;border-radius:999px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+nav button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button:focus-visible{outline:3px solid var(--you);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px}
+.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:14px}
+.key{padding:4px 12px;border-radius:999px;border:2px solid var(--line);background:var(--panel)}
+.key.opt{border-color:var(--opt);color:var(--opt);background:var(--opt-wash)}
+.key.off{border:2px dashed var(--off-line);color:var(--off-ink);background:var(--off-bg)}
+.layer{display:flex;flex-direction:column;gap:8px}
+.tag{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
+.row{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.box{text-align:left;font:inherit;color:var(--ink);background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:2px;border-top:6px solid var(--hue,var(--line))}
+.box b{font-family:"Trebuchet MS","Segoe UI",sans-serif;font-size:18px}
+.box span{font-size:15px;color:var(--soft)}
+.box em{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.box[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-wash)}
+.box.you{background:var(--you);color:var(--you-ink);border-color:var(--you);cursor:default}
+.box.you span{color:var(--you-ink);opacity:.85}
+.box.opt{border-top-color:var(--opt)} .box.opt em{color:var(--opt)}
+.box.off{background:var(--off-bg);border:2px dashed var(--off-line);border-top:6px dashed var(--off-line);color:var(--off-ink)}
+.box.off span,.box.off em{color:var(--off-ink)}
+.box.off[aria-pressed="true"]{background:var(--off-bg);border-color:var(--off-ink)}
+.box.off em::after{content:" · not in this edition"}
+body[data-ed="pro"] .box.off,body[data-ed="pro"] .person.off{background:var(--panel);border:2px solid var(--accent);color:var(--ink)}
+body[data-ed="pro"] .box.off{border-top:6px solid var(--accent)}
+body[data-ed="pro"] .box.off span,body[data-ed="pro"] .person.off span{color:var(--soft)}
+body[data-ed="pro"] .box.off em{color:var(--accent)}
+body[data-ed="pro"] .box.off em::after{content:" adds this"}
+.switch{display:inline-flex;border:2px solid var(--accent);border-radius:999px;overflow:hidden;align-self:flex-start}
+.switch button{font:700 16px/1 Verdana,"Segoe UI",sans-serif;padding:12px 18px;border:0;background:var(--panel);color:var(--ink);cursor:pointer}
+.switch button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.arrow{text-align:center;color:var(--soft);font-size:20px;line-height:1}
+#detail{background:var(--panel);border:2px solid var(--accent);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:14px;padding:4px 10px;border-radius:999px;background:var(--accent-wash);color:var(--ink)}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:16px;margin:0}
+.kv dt{color:var(--soft);font-weight:700} .kv dd{margin:0}
+.people{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.person{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:12px 14px}
+.person.off{background:var(--off-bg);border:2px dashed var(--off-line);color:var(--off-ink)}
+.person b{display:block;font-size:18px} .person span{font-size:15px;color:var(--soft)} .person.off span{color:var(--off-ink)}
+.flow{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));counter-reset:s}
+.step{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:14px;counter-increment:s;display:flex;flex-direction:column;gap:4px}
+.step::before{content:counter(s);font:800 22px "Trebuchet MS",sans-serif;color:var(--accent)}
+.step.you{border-color:var(--you)} .step.you::before{color:var(--you)}
+.two{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.foot{font-size:14px;color:var(--soft)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <h1>What's inside your OpenOcti install</h1>
+    <p class="sub">One app, a few helper services, all on your own machine. Tap any box to see what it does and what it needs.</p>
+    <div class="switch" role="group" aria-label="Edition"><button id="ed-open" data-ed="open" aria-pressed="true">OpenOcti (free)</button><button id="ed-pro" data-ed="pro" aria-pressed="false">Octi CC (pro)</button></div>
+    <p class="sub" id="ed-note">Showing the free edition. Greyed boxes are Octi CC only.</p>
+    <div class="legend"><span class="key">Included</span><span class="key opt">Optional — you add it</span><span class="key off">Octi CC — not in this edition</span></div>
+  </header>
+
+  <nav role="tablist" aria-label="Views">
+    <button role="tab" id="t-map" data-v="map" aria-selected="true">1 · The map</button>
+    <button role="tab" id="t-who" data-v="who" aria-selected="false">2 · The staff</button>
+    <button role="tab" id="t-appr" data-v="appr" aria-selected="false">3 · How approvals work</button>
+    <button role="tab" id="t-know" data-v="know" aria-selected="false">4 · Good to know</button>
+  </nav>
+
+  <section id="v-map">
+    <div class="layer"><div class="row" style="grid-template-columns:1fr"><div class="box you"><b>You</b><span>Your browser. Docker listens on localhost until you decide to expose it.</span></div></div></div>
+    <div class="arrow">▼</div>
+    <div class="layer"><div class="tag">The app</div><div class="row" id="r-app" style="grid-template-columns:1fr"></div></div>
+    <div class="layer"><div class="tag">Inside the app</div><div class="row" id="r-mod"></div></div>
+    <div class="arrow">▼</div>
+    <div class="layer"><div class="tag">Helper services — where agents and jobs run</div><div class="row" id="r-eng"></div></div>
+    <div class="arrow">▼</div>
+    <div class="layer"><div class="tag">Outside services — always your own accounts and keys</div><div class="row" id="r-out"></div></div>
+    <div class="layer"><div class="tag">The floor everything stands on</div><div class="row" id="r-base"></div></div>
+    <div id="detail" aria-live="polite"></div>
+  </section>
+
+  <section id="v-who" hidden>
+    <h2>The six starter staff</h2>
+    <p class="sub">Agents stay off until the model, voice, channel and tool connections they need are set up. A key on its own gives an agent no permission to act.</p>
+    <div class="people" id="who"></div>
+  </section>
+
+  <section id="v-appr" hidden>
+    <h2>What happens when an agent wants to do something risky</h2>
+    <div class="flow">
+      <div class="step"><h3>Agent reaches for a tool</h3><p class="sub">Sending email or SMS, placing a call, taking a payment, deleting a record, paid generation.</p></div>
+      <div class="step"><h3>The app checks its list</h3><p class="sub">Reading, searching and ordinary record-keeping run on their own. Risky tools must ask. Anything undeclared is refused.</p></div>
+      <div class="step"><h3>It holds the action</h3><p class="sub">A request is made for that exact call. It works once and expires (15 minutes by default).</p></div>
+      <div class="step you"><h3>You get a notice</h3><p class="sub">Push, email, or both. The approvals panel shows what is waiting.</p></div>
+      <div class="step you"><h3>You say yes or no</h3><p class="sub">Or open a timed window for supervised work. Windows are capped, show a countdown, and can be closed any time.</p></div>
+      <div class="step"><h3>The agent runs it once</h3><p class="sub">An agent can never approve itself. Only a signed-in administrator can. Every step lands in the audit log.</p></div>
+    </div>
+    <p class="foot">Settings → Agent Approvals: notice channels, expiry, maximum window, recent activity, and the full list of tools that ask first.</p>
+  </section>
+
+  <section id="v-know" hidden>
+    <h2>Good to know</h2>
+    <div class="two">
+      <div class="card"><h3>It works before you add any AI key</h3><p>CRM, projects, documents and local knowledge tools run without a provider. One model key switches on text help.</p></div>
+      <div class="card"><h3>Postiz needs Temporal</h3><p>Social posting runs through Postiz, and Postiz cannot work without its Temporal service. Docker starts both. A plain Node install must run them separately.</p></div>
+      <div class="card"><h3>DeerFlow is optional and separate</h3><p>Start it with <code>docker compose --profile research up -d</code>. It is the upstream service, not the integrated Octi CC research desk.</p></div>
+      <div class="card"><h3>Hermes is not installed by Docker</h3><p>Build Board needs a Hermes dashboard and Kanban service you set up yourself. Built-in Hermes support is planned.</p></div>
+      <div class="card"><h3>Your keys stay in your install</h3><p>Keys saved in Models &amp; Keys and Stripe setup are stored encrypted in your data volume. Back up that volume before every upgrade.</p></div>
+      <div class="card"><h3>Greyed boxes</h3><p>They belong to Octi CC, the planned commercial edition. They are shown so you can see the whole design. Nothing in OpenOcti depends on them.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const CC='Part of Octi CC, the planned commercial edition. Not included here, and nothing in OpenOcti depends on it.';
+const N={
+ app:{r:'app',n:'OpenOcti app',s:'Sell → Build → Projects → Tools. Every screen you see.',hue:'--e1',what:'One web app. It also holds the approval gate that every agent action passes through.',needs:['SQLite data volume','Key store'],breaks:'Everything you look at is down. Your data stays safe in the volume.'},
+ sell:{r:'mod',n:'Sell',s:'Leads, pipelines, accounts, contacts, support, Finance',hue:'--e1',what:'The CRM side: win the work and keep the records.',needs:['Nothing extra'],breaks:'—'},
+ build:{r:'mod',n:'Build',s:'Agents, automations, Press Desk, campaigns, Labs',hue:'--e1',what:'Where you set up your agents and the jobs they run.',needs:['A model key for AI features'],breaks:'—'},
+ proj:{r:'mod',n:'Projects',s:'Tasks, documents, media, Command Vault, calendar',hue:'--e1',what:'Deliver the work: projects, files, communications and the activity feed.',needs:['Nothing extra'],breaks:'—'},
+ tools:{r:'mod',n:'Tools',s:'Imports, keys, settings, diagnostics',hue:'--e1',what:'Imports, credentials, model keys, usage and connection checks.',needs:['Nothing extra'],breaks:'—'},
+ portal:{r:'mod',n:'Client portal',s:'Logins for your clients',off:1,pro:"Gives each client their own login to see their work, files and orders. Access is approved by an administrator.",what:CC},
+ research:{r:'mod',n:'Research desk',s:'Dossiers, vetting, concierge orders',off:1,pro:"An integrated research desk: client dossiers, lead briefs, vetting, competitor and reputation reports, ordered and delivered inside the app.",what:CC},
+ platforms:{r:'mod',n:'Platforms',s:'Manage other products from one place',off:1,pro:"Registers your other products and manages them from one screen through the Platform Admin API.",what:CC},
+ subs:{r:'mod',n:'Subscription billing',s:'Plans, catalog sync, checkout, orders',off:1,pro:"Subscription plans, automatic Stripe catalog sync, product checkout and order handling.",what:CC+' OpenOcti still connects to your own Stripe account — see Stripe below.'},
+ outreach:{r:'mod',n:'New-business outreach',s:'Automated first-touch campaigns',off:1,pro:"Finds new businesses and schedules a guarded first contact, with every send passing the approval gate.",what:CC+' The agent tools exist and are gated, but report that the capability is unavailable.'},
+ money:{r:'mod',n:'Money Console + Ship Desk',s:'Portfolio revenue, release monitoring',off:1,pro:"Money Console watches revenue across your products. Ship Desk watches releases.",what:CC+' Use Finance for this install\'s invoices and payments.'},
+ support:{r:'mod',n:'Support access',s:'Remote help gateway',off:1,pro:"A controlled gateway for remote support sessions.",what:CC},
+ oc:{r:'eng',n:'OpenClaw gateway',s:'Runs your agents',hue:'--e1',what:'The agent runtime, shipped as a sidecar. It makes the model calls and runs agent tools through the app. It restarts by itself after you change providers.',needs:['At least one model key'],breaks:'Agents stop answering. The CRM keeps working.'},
+ pz:{r:'eng',n:'Postiz + Temporal',s:'Social posting',hue:'--e4',what:'Postiz publishes to your social accounts. Temporal is the job engine under it, with its own database and search.',needs:['Temporal','Postgres','Redis','Your social accounts'],breaks:'Posts stop going out. If Temporal is down, Postiz can still look fine — check both.'},
+ git:{r:'eng',n:'Gitea',s:'Your own code host',hue:'--e5',what:'A private Git server bundled for repository status and builds.',needs:['Its data volume'],breaks:'Repository screens go empty. Nothing else is affected.'},
+ df:{r:'eng',n:'DeerFlow',s:'Deep research engine',opt:1,what:'The upstream open-source research service. Off by default. It is not the integrated Octi CC research desk.',needs:['docker compose --profile research up -d','A model key'],breaks:'Only research you run through it.'},
+ hm:{r:'eng',n:'Hermes',s:'Kanban agents for Build Board',opt:1,what:'Not installed by Docker. Build Board needs a Hermes dashboard and Kanban service you configure yourself. Built-in support is planned.',needs:['Your own Hermes setup'],breaks:'Build Board only.'},
+ rteam:{r:'eng',n:'Research agent team',s:'Integrated dossier and vetting agents',off:1,pro:"A team of research agents wired into the research desk, each with one job: dossiers, lead briefs, vetting, market analysis, reputation risk.",what:CC},
+ models:{r:'out',n:'AI models',s:'OpenAI, Anthropic, Gemini, OpenRouter, OrcaRouter',hue:'--e2',what:'The brains. Add any one key in Models & Keys to switch on text help.',needs:['Your own API key'],breaks:'AI features pause. The rest of the app carries on.'},
+ voice:{r:'out',n:'Voice + phone',s:'ElevenLabs + Twilio, Gemini Live, or local VibeVoice',hue:'--e2',what:'Voice receptionist, dialer and hands-free help.',needs:['Your own accounts'],breaks:'Voice and calling only.'},
+ mail:{r:'out',n:'Email + inbox',s:'Resend, Nylas',hue:'--e2',what:'Resend sends mail. Nylas reads the inbox.',needs:['Your own keys'],breaks:'Email features show as not connected.'},
+ video:{r:'out',n:'Video meetings',s:'Daily',hue:'--e2',what:'Browser conference rooms and meeting capture.',needs:['Your own Daily key'],breaks:'Conference screen asks for a key.'},
+ stripe:{r:'out',n:'Stripe',s:'Your own account',hue:'--e2',what:'The owner saves Stripe keys under System → Admin → Stripe. Products and prices are made in your Stripe Dashboard; OpenOcti does not create or sync them for you.',needs:['Your own Stripe account'],breaks:'Payment flows only.'},
+ db:{r:'base',n:'SQLite data volume',s:'All your records',hue:'--e4',what:'One database on a persistent volume. Back it up before every upgrade.',needs:['Disk','Your backups'],breaks:'Everything. This is the one thing to protect.'},
+ keys:{r:'base',n:'Key store',s:'Encrypted, inside your install',hue:'--e4',what:'Provider and Stripe keys are encrypted and kept in your data volume. Saved secrets are never shown again.',needs:['SQLite data volume'],breaks:'Connected services stop until keys are re-entered.'},
+ gate:{r:'base',n:'Approval gate + audit log',s:'Humans approve risky actions',hue:'--e4',what:'Every agent tool is declared safe or ask-first. Anything undeclared is refused. Each attempt, approval and use is logged.',needs:['A signed-in administrator'],breaks:'Risky actions stay blocked. That is the safe direction.'},
+ api:{r:'base',n:'Platform Admin API + SDK',s:'Connect your own products',hue:'--e4',what:'A standard way for other products to register with and be managed from this install.',needs:['Nothing extra'],breaks:'—'}
+};
+const rows={app:'r-app',mod:'r-mod',eng:'r-eng',out:'r-out',base:'r-base'};
+const detail=document.getElementById('detail');
+var show=function(id){
+  const d=N[id];
+  document.querySelectorAll('.box[data-id]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===id));
+  detail.textContent='';
+  const h=document.createElement('h3');h.textContent=d.n+(d.off?' — Octi CC':d.opt?' — optional':'');detail.appendChild(h);
+  const dl=document.createElement('dl');dl.className='kv';
+  const add=(k,node)=>{const dt=document.createElement('dt');dt.textContent=k;const dd=document.createElement('dd');dd.append(node);dl.append(dt,dd)};
+  const pro=document.body.dataset.ed==='pro';
+  add('What it is',d.off&&pro?d.pro:d.what);
+  if(d.off&&pro)add('Status','Octi CC is the planned commercial edition.');
+  if(d.needs){const c=document.createElement('div');c.className='chips';d.needs.forEach(x=>{const s=document.createElement('span');s.className='chip';s.textContent=x;c.appendChild(s)});add('It needs',c)}
+  if(d.breaks&&d.breaks!=='—')add('If it stops',d.breaks);
+  detail.appendChild(dl);
+};
+for(const [id,d] of Object.entries(N)){
+  const b=document.createElement('button');b.className='box'+(d.off?' off':d.opt?' opt':'');b.dataset.id=id;b.id='box-'+id;
+  if(d.hue)b.style.setProperty('--hue','var('+d.hue+')');
+  if(d.off||d.opt){const e=document.createElement('em');e.textContent=d.off?'Octi CC':'Optional';b.appendChild(e)}
+  const t=document.createElement('b');t.textContent=d.n;const s=document.createElement('span');s.textContent=d.s;
+  b.append(t,s);b.addEventListener('click',()=>show(id));
+  document.getElementById(rows[d.r]).appendChild(b);
+}
+let current='app';const _show=show;show=function(id){current=id;_show(id)};show('app');
+document.querySelectorAll('.switch button').forEach(b=>b.addEventListener('click',()=>{document.body.dataset.ed=b.dataset.ed;document.querySelectorAll('.switch button').forEach(x=>x.setAttribute('aria-pressed',x===b));document.getElementById('ed-note').textContent=b.dataset.ed==='pro'?'Showing Octi CC, the planned commercial edition. Highlighted boxes are what it adds on top of OpenOcti.':'Showing the free edition. Greyed boxes are Octi CC only.';show(current)}));
+
+[['Octi','Guides the demo workspace and helps you find the next screen.'],['Maggie','Coordinates office requests, schedules, follow-ups and CRM records.'],['Craig','Plans, implements, reviews and verifies software changes.'],['Sasha','Creates visual concepts and plans social campaigns.'],['Linda','Reviews draft agreements and flags issues for qualified human review.'],['Matilda','Handles hands-free questions and approved workspace actions.'],['+ 8 specialist templates','Prepared and ready to configure. A portrait does not mean the runtime is connected.'],['Research agent team','Octi CC: dossiers, lead briefs, vetting, market and reputation reports.',1]]
+.forEach(([a,b,off])=>{const d=document.createElement('div');d.className='person'+(off?' off':'');const x=document.createElement('b');x.textContent=a;const y=document.createElement('span');y.textContent=b;d.append(x,y);document.getElementById('who').appendChild(d)});
+
+const tabs=[...document.querySelectorAll('nav button')];
+function go(v){tabs.forEach(t=>t.setAttribute('aria-selected',t.dataset.v===v));['map','who','appr','know'].forEach(k=>document.getElementById('v-'+k).hidden=k!==v)}
+tabs.forEach(t=>t.addEventListener('click',()=>go(t.dataset.v)));
+</script>
+</body>
+</html>
 
 # Source: docs/guides/truthdiff.md
 

@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { CheckCircle2, ExternalLink, KeyRound, Loader2, Trash2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { clearClientCapabilityCache } from '@/lib/client-capabilities'
+import { isOpenOcti } from '@/lib/edition'
+import OpenOctiGuidePanel from '../components/OpenOctiGuidePanel'
 
 const PROVIDER_COPY = {
   daily: 'Video conferences and screen sharing. Open Daily, copy your API key, then return here and choose Save & test. Your saved key is used automatically for conference rooms.',
@@ -111,6 +113,7 @@ export default function OpenOctiModelsSettings({ standalone = false }) {
 
   return (
     <div className={standalone ? 'command-workspace p-6' : ''}>
+      {!standalone && isOpenOcti() && <div className="mb-6"><OpenOctiGuidePanel compact /></div>}
       <PageHeader
         icon={<KeyRound size={22} />}
         title="Models & Keys"
