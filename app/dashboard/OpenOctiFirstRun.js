@@ -37,7 +37,7 @@ export default function OpenOctiFirstRun() {
 
   const steps = useMemo(() => [
     { id: 'workspace', label: 'Name your workspace', done: Boolean(profile?.complete) },
-    { id: 'model', label: 'Add a model key', done: modelConfigured, href: '/settings/models' },
+    { id: 'model', label: 'Add a model key', done: modelConfigured, href: '/?tab=settings&settings=models' },
     { id: 'agents', label: 'Meet your agents', done: Boolean(profile?.firstRunVisitedAgentsAt), href: '/?tab=agents&ask=octi', action: 'visit-agents' },
     { id: 'import', label: 'Import your data', done: Boolean(profile?.firstRunImportOpenedAt), href: '/settings/import', action: 'open-import' },
   ], [profile, modelConfigured])
@@ -91,7 +91,7 @@ export default function OpenOctiFirstRun() {
   return (
     <section className="rounded-xl p-5 mb-6" style={{ background: '#001040', border: '1px solid #30c0f0', color: '#fff' }}>
       <div className="flex items-start justify-between gap-3">
-        <div><h2 className="text-lg font-semibold">Welcome to OpenOcti</h2><p className="text-sm mt-1" style={{ color: '#8ba0c4' }}>Start with your workspace, then configure the services you need.</p><Link href="/help" className="inline-flex items-center underline" style={{ minHeight: 48 }}>Setup guide and Ask Octi · no AI key needed</Link></div>
+        <div><h2 className="text-lg font-semibold">Welcome to OpenOcti</h2><p className="text-sm mt-1" style={{ color: '#8ba0c4' }}>Start with your workspace, then configure the services you need.</p><Link href="/?ask=octi" onClick={event => { event.preventDefault(); window.dispatchEvent(new CustomEvent('openocti:ask', { detail: {} })) }} className="inline-flex items-center underline" style={{ minHeight: 48 }}>Setup guide and Ask Octi · no AI key needed</Link></div>
         <div className="flex items-center gap-1">
           {completed > 0 && <button type="button" onClick={() => setExpanded(false)} title="Collapse checklist" className="p-2 rounded-lg"><ChevronUp size={18} /></button>}
           <button type="button" onClick={() => patchProgress('dismiss')} title="Dismiss checklist" className="p-2 rounded-lg"><X size={18} /></button>
@@ -103,7 +103,7 @@ export default function OpenOctiFirstRun() {
             <div className="flex items-center gap-3">
               {step.done ? <Check size={20} color="#30c0f0" /> : <Circle size={20} color="#8ba0c4" />}
               <span className="flex-1 font-medium">{index + 1}. {step.label}</span>
-              {step.href && (!step.done || step.id === 'agents') && <Link href={step.href} aria-label={`Open ${step.label.toLowerCase()}`} onClick={event => { if (step.id === 'agents') { event.preventDefault(); window.dispatchEvent(new CustomEvent('openocti:ask', { detail: {} })) } if (step.action) patchProgress(step.action) }} className="rounded-lg px-3 py-2 font-semibold" style={{ color: '#001040', background: '#30c0f0' }}>Open</Link>}
+              {step.href && (!step.done || step.id === 'agents') && <Link href={step.href} aria-label={`Open ${step.label.toLowerCase()}`} onClick={event => { if (step.id === 'agents') { event.preventDefault(); window.dispatchEvent(new CustomEvent('openocti:ask', { detail: {} })) } if (step.id === 'model') { event.preventDefault(); try { sessionStorage.setItem('fcc-settings-sub-pending', 'models') } catch {} window.dispatchEvent(new CustomEvent('fcc:set-tab', { detail: 'settings' })) } if (step.action) patchProgress(step.action) }} className="rounded-lg px-3 py-2 font-semibold" style={{ color: '#001040', background: '#30c0f0' }}>Open</Link>}
             </div>
             {step.id === 'workspace' && !step.done && (
               <form onSubmit={saveWorkspace} className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">

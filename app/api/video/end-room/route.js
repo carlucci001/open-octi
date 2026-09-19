@@ -14,8 +14,14 @@ const DAILY_ROOM_NAME = /^[A-Za-z0-9_-]{1,128}$/
 // on room ff-instant-4v67tj (2026-07-29 17:19), retried ~100s later, and it
 // succeeded. Budget is now ~3.8s of backoff, still strictly bounded and still
 // fail-closed if participants genuinely remain.
-const PRESENCE_CONFIRMATION_ATTEMPTS = 6
-const PRESENCE_RETRY_BACKOFF_MS = [250, 400, 650, 1000, 1500]
+// 2026-09-18: ~3.8s was still too short — room ff-instant-m6pg1g 409'd after 6
+// checks although the eject had worked (presence was empty seconds later).
+// Budget is now ~9.8s. Still bounded, still fail-closed.
+const PRESENCE_CONFIRMATION_ATTEMPTS = 9
+const PRESENCE_RETRY_BACKOFF_MS = [250, 400, 650, 1000, 1500, 2000, 2000, 2000]
+// Daily answers an eject against a room with no live call with this message.
+// That means the meeting is over — success, not a 502 (same incident, the retry).
+const DAILY_NO_ACTIVE_CALL = /not seem to be hosting a call|not hosting a call/i
 const PRESENCE_RETRY_DELAY_MS = process.env.NODE_ENV === 'test' ? 0 : 150
 
 async function dailyJson(url, options) {
@@ -102,11 +108,20 @@ export async function POST(request) {
       return NextResponse.json({ ok: true, ejectedIds: [] })
     }
 
-    const data = await dailyJson(`${baseUrl}/eject`, {
-      method: 'POST',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: initialPresence.ids, ban: false }),
-    })
+    let data
+    try {
+      data = await dailyJson(`${baseUrl}/eject`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: initialPresence.ids, ban: false }),
+      })
+    } catch (err) {
+      if (DAILY_NO_ACTIVE_CALL.test(String(err?.message || ''))) {
+        console.info(`[video/end-room] room=${room} has no active call (stale presence) — treating as already ended`)
+        return NextResponse.json({ ok: true, ejectedIds: [], alreadyEnded: true })
+      }
+      throw err
+    }
 
     for (let attempt = 0; attempt < PRESENCE_CONFIRMATION_ATTEMPTS; attempt += 1) {
       if (attempt > 0) await pauseBeforeRetry(attempt)

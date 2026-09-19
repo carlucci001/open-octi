@@ -114,6 +114,7 @@ Agents remain disabled until their required model, voice, channel, and tool conn
 - [E-signatures](docs/guides/e-sign.md)
 - [Run on a VPS](docs/guides/running-on-a-vps.md)
 - [Upgrade](docs/guides/upgrading.md)
+- [System map](docs/guides/system-map.html) — open it in a browser: every part of your install, what it needs, and what Octi CC adds
 - [Screenshot inventory](docs/screenshots/README.md)
 
 ## Support

@@ -242,7 +242,7 @@ export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio)
     const played = await playPrerecordedWelcome(openOctiWelcomeClipFor({ setupIncomplete: true }), primedAudio, { blockedDelayMs: 8000 })
     logLoginWelcomeStage(played ? 'played' : 'blocked', { provider: 'prerecorded' })
     await markOpenOctiFirstLoginComplete()
-    window.location.assign('/settings/models')
+    window.location.assign('/?tab=settings&settings=models')
     return
   }
 
