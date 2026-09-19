@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "f806481487ab8e3ef4882b928b3b3a458325f20c",
+  "sourceCommit": "8fad30bbcac33b0a256828a1b45a021c5928d753",
   "approvedPublicCommit": "d488f91548f57fd2f7c2198fc077a5828e47441e",
   "normalization": "utf8-lf-text/raw-binary",
   "files": [
@@ -12,7 +12,7 @@
     {
       "path": ".env.example",
       "kind": "text",
-      "sha256": "87334c2a3f39108eb53b3e87e5acf47af0f3455375bb1fdd759ddacd2516317d"
+      "sha256": "829d4eb38b93986779eaafee03a3ca64748fadcd508eec4a9a4ac05fbb45d3be"
     },
     {
       "path": ".gitattributes",
@@ -77,12 +77,12 @@
     {
       "path": "OPENOCTI_FILELIST.txt",
       "kind": "text",
-      "sha256": "d4ec5b3e130d8f7bb800216019767fc3072149d0ca8df1fd1141d658005f1d7b"
+      "sha256": "313c6f62977b007a7a1ad8561cd467829e2914e49de3b8af538c52533f7b2557"
     },
     {
       "path": "OPENOCTI_MANIFEST.json",
       "kind": "text",
-      "sha256": "777137a5aebaa7678ff1751c1962622fc35e5bd009f55642f03401e24cb5ac2f"
+      "sha256": "314c50d249727539c7b8ce1e5df3b2ae638e6b49352ffc770b719a1e93f4ae8b"
     },
     {
       "path": "README.md",
@@ -102,7 +102,7 @@
     {
       "path": "VERSION.json",
       "kind": "text",
-      "sha256": "574f1edacd6cd3668450f463e773a37def8935e27f5a2742ebc833e0dd5409d4"
+      "sha256": "af92f3f06a4e63be030e6801fd152037e155a05503a23fddefebb9394071d486"
     },
     {
       "path": "__tests__/CampaignStudioDrawer.test.jsx",
@@ -1547,7 +1547,7 @@
     {
       "path": "app/api/repository/gitea/[[...path]]/route.js",
       "kind": "text",
-      "sha256": "ecd798a03417d38764ce69ce7bd8196febe56adeb78c428d8379dacfe781214c"
+      "sha256": "2dd1d6697557d991113d29b6547d26207ad8b843df199e92004f52744526af18"
     },
     {
       "path": "app/api/scripts/route.js",
@@ -1712,7 +1712,7 @@
     {
       "path": "app/api/twilio/token/route.js",
       "kind": "text",
-      "sha256": "3868368151ad9ff40fa34e304e211541061bf345bb41da6c1c25659f9e7d6329"
+      "sha256": "80269462808c6aa66016753da7565f2c3a0a54c6a76238455c32044d1be14995"
     },
     {
       "path": "app/api/twilio/voice/route.js",
@@ -3550,6 +3550,11 @@
       "sha256": "6da9f575ff3bae01d24847a1a2bd6ca3d32ea8f960ae70500d8dca9854931914"
     },
     {
+      "path": "docs/releases/1.4.2.md",
+      "kind": "text",
+      "sha256": "8d1dbcc58a914f9e70408e367892156d5c650941b33b80271530515f6344faea"
+    },
+    {
       "path": "docs/screenshots/README.md",
       "kind": "text",
       "sha256": "95dbafbadab5df72bad88b58064f40645123e422867550fa4eaf0e96679f9257"
@@ -3822,7 +3827,7 @@
     {
       "path": "lib/auth.js",
       "kind": "text",
-      "sha256": "858a09510fe41a96a3faefe462886c4f9f4404ee69063663b56c1428e1edf5bc"
+      "sha256": "66bcca135945a5b374259869e24283c37d0381e310892ee7db2f7e1cf7cde6aa"
     },
     {
       "path": "lib/authEdge.js",
@@ -4142,7 +4147,7 @@
     {
       "path": "lib/incidents.js",
       "kind": "text",
-      "sha256": "de12fafd5688c85afbbc9245ccdac3f6a8bd4187658dd60ed572669bcef05acc"
+      "sha256": "fd26833dd2dcb90c38cc28bac72f7f7b511da72b99b8f9b4917e345de1696814"
     },
     {
       "path": "lib/integration-directory.js",
@@ -4672,7 +4677,7 @@
     {
       "path": "lib/ownerInbox.js",
       "kind": "text",
-      "sha256": "afef0de21d61e8c6be10ce72d85ebf26145e39d3624ebd8048a92df6d48316f1"
+      "sha256": "d7d58d74058c2369b18d9dac24d0c545457ae7a64597fbb79376d9103f6eec2f"
     },
     {
       "path": "lib/paymentLedger.js",
@@ -4877,7 +4882,7 @@
     {
       "path": "lib/roles.js",
       "kind": "text",
-      "sha256": "c09f847b19515d4a2babc3b484e5a363e757e1f3b9502c86574ed85b25dccb78"
+      "sha256": "e60bb3766571d679b876abb3203da5589f1f9691ef052954f623ab56571599cc"
     },
     {
       "path": "lib/safe-url-fetch.js",
@@ -5177,12 +5182,12 @@
     {
       "path": "package-lock.json",
       "kind": "text",
-      "sha256": "7fbf84ce935d70db79744e2526dbaad19fca717bc59d00b50391b9c8befeb9c7"
+      "sha256": "0341f7206bfbbb328b2d0b63fa864248a135961ec25146e51e96de7ab9e39393"
     },
     {
       "path": "package.json",
       "kind": "text",
-      "sha256": "897509856c96e96fd80f762b7fd1f9dea39111c4bc688079c1ddb95363cb0a14"
+      "sha256": "d143b6415bbbc60828ffe0f81ad67e07ee48b2da329fb7b99b0bb240e4cf3eaa"
     },
     {
       "path": "postcss.config.js",
@@ -5807,7 +5812,7 @@
     {
       "path": "public/sw.js",
       "kind": "text",
-      "sha256": "6899a9e11f97dae8d00d65df4c41f6f88db99b143e0b0c1c0cfd0965a7f9bf30"
+      "sha256": "4dabd93df548ef9ce256bfe36ff6cc4d0278347c5041700b080ff0cd196ac5ac"
     },
     {
       "path": "scripts/build-doc-templates.js",
@@ -5872,7 +5877,7 @@
     {
       "path": "scripts/openocti-boundary-policy.json",
       "kind": "text",
-      "sha256": "66198d55953f4219076fb4d7e222c6075fb3d872f6d64a11d3df4b1476477f2f"
+      "sha256": "cbcf0743cb83d9a0b1ef5686d41ef7bad947f538d9f61276d8e42c232cd1cdf4"
     },
     {
       "path": "scripts/openocti-build.mjs",

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import twilio from 'twilio'
 import { requireCapability } from '@/lib/permissions'
+import { getOwnerUsername } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -28,7 +29,7 @@ export async function GET(request) {
 
   const url = new URL(request.url)
   const requestedIdentity = (url.searchParams.get('identity') || '').trim()
-  const identity = /^[a-zA-Z0-9_-]{1,64}$/.test(requestedIdentity) ? requestedIdentity : 'carl'
+  const identity = /^[a-zA-Z0-9_-]{1,64}$/.test(requestedIdentity) ? requestedIdentity : getOwnerUsername()
   const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
     identity,
     ttl: 3600, // 1 hour

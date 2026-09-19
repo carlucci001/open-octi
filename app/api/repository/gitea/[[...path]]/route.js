@@ -448,6 +448,7 @@ async function proxy(request, context) {
     headers.set('x-webauth-user', identity.name)
     headers.set('x-webauth-fullname', identity.fullName)
   } else {
+    // Command Center edition: fixed reverse-proxy account for the private Gitea instance.
     headers.set('x-webauth-user', 'carl')
     headers.set('x-webauth-email', 'redacted@example.invalid')
     headers.set('x-webauth-fullname', user?.displayName || 'Workspace owner')
