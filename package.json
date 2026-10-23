@@ -6,6 +6,9 @@
     "node": ">=24"
   },
   "scripts": {
+    "update:check": "node scripts/openocti-update.mjs check",
+    "update:install": "node scripts/openocti-update.mjs install",
+    "update:enable-click": "node scripts/install-openocti-updater.mjs",
     "monitor:run": "node scripts/run-monitoring.mjs",
     "dev": "next dev",
     "build": "node scripts/openocti-build.mjs",

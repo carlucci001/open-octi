@@ -28,6 +28,7 @@ services:
       - "${OPENOCTI_PORT:-127.0.0.1:3000}:3000"
     volumes:
       - openocti-data:/data
+      - ${OPENOCTI_UPDATER_RUN_DIR:-/run/openocti-updater}:/run/openocti-updater
     depends_on:
       openclaw:
         condition: service_started

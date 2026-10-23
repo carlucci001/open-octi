@@ -49,6 +49,7 @@ __tests__/openOctiVoiceRouting.test.js
 __tests__/openOctiVoiceSession.test.js
 __tests__/openclawDashboard.test.js
 __tests__/openclawStreamIsolation.test.js
+__tests__/openocti-updates.test.js
 __tests__/openoctiBoundary.test.js
 __tests__/openoctiClientSetup.test.jsx
 __tests__/openoctiCommercialCatalogBoundary.test.js
@@ -247,6 +248,7 @@ app/api/openocti/postiz/route.js
 app/api/openocti/sample-data/route.js
 app/api/openocti/setup/route.js
 app/api/openocti/stripe/route.js
+app/api/openocti/update/route.js
 app/api/opportunities/requirements/route.js
 app/api/opportunities/route.js
 app/api/ops/incidents/poll/route.js
@@ -933,6 +935,7 @@ lib/openocti-sample-data.js
 lib/openocti-settings-links.js
 lib/openocti-setup-help.js
 lib/openocti-system-status.js
+lib/openocti-updates.mjs
 lib/openocti-voice-routing.js
 lib/openocti/closed-module-stub.cjs
 lib/operator-agent/approval.js
@@ -1199,12 +1202,15 @@ scripts/generate-octi-knowledge.mjs
 scripts/generate-openocti-brand-assets.mjs
 scripts/generate-openocti-setup-guide.mjs
 scripts/generate-third-party-notices.mjs
+scripts/install-openocti-updater.mjs
 scripts/kill-port.ps1
 scripts/migrate-json-to-sqlite.mjs
 scripts/openocti-boundary-policy.json
 scripts/openocti-build.mjs
 scripts/openocti-excludes.mjs
 scripts/openocti-source-snapshot.mjs
+scripts/openocti-update.mjs
+scripts/openocti-updater-service.mjs
 scripts/preflight.js
 scripts/run-monitoring.mjs
 scripts/setup-openocti-postiz.mjs

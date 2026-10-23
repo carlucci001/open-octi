@@ -105,6 +105,7 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   // WO-8: Farrington product modules are closed and never enter OpenOcti.
   '!__tests__/openoctiExportDenylist.test.js',
   '!__tests__/openoctiBoundary.test.js',
+  '!__tests__/openocti-updates.test.js',
   'app/platforms/**',
   'app/api/platforms/**',
   'lib/platforms/**',
@@ -200,6 +201,9 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   '!scripts/build-doc-templates.js',
   '!scripts/verify-data-backend.js',
   '!scripts/kill-port.ps1',
+  '!scripts/openocti-update.mjs',
+  '!scripts/openocti-updater-service.mjs',
+  '!scripts/install-openocti-updater.mjs',
   'public/avatars/cheryl*',
 ])
 

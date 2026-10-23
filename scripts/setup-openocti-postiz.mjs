@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const KEYS = ['POSTIZ_JWT_SECRET', 'POSTIZ_DB_PASSWORD', 'POSTIZ_TEMPORAL_DB_PASSWORD']
+const KEYS = ['POSTIZ_JWT_SECRET', 'POSTIZ_DB_PASSWORD', 'POSTIZ_TEMPORAL_DB_PASSWORD', 'OPENOCTI_UPDATER_TOKEN']
 export function preparePostizEnvironment(root = process.cwd()) {
   const file = path.resolve(root, '.env')
   if (fs.existsSync(file) && (!fs.lstatSync(file).isFile() || fs.lstatSync(file).isSymbolicLink())) throw new Error('The .env path must be a regular file.')

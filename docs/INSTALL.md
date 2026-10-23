@@ -131,6 +131,21 @@ docker compose --profile research up -d
 
 ## Upgrade
 
+### Enable update notifications and one-click installation
+
+Every installation checks the official release feed after an administrator signs in. A newer release appears in a banner with its version and release details. The check does not install anything by itself.
+
+On a Linux host with systemd, enable the guarded updater once from the OpenOcti checkout:
+
+```bash
+sudo node scripts/install-openocti-updater.mjs
+docker compose up -d
+```
+
+The installer creates a local Unix-socket service. The socket is not published to the network, the owner must confirm each update in the application, and the updater accepts only the latest semantic release from the configured official repository. It refuses a dirty checkout or an unexpected Git remote, takes a private backup before changing services, and verifies that the updated services are running. Existing installations must complete one manual upgrade to a release containing this updater before the button can be used.
+
+Windows, macOS, ZIP, and installations without the guarded service still receive the update notice and release link. Use the documented command-line upgrade on those systems.
+
 Back up the named volume first. Then update the checkout and recreate the services:
 
 ```sh
