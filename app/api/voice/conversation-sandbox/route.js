@@ -9,7 +9,7 @@ import { PRESET_BY_ID } from '@/lib/agent-presets'
 import { CHIRP3_VOICES } from '@/lib/chirp3-tts'
 import { isOpenOcti } from '@/lib/edition'
 import { resolveProviderKey } from '@/lib/openocti-keys'
-import { runDeepResearchDossier } from '@/lib/deep-research'
+import { readResearchJobs, saveResearchJob, startBackgroundResearch } from '@/lib/voice-research-jobs'
 import { latestUnfiledDossier, fileDossierToAccount, resolveAccountByPhrase } from '@/lib/research-dossiers'
 import { resolveDeerFlowResearchTarget } from '@/lib/deerflow-voice-turn'
 import { runDeerFlowStudioTask } from '@/lib/deerflow-studio'
@@ -132,89 +132,6 @@ function splitInlineFiling(cleaned) {
   const target = cleaned.slice(0, m.index).trim()
   if (!target) return { target: cleaned, accountPhrase: '' }
   return { target, accountPhrase: phrase }
-}
-
-const RESEARCH_JOBS_FILE = 'voice-research-jobs.json'
-
-function readResearchJobs() {
-  const data = readData(RESEARCH_JOBS_FILE)
-  return Array.isArray(data?.jobs) ? data.jobs : []
-}
-
-function saveResearchJob(job) {
-  try {
-    const jobs = readResearchJobs().filter(j => j.id !== job.id)
-    jobs.push(job)
-    writeData(RESEARCH_JOBS_FILE, { jobs: jobs.slice(-20), lastUpdated: new Date().toISOString() })
-  } catch (e) {
-    console.warn('[voice-research] job save failed', e?.message || e)
-  }
-}
-
-function spokenDossierSummary(result, target) {
-  const d = result?.dossier || {}
-  const positives = (Array.isArray(d.positiveSignals) && d.positiveSignals.length) ? d.positiveSignals
-    : (Array.isArray(d.reputationSignals) ? d.reputationSignals : [])
-  const nextSteps = (Array.isArray(d.recommendedNextSteps) && d.recommendedNextSteps.length) ? d.recommendedNextSteps
-    : (Array.isArray(d.nextSteps) ? d.nextSteps : [])
-  return cleanText([
-    d.executiveSummary || d.summary || `Deep research completed for ${target}.`,
-    d.riskLevel ? `Risk level: ${d.riskLevel}.` : '',
-    d.confidence ? `Confidence: ${d.confidence}.` : '',
-    Array.isArray(d.redFlags) && d.redFlags.length ? `Main red flags: ${d.redFlags.slice(0, 3).join('; ')}.` : '',
-    positives.length ? `Positive signals: ${positives.slice(0, 3).join('; ')}.` : '',
-    nextSteps.length ? `Next steps: ${nextSteps.slice(0, 3).join('; ')}.` : '',
-  ].filter(Boolean).join(' '), 1800)
-}
-
-function startBackgroundResearch({ target, label, role, fileToPhrase = '', agentId = 'deep-research-analyst', clientId = '', requestId = '' }) {
-  const job = {
-    id: `vrj_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
-    target,
-    status: 'running',
-    startedAt: new Date().toISOString(),
-    finishedAt: '',
-    spokenSummary: '',
-    error: '',
-    fileToPhrase,
-    filedNote: '',
-  }
-  saveResearchJob(job)
-  runDeepResearchDossier({
-    target,
-    context: `Requested by Carl through the Chirp voice interface as ${label} (${role}).`,
-    subjectType: 'person_or_company',
-    usePerplexity: true,
-    source: 'voice',
-    agentId,
-    clientId,
-    accountId: clientId,
-    productId: 'research',
-    requestId,
-  }).then(result => {
-    const current = readResearchJobs().find(j => j.id === job.id)
-    if (current?.status === 'cancelled') return
-    let filedNote = ''
-    if (fileToPhrase) {
-      try {
-        const pending = latestUnfiledDossier()
-        if (pending && pending.target === target) {
-          const res = fileDossierToAccount({ dossierId: pending.id, accountPhrase: fileToPhrase })
-          filedNote = res.ok
-            ? `Already filed to ${res.account.name}'s documents.`
-            : `I couldn't match an account named "${fileToPhrase}" — the dossier is on the Research page, unfiled.`
-        }
-      } catch (e) {
-        filedNote = `Auto-filing failed (${cleanText(e?.message || String(e), 120)}) — the dossier is on the Research page, unfiled.`
-      }
-    }
-    saveResearchJob({ ...job, status: 'done', finishedAt: new Date().toISOString(), spokenSummary: spokenDossierSummary(result, target), filedNote })
-  }).catch(e => {
-    const current = readResearchJobs().find(j => j.id === job.id)
-    if (current?.status === 'cancelled') return
-    saveResearchJob({ ...job, status: 'failed', finishedAt: new Date().toISOString(), error: cleanText(e?.message || String(e), 300) })
-  })
-  return job
 }
 
 function isResearchStatusQuestion(text) {

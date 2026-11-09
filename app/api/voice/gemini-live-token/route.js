@@ -12,6 +12,9 @@ import { resolveProviderKey } from '@/lib/openocti-keys'
 import { OPENOCTI_GUIDE_INSTRUCTIONS } from '@/lib/openocti-assistant'
 import { openOctiVoiceAgent } from '@/lib/openocti-voice-routing'
 import { readOpenOctiAgentKnowledge } from '@/lib/openocti-knowledge'
+import { buildCrmSnapshot, crmSnapshotLines } from '@/lib/voice-crm-snapshot'
+import { voiceRuntimeFact } from '@/lib/voice-runtime-fact'
+import { SASHA_MEDIA_INSTRUCTIONS } from '@/lib/sasha-media-instructions'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -72,6 +75,8 @@ function agentInstructions(agent, { context, toolsEnabled } = {}) {
     agent.jobDescription || '',
     'Keep live voice replies concise, useful, and interruption-friendly. Do not mention implementation details unless Carl asks.',
   ]
+  // Same live numbers the ElevenLabs path sends. A snapshot failure must not block the session.
+  try { lines.push(crmSnapshotLines(buildCrmSnapshot()).join('\n')) } catch {}
   const sectionLabel = cleanText(context?.sectionLabel, 160)
   const sectionId = cleanText(context?.sectionId, 80)
   const record = cleanText(context?.record, 400)
@@ -86,6 +91,9 @@ function agentInstructions(agent, { context, toolsEnabled } = {}) {
     lines.push(`COMMAND CENTER MENU MAP:\n${COMMAND_CENTER_MENU_GUIDE}`)
     lines.push('You have live tools. Use navigate_to to open Command Center sections, and the other declared tools for CRM facts and actions. When Carl asks you to create and save a document, compose the complete content first and call create_document immediately; never promise background work or claim the document exists unless the tool confirms the save. If a tool call fails, say it failed and report the short error instead of pretending it succeeded. Anything that sends, spends, or is irreversible requires Carl to explicitly confirm in this conversation first. If you do not know a specific detail, say you do not have it in front of you instead of guessing.')
   }
+  // Last on purpose: stored profile text can name a provider the agent no longer uses.
+  if (agent.id === 'social-media' || agent.name === 'Sasha') lines.push(SASHA_MEDIA_INSTRUCTIONS)
+  lines.push(voiceRuntimeFact('gemini'))
   return lines.filter(Boolean).join('\n\n')
 }
 

@@ -6,8 +6,13 @@ const agentIds = ['main', 'coding', 'social-media', 'legal', 'matilda']
 const begin = '<!-- OPENOCTI AUTHORED KNOWLEDGE -->'
 const end = '<!-- END OPENOCTI AUTHORED KNOWLEDGE -->'
 
-export function seedAgentKnowledge(stateDir, knowledgeRoot) {
-  for (const id of agentIds) {
+function adaptKnowledgeForEdition(content, edition) {
+  return edition === 'octicc' ? content.replace(/\bOpenOcti\b/g, 'OctiCC') : content
+}
+
+export function seedAgentKnowledge(stateDir, knowledgeRoot, { edition = process.env.FCC_EDITION || 'openocti' } = {}) {
+  const selectedAgentIds = edition === 'octicc' ? ['coding'] : agentIds
+  for (const id of selectedAgentIds) {
     const workspace = path.join(stateDir, 'workspace', id)
     if (!fs.existsSync(workspace)) continue
     const target = path.join(workspace, 'knowledge')
@@ -17,7 +22,8 @@ export function seedAgentKnowledge(stateDir, knowledgeRoot) {
       const source = path.join(knowledgeRoot, id + suffix)
       if (!fs.existsSync(source)) throw new Error(`Missing packaged agent knowledge: ${id}${suffix}`)
       const destination = path.join(target, id + suffix)
-      try { fs.copyFileSync(source, destination, fs.constants.COPYFILE_EXCL) }
+      const packaged = adaptKnowledgeForEdition(fs.readFileSync(source, 'utf8'), edition)
+      try { fs.writeFileSync(destination, packaged, { flag: 'wx' }) }
       catch (error) { if (error.code !== 'EEXIST') throw error }
       content.push(fs.readFileSync(destination, 'utf8'))
     }
@@ -30,4 +36,6 @@ export function seedAgentKnowledge(stateDir, knowledgeRoot) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) seedAgentKnowledge(process.argv[2], process.argv[3])
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  seedAgentKnowledge(process.argv[2], process.argv[3], { edition: process.env.FCC_EDITION || 'openocti' })
+}

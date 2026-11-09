@@ -121,7 +121,7 @@ function TaskForm({ task, clients, projects, onSave, onClose }) {
         <Field label="Due Date"><input type="date" style={inputStyle} value={f.dueDate || ''} onChange={e => u('dueDate', e.target.value)} /></Field>
         <Field label="Client">
           <ThemedSelect style={inputStyle} value={f.clientId || ''} onChange={e => { u('clientId', e.target.value); u('projectId', '') }}>
-            <option value="">â€” None â€”</option>
+            <option value="">{'\u2014 None \u2014'}</option>
             {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </ThemedSelect>
         </Field>
@@ -130,7 +130,7 @@ function TaskForm({ task, clients, projects, onSave, onClose }) {
       {f.clientId && projectsForClient.length > 0 && (
         <Field label="Project">
           <ThemedSelect style={inputStyle} value={f.projectId || ''} onChange={e => u('projectId', e.target.value)}>
-            <option value="">â€” None â€”</option>
+            <option value="">{'\u2014 None \u2014'}</option>
             {projectsForClient.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </ThemedSelect>
         </Field>
@@ -140,7 +140,7 @@ function TaskForm({ task, clients, projects, onSave, onClose }) {
         <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg" style={{ background: 'var(--surface2)', border: '1px solid var(--border)', minHeight: 40 }}>
           {(f.tags || []).map(t => (
             <span key={t} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
-              {t}<button onClick={() => removeTag(t)} className="opacity-60 hover:opacity-100">Ã—</button>
+              {t}<button onClick={() => removeTag(t)} className="opacity-60 hover:opacity-100">{'\u00d7'}</button>
             </span>
           ))}
           <input style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', flex: 1, minWidth: 80, fontSize: 12 }}
@@ -187,7 +187,7 @@ function TaskRow({ t, clientName, projectName, onToggle, onEdit, onDelete, check
     <div className="task-list-row flex items-start gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)', background: checked ? 'var(--accent-soft)' : 'transparent', transition: 'background var(--transition-fast)' }}>
       <input type="checkbox" className="mt-1" checked={checked} onChange={onCheck} onClick={e => e.stopPropagation()} />
       <button onClick={onToggle} className="mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: done ? 'var(--green)' : 'transparent', border: `1.5px solid ${done ? 'var(--green)' : 'var(--border)'}`, cursor: 'pointer' }}>
-        {done && <span style={{ color: 'var(--accent-text)', fontSize: 10 }}>âœ“</span>}
+        {done && <span style={{ color: 'var(--accent-text)', fontSize: 10 }}>{'\u2713'}</span>}
       </button>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={onEdit}>
         <div className="flex items-center gap-2 flex-wrap">
@@ -198,8 +198,8 @@ function TaskRow({ t, clientName, projectName, onToggle, onEdit, onDelete, check
         </div>
         {(clientName || projectName || (t.tags?.length > 0)) && (
           <div className="flex items-center gap-2 mt-1 text-[11px] flex-wrap" style={{ color: 'var(--text-muted)' }}>
-            {clientName && <span>ðŸ‘¤ {clientName}</span>}
-            {projectName && <span>ðŸ“ {projectName}</span>}
+            {clientName && <span>{'\u{1f464} '}{clientName}</span>}
+            {projectName && <span>{'\u{1f4c1} '}{projectName}</span>}
             {(t.tags || []).map(tag => <span key={tag} className="px-1.5 rounded" style={{ background: 'var(--surface2)' }}>#{tag}</span>)}
           </div>
         )}
@@ -269,8 +269,8 @@ function BoardColumn({ status, statuses, tasks, clients, projects, onDrop, onEdi
               {t.description && <div className="text-[11px] mb-2 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{t.description}</div>}
               <div className="flex items-center gap-2 flex-wrap text-[10px]">
                 {due && <span className="px-1.5 py-0.5 rounded-full" style={{ background: due.bg, color: due.color }}>{due.text}</span>}
-                {client && <span style={{ color: 'var(--text-muted)' }}>ðŸ‘¤ {client.name}</span>}
-                {project && <span style={{ color: 'var(--text-muted)' }}>ðŸ“ {project.name}</span>}
+                {client && <span style={{ color: 'var(--text-muted)' }}>{'\u{1f464} '}{client.name}</span>}
+                {project && <span style={{ color: 'var(--text-muted)' }}>{'\u{1f4c1} '}{project.name}</span>}
               </div>
               <ThemedSelect
                 className="board-card-move mt-2"
@@ -301,7 +301,7 @@ function BoardColumn({ status, statuses, tasks, clients, projects, onDrop, onEdi
 export default function TasksManager() {
   const [tasks, setTasks] = useState([])
   const [accounts, setAccounts] = useState([])
-  const clients = accounts // compat alias â€” JSX still references `clients` in many places
+  const clients = accounts // compat alias; JSX still references `clients` in many places
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -439,7 +439,7 @@ export default function TasksManager() {
       <PageHeader
         icon={<CheckCircle2 size={20} />}
         title="Tasks"
-        subtitle={`${tasks.length} total Â· ${stats.in_progress} active Â· ${stats.overdue} overdue`}
+        subtitle={`${tasks.length} total \u00b7 ${stats.in_progress} active \u00b7 ${stats.overdue} overdue`}
         actions={null}
         viewToggle={<ViewModeToggle value={activeView} onChange={setView} modes={['list', 'card', 'kanban']} />}
       />
@@ -494,7 +494,7 @@ export default function TasksManager() {
           <option value="updated">Sort: Updated</option>
           <option value="created">Sort: Created</option>
         </ThemedSelect>
-        <button style={{ ...select, cursor: 'pointer', minWidth: 32 }} onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}>{sortDir === 'asc' ? 'â†‘' : 'â†“'}</button>
+        <button style={{ ...select, cursor: 'pointer', minWidth: 32 }} onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}>{sortDir === 'asc' ? '\u2191' : '\u2193'}</button>
 
         <button className="px-3 rounded-lg text-sm font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-text)', minHeight: 40 }} onClick={() => setShowAdd(true)}>New Task</button>
         <BulkActionsMenu
@@ -527,7 +527,7 @@ export default function TasksManager() {
       {loading ? <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>Loading...</div>
         : filtered.length === 0 ? (
           tasks.length === 0 && isOpenOcti() ? <OpenOctiEmptyState objectType="tasks" title="Turn plans into next actions" description="Import tasks or create them here to track ownership, priority, and due dates." /> : <div className="text-center py-16">
-            <div className="text-4xl mb-3">âœ…</div>
+            <div className="text-4xl mb-3">{'\u2705'}</div>
             <p style={{ color: 'var(--text-muted)' }}>{tasks.length === 0 ? 'No tasks yet. Add your first task to get started.' : 'No tasks match these filters.'}</p>
           </div>
         ) : activeView === 'list' ? (
@@ -565,7 +565,7 @@ export default function TasksManager() {
                       </button>
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold text-sm leading-tight truncate" style={{ color: done ? 'var(--text-muted)' : 'var(--text)', textDecoration: done ? 'line-through' : 'none' }}>{t.title}</div>
-                        <div className="text-xs truncate mt-1" style={{ color: 'var(--text-muted)' }}>{clientName || 'No client'} Â· {projectName || 'No project'}</div>
+                        <div className="text-xs truncate mt-1" style={{ color: 'var(--text-muted)' }}>{clientName || 'No client'}{' \u00b7 '}{projectName || 'No project'}</div>
                       </div>
                       <ItemActionsMenu
                         label={`Actions for ${t.title}`}

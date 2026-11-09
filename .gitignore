@@ -59,6 +59,7 @@ data/*.sqlite.backup*
 data/crm.sqlite.pre-*
 data/*.json
 data/*.json.*
+data/document-files/
 data/*.txt
 data/.mode
 data/.vercel-project-id.txt
@@ -147,3 +148,7 @@ data/monitoring.sqlite
 data/monitoring.sqlite-wal
 data/monitoring.sqlite-shm
 *.tsbuildinfo
+
+# Credential-bearing local exports and provider backups must stay untracked.
+/data/elevenlabs-backups/
+/claude_api_tokens_2026_04.csv

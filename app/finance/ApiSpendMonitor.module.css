@@ -181,6 +181,15 @@
 
 @media (max-width: 520px) {
   .floatingShell { right: 12px; bottom: 12px; }
+  .compactShell { width: 52px; }
+  .compactShell .meterButton {
+    gap: 0;
+    justify-content: center;
+    padding: 7px;
+    border-radius: 999px;
+  }
+  .compactShell .meterButton > span:not(.ring),
+  .compactShell .meterButton > svg { display: none; }
   .providerRow { grid-template-columns: minmax(100px, 1fr) auto; }
   .providerRow > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
   .fieldGrid { grid-template-columns: 1fr; }

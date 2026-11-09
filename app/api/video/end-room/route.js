@@ -21,6 +21,8 @@ const PRESENCE_CONFIRMATION_ATTEMPTS = 9
 const PRESENCE_RETRY_BACKOFF_MS = [250, 400, 650, 1000, 1500, 2000, 2000, 2000]
 // Daily answers an eject against a room with no live call with this message.
 // That means the meeting is over — success, not a 502 (same incident, the retry).
+// Checks (0-based) after which the eject is re-sent; the last one is the final check.
+const REEJECT_AT_ATTEMPTS = new Set([2, 5, PRESENCE_CONFIRMATION_ATTEMPTS - 1])
 const DAILY_NO_ACTIVE_CALL = /not seem to be hosting a call|not hosting a call/i
 const PRESENCE_RETRY_DELAY_MS = process.env.NODE_ENV === 'test' ? 0 : 150
 
@@ -136,6 +138,32 @@ export async function POST(request) {
           ok: true,
           ejectedIds: Array.isArray(data.ejectedIds) ? data.ejectedIds : [],
         })
+      }
+
+      // 2026-09-19: presence lagged past the whole ~9.8s budget on room
+      // ff-instant-tzerwz although the call was over. Presence is only a hint;
+      // the eject endpoint is the authority. Re-send the eject at checkpoints:
+      // "not hosting a call" proves the meeting ended, and a real straggler
+      // gets ejected again. Still fail-closed if Daily keeps accepting ejects
+      // while people remain.
+      if (REEJECT_AT_ATTEMPTS.has(attempt)) {
+        try {
+          await dailyJson(`${baseUrl}/eject`, {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: confirmation.ids, ban: false }),
+          })
+        } catch (err) {
+          if (DAILY_NO_ACTIVE_CALL.test(String(err?.message || ''))) {
+            console.info(`[video/end-room] room=${room} re-eject says no active call after ${attempt + 1} check(s) — ended (presence was stale)`)
+            return NextResponse.json({
+              ok: true,
+              ejectedIds: Array.isArray(data.ejectedIds) ? data.ejectedIds : [],
+              presenceStale: true,
+            })
+          }
+          throw err
+        }
       }
 
       if (attempt === PRESENCE_CONFIRMATION_ATTEMPTS - 1) {

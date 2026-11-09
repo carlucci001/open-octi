@@ -2,9 +2,26 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { buildInventory, diffInventories, renderCatalog, renderDiff } from '../scripts/feature-inventory.mjs'
+import { navigationDestinationsFor } from '../lib/navigation-manifest'
+import {
+  buildInventory,
+  diffInventories,
+  navigationInventoryEntries,
+  renderCatalog,
+  renderDiff,
+} from '../scripts/feature-inventory.mjs'
 
 const temporaryRoots = []
+const FIXTURE_NAVIGATION = [
+  { id: 'sales', label: 'Sales', commandCenter: true, routable: true },
+  {
+    id: 'reports',
+    label: 'Operations > Reports',
+    commandCenter: true,
+    routable: true,
+    gatingFlags: [{ name: 'featureFlag', value: 'reports' }],
+  },
+]
 
 function write(root, relative, content) {
   const target = path.join(root, relative)
@@ -15,12 +32,6 @@ function write(root, relative, content) {
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'feature-inventory-'))
   temporaryRoots.push(root)
-  write(root, 'lib/commandCenterNavigation.js', `
-    export const COMMAND_CENTER_SECTIONS = [
-      { id: 'sales', label: 'Sales', aliases: [] },
-      { id: 'reports', label: 'Operations > Reports', aliases: [], featureFlag: 'reports' },
-    ]
-  `)
   write(root, 'lib/entityStore.js', `const FILES = { accounts: {}, tasks: {} }`)
   write(root, 'app/api/agent/execute/route.js', `
     const TOOLS = { find_client: { run() {} }, create_task: { run() {} } }
@@ -43,9 +54,19 @@ afterEach(() => {
 })
 
 describe('feature inventory', () => {
+  it('derives navigation from the canonical manifest API without source scraping', () => {
+    const destinations = navigationDestinationsFor({ FCC_EDITION: 'commandcenter' })
+    const expectedIds = destinations
+      .filter(destination => destination.commandCenter && destination.routable)
+      .map(destination => destination.id)
+      .sort()
+
+    expect(navigationInventoryEntries().map(entry => entry.id)).toEqual(expectedIds)
+  })
+
   it('enumerates routes, navigation, controls, tools, and entities deterministically', () => {
     const root = fixture()
-    const inventory = buildInventory(root)
+    const inventory = buildInventory(root, { navigationDestinations: FIXTURE_NAVIGATION })
 
     expect(inventory.routes).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: 'page', path: '/' }),
@@ -62,18 +83,18 @@ describe('feature inventory', () => {
     ]))
     expect(inventory.agentTools.map(tool => tool.name)).toEqual(['create_task', 'find_client'])
     expect(inventory.entities.map(entity => entity.name)).toEqual(['accounts', 'tasks'])
-    expect(buildInventory(root)).toEqual(inventory)
+    expect(buildInventory(root, { navigationDestinations: FIXTURE_NAVIGATION })).toEqual(inventory)
   })
 
   it('reports removed and now-gated features and makes removals blocking', () => {
     const root = fixture()
-    const before = buildInventory(root)
+    const before = buildInventory(root, { navigationDestinations: FIXTURE_NAVIGATION })
     write(root, 'app/sales/SalesManager.jsx', `
       export default function SalesManager({ canSave }) {
         return <div>{canSave && <button>Save lead</button>}</div>
       }
     `)
-    const diff = diffInventories(before, buildInventory(root))
+    const diff = diffInventories(before, buildInventory(root, { navigationDestinations: FIXTURE_NAVIGATION }))
     const output = renderDiff(diff)
 
     expect(diff.removed).toEqual(expect.arrayContaining([
@@ -87,7 +108,7 @@ describe('feature inventory', () => {
   })
 
   it('renders every navigation screen in customer-facing catalog language', () => {
-    const inventory = buildInventory(fixture())
+    const inventory = buildInventory(fixture(), { navigationDestinations: FIXTURE_NAVIGATION })
     const catalog = renderCatalog(inventory)
 
     expect(catalog).toContain('**Sales**')

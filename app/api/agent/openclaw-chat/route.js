@@ -4,7 +4,7 @@ import { resolveCommandCenterTab } from '@/lib/commandCenterNavigation'
 import { OFFICE_AGENT_CONDUCT } from '@/lib/agentOfficeConduct'
 import { hermesChat } from '@/lib/hermes-client'
 import { deepSeekHarnessChat } from '@/lib/deepseek-harness-client'
-import { openclawChat } from '@/lib/openclaw-client'
+import { openclawChat, resolveDefaultFirstChunkMs } from '@/lib/openclaw-client'
 import { directProviderChat, resolveDirectProvider } from '@/lib/direct-provider-chat'
 import { requireCapability } from '@/lib/permissions'
 import { isOwner } from '@/lib/roles'
@@ -15,6 +15,8 @@ import { runDeepResearchDossier } from '@/lib/deep-research'
 import { DEERFLOW_READONLY_TOOL_DEFS } from '@/lib/deerflow-tools'
 import { isOpenOcti, openclawRuntimeLogLabel } from '@/lib/edition'
 import { findChatAgent, mergeChatOperator, chatAgentPersona, chatGatewayAgentId, chatGatewaySessionKey, chatContextPrompt } from '@/lib/agent-chat-selection'
+import { isChatConversationId, wizardConversationSessionKey } from '@/lib/chat-conversation'
+import { SASHA_MEDIA_INSTRUCTIONS } from '@/lib/sasha-media-instructions'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -167,6 +169,34 @@ function reconnectFallbackText(section, agentId, operatorTool) {
   return `OpenClaw is reconnecting, but the CRM is still online. ${selectedName} can still help with section navigation from here. Finance invoice commands route to Frank.${location}`.trim()
 }
 
+// A first-response/RPC/duration timeout is not a broken connection -- the
+// gateway and agent runtime are healthy, the model was just slow to start.
+// Keep this copy separate from reconnectFallbackText so we never tell Carl
+// OpenClaw is reconnecting when it never dropped.
+function slowModelFallbackText(section) {
+  const location = SECTION_LABELS[section] ? ` You are in ${SECTION_LABELS[section]}.` : ''
+  return `That request took too long to start -- the model was slow to respond. Nothing is broken; please try again, or ask for something narrower.${location}`.trim()
+}
+
+function genericErrorFallbackText() {
+  return 'Something went wrong running that request. Please try again.'
+}
+
+// Classifies an openclawChat() rejection into the user-facing copy it should
+// produce. Connection-level failures (a dead/never-established socket) keep
+// the existing reconnect copy; anything that is just slow gets its own,
+// non-alarming message; anything unrecognized gets a neutral fallback.
+function openclawErrorFallbackText(err, section, agentId, operatorTool) {
+  const code = String(err?.code || '')
+  if (code === 'FIRST_CHUNK_TIMEOUT' || code === 'MAX_DURATION' || code === 'RPC_TIMEOUT') {
+    return slowModelFallbackText(section)
+  }
+  if (code === 'WS_ERROR' || code === 'HANDSHAKE_TIMEOUT') {
+    return reconnectFallbackText(section, agentId, operatorTool)
+  }
+  return genericErrorFallbackText()
+}
+
 function agentIdFromSessionKey(sessionKey) {
   const m = String(sessionKey || '').match(/^agent:([^:]+):/)
   return m?.[1] || ''
@@ -279,11 +309,9 @@ function isResearchFollowUpQuestion(text) {
 
 function whereToFindDossiersText() {
   return [
-    'Every completed dossier is saved server-side the moment it finishes — it is never chat-only, even if this window times out or you close it.',
+    '[Open Research](/?tab=research) to see running, completed, and failed research requests.',
     '',
-    'Find them in Command Center under Research (the Research Dossiers screen). Each entry lands as unfiled until you file it to an account, and carries the target, risk level, confidence, sources, and the full report.',
-    '',
-    'Say "show me the last dossier" and name the target if you want it pulled up here.',
+    'Completed dossiers include the target, risk level, confidence, sources, and report. Unfiled dossiers can be filed to an account. Open a failed request to see what happened, then ask me to research the target again to retry.',
   ].join('\n')
 }
 
@@ -292,6 +320,9 @@ function extractDeepResearchTarget(text) {
   if (isResearchFollowUpQuestion(raw)) return ''
   if (!/\b(research|deep dive|diligence|vet|check out|investigate|look into|analyze)\b/i.test(raw)) return ''
   const cleaned = raw
+    // Voice requests often add this conversational lead-in. Remove only the
+    // request wrapper; keep the complete person/company subject that follows.
+    .replace(/^i\s+(?:(?:want|need)\s+you\s+to|would\s+like\s+you\s+to)\s+/i, '')
     .replace(/^(please\s+)?(do|run|perform|make|give me|can you|could you)?\s*(a\s+)?(deep\s+)?(research|dive|diligence|vetting|analysis|investigation)\s*(on|for|about|into)?\s*/i, '')
     .trim()
   if (!cleaned || cleaned.length < 3 || isCapabilitiesQuestion(cleaned)) return ''
@@ -328,11 +359,30 @@ function dossierSources(d) {
 
 function renderDossierSummary(d, target) {
   const summary = String(d?.executiveSummary || d?.summary || '').trim()
-  if (!summary) return `Deep research completed for ${target}, but DeerFlow returned no written summary. The raw run is saved under Research.`
+  if (!summary) return `The saved dossier for ${target} does not include a written summary.`
   return `Summary: ${summary}`
 }
 
-async function handleDeerFlowOperatorChat(text, operatorTool) {
+function researchLink(jobId, dossierId) {
+  if (dossierId) return `/?tab=research&dossier=${encodeURIComponent(dossierId)}`
+  if (jobId) return `/?tab=research&job=${encodeURIComponent(jobId)}`
+  return '/?tab=research'
+}
+
+function researchReceipt(job, overrides = {}) {
+  const jobId = job?.id || job?.jobId || ''
+  const dossierId = job?.dossierId || ''
+  return {
+    jobId,
+    dossierId,
+    status: job?.status || 'running',
+    stage: job?.stage || 'starting',
+    url: researchLink(jobId, dossierId),
+    ...overrides,
+  }
+}
+
+async function handleDeerFlowOperatorChat(text, operatorTool, { onProgress, requestId } = {}) {
   if (isResearchFollowUpQuestion(text)) {
     return whereToFindDossiersText()
   }
@@ -348,13 +398,24 @@ async function handleDeerFlowOperatorChat(text, operatorTool) {
       context: `Requested from Agent Manager ${label} (${role}) chat.`,
       subjectType: 'person_or_company',
       usePerplexity: true,
+      source: 'agent-manager',
+      agentId: operatorTool?.agentId || 'deep-research-analyst',
+      requestId,
+      onProgress,
     })
     const d = result?.dossier || {}
+    const dossierId = result?.dossierId || result?.job?.dossierId
+    if (!dossierId || result?.ok === false) {
+      const error = new Error('Research did not return a saved dossier')
+      error.jobId = result?.jobId || result?.job?.id
+      error.researchJob = result?.job
+      throw error
+    }
     // lib/deep-research.js emits executiveSummary / recommendedNextSteps and
     // returns signal arrays as objects ({signal, details, source}), not strings.
     // Reading d.summary / d.nextSteps / .join() silently threw the whole
     // dossier away and left Carl with three empty lines. Read both shapes.
-    return [
+    const text = [
       renderDossierSummary(d, target),
       d.riskLevel ? `Risk level: ${d.riskLevel}` : '',
       d.confidence ? `Confidence: ${d.confidence}` : '',
@@ -366,7 +427,12 @@ async function handleDeerFlowOperatorChat(text, operatorTool) {
       dossierBullets('Next steps', d.recommendedNextSteps || d.nextSteps),
       dossierSources(d),
       `Saved to Research Dossiers${result?.ms ? ` in ${Math.round(result.ms / 1000)}s` : ''} — target: ${target}. It is unfiled until you file it to an account.`,
+      `[Open saved dossier](${researchLink(result?.jobId || result?.job?.id, dossierId)})`,
     ].filter(Boolean).join('\n\n')
+    return {
+      text,
+      research: researchReceipt({ ...result?.job, id: result?.jobId || result?.job?.id, dossierId }, { status: 'completed', stage: 'completed' }),
+    }
   }
   const label = String(operatorTool?.label || 'DeerFlow Research Analyst').trim()
   const role = String(operatorTool?.role || 'public-source research analyst').trim()
@@ -450,8 +516,11 @@ export async function POST(request) {
   const { user, error } = await requireCapability(request, 'agents:use')
   if (error) return error
 
-  const { messages, leadContext, sessionKey, section, operatorContext, operatorTool } = await request.json()
-  const storedOperatorAgent = resolveOperatorAgent({ operatorTool, operatorContext, sessionKey })
+  const { messages, leadContext, sessionKey, conversationId, section, operatorContext, operatorTool } = await request.json()
+  if (conversationId !== undefined && (!isChatConversationId(conversationId) || !user?.id)) {
+    return Response.json({ error: 'Invalid chat conversation' }, { status: 400 })
+  }
+  const storedOperatorAgent = resolveOperatorAgent({ operatorTool, operatorContext, sessionKey: conversationId ? undefined : sessionKey })
   const activeOperatorTool = mergeOperatorTool(operatorTool, storedOperatorAgent)
   const requestId = `aiw_${Date.now().toString(36)}`
   const cred = getCred('open claw') || getCred('openclaw')
@@ -542,33 +611,52 @@ export async function POST(request) {
     const deerEncoder = new TextEncoder()
     const deerStarted = Date.now()
     const deerTarget = extractDeepResearchTarget(last.content)
+    let heartbeat = null
+    let disconnected = false
     const deerStream = new ReadableStream({
       async start(controller) {
-        let heartbeat = null
+        let latestJob = null
         const write = (obj) => {
+          if (disconnected) return
           try { controller.enqueue(deerEncoder.encode(`data: ${JSON.stringify(obj)}\n\n`)) } catch {}
         }
-        const ack = deerTarget
-          ? `Starting the deep dive on ${deerTarget}. This normally takes one to three minutes -- the dossier is saved server-side the moment it finishes, so it survives even if this window drops.`
-          : ''
+        const progress = () => {
+          const research = researchReceipt(latestJob)
+          const detail = latestJob?.message || 'Preparing the research request.'
+          return {
+            text: `Deep research on ${deerTarget}. ${detail}\n\n${Math.round((Date.now() - deerStarted) / 1000)}s elapsed. [Open research status](${research.url})`,
+            research,
+            source: 'deerflow-runtime',
+          }
+        }
         try {
           console.log(`[ai-wizard] deerflow_operator start requestId=${requestId} target=${String(deerTarget || 'none').slice(0, 100)}`)
-          if (ack) {
-            write({ text: ack })
-            heartbeat = setInterval(() => {
-              write({ text: `${ack}\n\nStill working -- ${Math.round((Date.now() - deerStarted) / 1000)}s elapsed.` })
-            }, 10000)
+          if (deerTarget) {
+            write(progress())
+            heartbeat = setInterval(() => write(progress()), 10000)
           }
-          const text = await handleDeerFlowOperatorChat(last.content, activeOperatorTool)
+          const result = await handleDeerFlowOperatorChat(last.content, activeOperatorTool, {
+            requestId,
+            onProgress(job) {
+              latestJob = job
+              if (job?.status === 'running') write(progress())
+            },
+          })
           if (heartbeat) clearInterval(heartbeat)
+          const text = typeof result === 'string' ? result : result.text
           console.log(`[ai-wizard] deerflow_operator done requestId=${requestId} ms=${Date.now() - deerStarted} chars=${String(text || '').length}`)
-          write({ text, done: true, source: 'deerflow-runtime' })
+          write({ text, ...(result?.research ? { research: result.research } : {}), done: true, source: 'deerflow-runtime' })
         } catch (e) {
           if (heartbeat) clearInterval(heartbeat)
-          const message = String(e?.message || e || 'unknown error').slice(0, 200)
-          console.warn(`[ai-wizard] deerflow_operator error requestId=${requestId} ms=${Date.now() - deerStarted} message=${message}`)
+          const job = e?.researchJob || e?.job || latestJob
+          const research = researchReceipt({ ...job, id: e?.jobId || job?.id }, { status: 'failed' })
+          const message = 'The deep dive did not finish.'
+          const text = `${message}${deerTarget ? ` Target: ${deerTarget}.` : ''} ${research.jobId ? 'The request is recorded in Research.' : 'Open Research to check the request status.'} [Open research status](${research.url}) Ask me to research the target again to retry. Request id ${requestId}.`
+          console.warn(`[ai-wizard] deerflow_operator error requestId=${requestId} ms=${Date.now() - deerStarted} jobId=${research.jobId || 'none'}`)
           write({
-            text: `The deep dive did not finish. ${message}${deerTarget ? ` (target: ${deerTarget})` : ''} Nothing was saved for this run -- ask again and I will retry. Request id ${requestId}.`,
+            text,
+            error: message,
+            research,
             done: true,
             source: 'deerflow-runtime',
           })
@@ -576,6 +664,12 @@ export async function POST(request) {
           if (heartbeat) clearInterval(heartbeat)
           try { controller.close() } catch {}
         }
+      },
+      cancel() {
+        // Closing chat stops transport heartbeats, while the server-side run
+        // continues and records its result in the durable research job.
+        disconnected = true
+        if (heartbeat) clearInterval(heartbeat)
       },
     })
     return new Response(deerStream, {
@@ -613,6 +707,16 @@ export async function POST(request) {
   }
   const personaLine = chatAgentPersona(activeOperatorTool, sectionPersonaLine(effectiveSection))
   if (personaLine) contextLines.push(personaLine)
+  const usesSashaMediaWorkflow = agentId === 'social-media' || ['media', 'content-lab'].includes(effectiveSection)
+  if (usesSashaMediaWorkflow) {
+    contextLines.push(SASHA_MEDIA_INSTRUCTIONS)
+    if (/\bkie(?:\.ai)?\b/i.test(last.content)) contextLines.push(
+      'Sasha media capability: when Carl explicitly names Kie, Kie.AI, or KIE for an image, video, audio, or content-generation request, use the Kie tools. First fcc_list_kie_models to discover exact model ids, then fcc_inspect_kie_model for required inputs and pricing, then fcc_generate_kie_content with the inspected input schema, mediaType, and a stable unique requestId. Preserve the same requestId on retries. Do not send an explicit Kie request through generate_image or silently substitute another provider.',
+      'If those named Kie wrappers are not available in your current OpenClaw allowlist, use the existing fcc_list_tools to confirm the dispatcher tools, then fcc_call with tool set to list_kie_models, inspect_kie_model, generate_kie_content, or get_kie_content_job and the same args object. This generic dispatcher path uses the same authentication, paid-action approvals, and durable jobs. Missing named wrappers alone does not mean Kie is unavailable; if the dispatcher also lacks the tools, report that the CRM release is not active instead of pretending to generate.',
+      'Kie content jobs are asynchronous. Keep the returned job id and use fcc_get_kie_content_job to check it. Say the request is pending while it is pending; report finished content only when the job status is completed and saved Media library items are returned. Never invent an output URL or start another paid task to recover from a timeout. Respect the existing verified admin paid-action approval gate; an agent argument claiming Carl approved is not authorization.',
+      'A Kie credential covers the account catalogue, but this integration supports only models with the standard createTask endpoint and an available input schema. If discovery or inspection reports an unsupported endpoint, missing schema, missing reference asset, or other error, explain the specific limitation instead of claiming execution. Generic still-image requests continue to use the saved image provider, currently OpenAI for Sasha. Generic video production-brief behavior and voice settings are unchanged.'
+    )
+  }
   if (isOpenOcti()) contextLines.push('Begin and respond in English by default. Change languages only when the user explicitly asks for another language.')
   if (operatorContext && typeof operatorContext === 'object') {
     const safeContext = {
@@ -645,16 +749,28 @@ export async function POST(request) {
         console.log(`[ai-wizard] start requestId=${requestId} section=${String(section || 'unknown').replace(/[^a-z0-9_-]/gi, '') || 'unknown'} screenControl=${screenControl} chars=${String(last.content || '').length}`)
         const r = await openclawChat({
           message: prompt,
-          sessionKey: screenControl && !isOpenOcti() ? `agent:main:screen-control-live-${Date.now()}` : (chatGatewaySessionKey(sessionKey, isOpenOcti(), agentId) || `agent:${agentId}:ai-wizard-${Date.now()}`),
+          sessionKey: screenControl && !isOpenOcti() ? `agent:main:screen-control-live-${Date.now()}` : (conversationId
+            ? wizardConversationSessionKey({ conversationId, user, agentId })
+            : chatGatewaySessionKey(sessionKey, isOpenOcti(), agentId) || `agent:${agentId}:ai-wizard-${Date.now()}`),
           token,
-          firstChunkMs: isOpenOcti() ? 120000 : undefined,
+          // Website research and paid media tools can finish before the first
+          // assistant text arrives. Keep Sasha's request alive through that
+          // work instead of inviting a retry while generation is still active.
+          firstChunkMs: usesSashaMediaWorkflow
+            ? Math.max(240000, resolveDefaultFirstChunkMs())
+            : (process.env.OPENCLAW_FIRST_CHUNK_MS ? undefined : (isOpenOcti() ? 120000 : undefined)),
+          betweenChunksMs: usesSashaMediaWorkflow ? 240000 : undefined,
+          maxMs: usesSashaMediaWorkflow ? 600000 : undefined,
           onChunk: (text) => write({ text }),
         })
         console.log(`[ai-wizard] done requestId=${requestId} runId=${r.runId || 'none'} chars=${String(r.text || '').length}`)
         // Final text (in case the last chunk had more than what onChunk captured)
         write({ text: r.text, done: true, runId: r.runId })
       } catch (e) {
-        console.warn(`[ai-wizard] error requestId=${requestId} message=${String(e.message || e).slice(0, 180)}`)
+        const errCode = e?.code || 'UNKNOWN'
+        const errStage = e?.stage || 'unknown'
+        const errElapsedMs = typeof e?.elapsedMs === 'number' ? e.elapsedMs : ''
+        console.warn(`[ai-wizard] error requestId=${requestId} code=${errCode} stage=${errStage} elapsedMs=${errElapsedMs} agentId=${String(agentId || 'none').replace(/[^a-z0-9_-]/gi, '')} message=${String(e.message || e).slice(0, 180)}`)
         if (screenControl) {
           const text = runLocalScreenFallback(last.content)
           if (text) {
@@ -675,7 +791,7 @@ export async function POST(request) {
           }
         }
         write({
-          text: reconnectFallbackText(section, agentId, activeOperatorTool),
+          text: openclawErrorFallbackText(e, section, agentId, activeOperatorTool),
           done: true,
           source: 'local-fallback',
         })

@@ -6,7 +6,7 @@ import SettingsManager from './settings/SettingsManager'
 import MyAccount from './account/MyAccount'
 import DocumentsManager from './documents/DocumentsManager'
 import ResearchPage from '@closed/research-page'
-import { isOpenOcti } from '@/lib/edition'
+import { isOctiCc, isOpenOcti } from '@/lib/edition'
 import { brandAssetsFor } from '@/lib/brand-assets'
 import OpenOctiAskButton from './components/OpenOctiAskButton'
 import DomainManager from './domains/DomainManager'
@@ -16,7 +16,7 @@ import Feed from './feed/Feed'
 import ChatPanel from './components/ChatPanel'
 import CommandPalette, { CommandPaletteTrigger } from './components/CommandPalette'
 import OperatorPromptBar from './components/OperatorPromptBar'
-import AgentApprovals from './components/AgentApprovals'
+import SidebarFooter from './components/SidebarFooter'
 import OperatorContextRail from './components/OperatorContextRail'
 import WorkspaceLayoutSettings from './components/WorkspaceLayoutSettings'
 import { useWorkspaceLayout } from '@/lib/use-workspace-layout'
@@ -36,6 +36,7 @@ import PressDeskManager from './press/PressDeskManager'
 import MigrationCenterTab from './settings/import/MigrationCenterTab'
 import EmailTemplatesManager from './email-templates/EmailTemplatesManager'
 import GestureMode from './components/GestureMode'
+import AgentApprovals from './components/AgentApprovals'
 import SponsorCRM from './sponsors/SponsorCRM'
 import AutomationsManager from './automations/AutomationsManager'
 import VoiceGuide from './voice-guide/VoiceGuide'
@@ -64,6 +65,8 @@ import PresenceBeacon from './components/PresenceBeacon'
 import MessageBell from './components/MessageBell'
 import ThemeModeToggle from './components/ThemeModeToggle'
 import { canUseTab } from '@/lib/roles'
+import { getVisibleWorkspaces, getWorkspaceDestination } from '@/lib/workspace-navigation'
+import { getNavigationDestination, isNavigationDestinationActive, navigationWorkspacesFor } from '@/lib/navigation-manifest'
 import { Activity, Bot, Boxes, BrainCircuit, Cable, CircleDollarSign, Database, FlaskConical, Hammer, KeyRound, LifeBuoy, Megaphone, Mic2, Newspaper, Package, PhoneCall, Radio, Server, Settings2, ShieldAlert, Wrench } from 'lucide-react'
 
 const APP_BUILD_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 10) || '2026.06.11-api-lab-mobile'
@@ -441,11 +444,13 @@ function RepositoryNavIcon() {
 }
 
 const OPENOCTI = isOpenOcti()
+const OCTICC = isOctiCc()
+const CUSTOMER_EDITION = OPENOCTI || OCTICC
 const EDITION_BRAND = brandAssetsFor()
 const OPENOCTI_CLOSED_TABS = new Set(['research', 'platforms', 'SearchTools3'])
 
 const NAV_MAIN = [
-  { id: 'dashboard', icon: <CommandCenterNavIcon />, label: OPENOCTI ? 'OpenOcti' : 'Command Center', desc: OPENOCTI ? 'OpenOcti dashboard and today\'s priorities' : 'Command Center dashboard and today\'s priorities' },
+  { id: 'dashboard', icon: <CommandCenterNavIcon />, label: EDITION_BRAND.editionName, desc: `${EDITION_BRAND.editionName} dashboard and today's priorities` },
   { id: 'feed', icon: '📰', label: 'Feed', desc: 'Live activity, online users, and direct messages' },
   { id: 'leads', icon: <LeadsNavIcon />, label: 'Leads', desc: 'Working leads, scripts, statuses, intake, and qualification' },
   { id: 'press-desk', icon: <Newspaper size={18} strokeWidth={2.25} />, label: 'Press Desk', desc: 'Ranked press contacts, saved lists, compliant campaigns, and reporting' },
@@ -478,7 +483,7 @@ const POSTIZ_LINKS = [
 const LAB_WORKSPACES = [
   {
     id: 'nvidia-labs',
-    label: 'AI Labs',
+    label: 'AI Lab',
     short: 'AI',
     Icon: BrainCircuit,
     lane: 'Models',
@@ -553,8 +558,12 @@ const LAB_WORKSPACES = [
 const LAB_TAB_IDS = new Set(['labs', ...LAB_WORKSPACES.map(lab => lab.id)])
 
 function LabWorkspaceIcon({ lab, size = 18, strokeWidth = 2.25 }) {
-  const Icon = lab?.Icon || FlaskConical
-  return <Icon aria-hidden="true" size={size} strokeWidth={strokeWidth} />
+  return <FlaskConical data-lab-primary-glyph="flask" aria-hidden="true" size={size} strokeWidth={strokeWidth} />
+}
+
+function LabWorkspaceDomainIcon({ lab, size = 13, strokeWidth = 2 }) {
+  const DomainIcon = lab?.Icon
+  return DomainIcon && DomainIcon !== FlaskConical ? <DomainIcon data-lab-secondary-glyph={lab?.id || 'domain'} aria-hidden="true" size={size} strokeWidth={strokeWidth} /> : null
 }
 
 const NAV_TOOLS = [
@@ -570,7 +579,7 @@ const NAV_TOOLS = [
   { id: 'incident-inbox', icon: <ShieldAlert size={18} strokeWidth={2.25} />, label: 'Incident Inbox', desc: 'Platform health, relayed errors, response tasks, and public status notes' },
   { id: 'money-console', icon: <CircleDollarSign size={18} strokeWidth={2.25} />, label: 'Money Console', desc: 'Portfolio MRR, churn, trials, failed payments, and attributed margin' },
   {
-    id: 'labs', icon: <LabsNavIcon />, label: 'Labs', desc: 'Product, agent, and operations experiments',
+    id: 'labs', icon: <FlaskConical data-lab-primary-glyph="flask" aria-hidden="true" size={18} strokeWidth={2.25} />, label: 'Labs', desc: 'Product, agent, and operations experiments',
     children: [
       { id: 'nvidia-labs', label: 'AI Lab' },
       { id: 'api-lab', label: 'API Lab' },
@@ -597,14 +606,14 @@ const NAV_TOOLS = [
 ].filter(item => !OPENOCTI || !OPENOCTI_CLOSED_TABS.has(item.id))
 
 // ── Workspace segmentation (presentational): groups the existing section ids
-// into Sell / Build / Projects / System. Every id still routes via the same
+// into Sell / Build / Work / System. Every id still routes via the same
 // handleNav/setTab — no routing or flow change.
 // Distinct icon per sub-section — without this, flattened children inherit their
 // parent's (Tools/Labs) icon and all look identical in the workspace panel.
 const CHILD_ICONS = {
-  'content-lab': <Newspaper size={16} strokeWidth={2.25} />, 'agent-labs': <Bot size={16} strokeWidth={2.25} />, 'provisioning-lab': <PhoneCall size={16} strokeWidth={2.25} />, 'nvidia-labs': <BrainCircuit size={16} strokeWidth={2.25} />, 'api-lab': <KeyRound size={16} strokeWidth={2.25} />, 'leads-lab': <Activity size={16} strokeWidth={2.25} />, 'voice-labs': <Mic2 size={16} strokeWidth={2.25} />, ops: <Wrench size={16} strokeWidth={2.25} />,
+  'content-lab': <Newspaper size={16} strokeWidth={2.25} />, 'agent-labs': <FlaskConical size={16} strokeWidth={2.25} />, 'agent-sandbox': <FlaskConical size={16} strokeWidth={2.25} />, 'provisioning-lab': <FlaskConical size={16} strokeWidth={2.25} />, 'nvidia-labs': <FlaskConical size={16} strokeWidth={2.25} />, 'api-lab': <FlaskConical size={16} strokeWidth={2.25} />, 'leads-lab': <FlaskConical size={16} strokeWidth={2.25} />, 'voice-labs': <FlaskConical size={16} strokeWidth={2.25} />, ops: <FlaskConical size={16} strokeWidth={2.25} />,
   phone: '☎', conference: '☎', 'meeting-capture': '🎙️', calendar: '📅',
-  harness: '🧪', network: '🌐', domains: '🌍', credentials: '🔑',
+  harness: <FlaskConical size={16} strokeWidth={2.25} />, network: '🌐', domains: '🌍', credentials: '🔑',
 }
 const SECTION_BY_ID = (() => {
   const m = {}
@@ -626,16 +635,13 @@ const WS_GLYPH = {
   projects: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path strokeLinejoin="round" d="M4 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2z" /></svg>,
   system: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path strokeLinejoin="round" d="M5 4h14v6H5zM5 14h14v6H5z" /><path strokeLinecap="round" d="M8 7h.01M8 17h.01M12 7h5M12 17h5" /></svg>,
 }
-const WORKSPACES = [
-  { id: 'sell', label: 'Sell', ids: ['dashboard', 'leads', 'pipelines', 'accounts', 'support', 'contacts', 'finance'] },
-  { id: 'build', label: 'Build', ids: ['agents', 'platforms', 'automations', 'press-desk', 'builder', 'campaign-studio', 'social', 'products', 'repository', 'ship-desk', 'build-board', 'switchboard', 'labs'] },
-  { id: 'projects', label: 'Projects', ids: ['projects', 'tasks', 'documents', 'research', 'content-lab', 'media', 'notes', 'phone', 'conference', 'calendar', 'meeting-capture', 'feed'] },
-  { id: 'system', label: 'System', ids: ['incident-inbox', 'money-console', 'network', 'domains', 'credentials', 'migrate', ...(OPENOCTI ? ['settings'] : ['control-services'])] },
-].map(workspace => ({
+const WORKSPACES = navigationWorkspacesFor().map(workspace => ({
   ...workspace,
-  ids: OPENOCTI ? workspace.ids.filter(id => !OPENOCTI_CLOSED_TABS.has(id)) : workspace.ids,
+  label: workspace.displayLabel,
 }))
 const WORKSPACE_OF = (tabId) => {
+  const destination = getNavigationDestination(tabId)
+  if (destination?.workspace) return destination.workspace
   const direct = WORKSPACES.find(w => w.ids.includes(tabId))
   if (direct) return direct.id
   const parent = NAV_TOOLS.find(item => item.children?.some(child => child.id === tabId))
@@ -643,7 +649,20 @@ const WORKSPACE_OF = (tabId) => {
     const workspace = WORKSPACES.find(w => w.ids.includes(parent.id))
     if (workspace) return workspace.id
   }
-  return WORKSPACES[0].id
+  return null
+}
+function workspaceHasAllowedDestination(workspace, canOpenTab) {
+  return getVisibleWorkspaces([workspace], {
+    canOpenTab,
+    getItem: id => SECTION_BY_ID[id],
+  }).length > 0
+}
+function workspaceDestination(workspace, currentTab, canOpenTab) {
+  return getWorkspaceDestination(workspace, currentTab, {
+    canOpenTab,
+    getItem: id => SECTION_BY_ID[id],
+    workspaceOf: WORKSPACE_OF,
+  })
 }
 // Derived from the same sources that define tabs (WORKSPACES + SECTION_BY_ID,
 // which is itself built from NAV_MAIN/NAV_TOOLS) so a tab added to any of
@@ -1088,8 +1107,8 @@ function UserAvatarMenu({ user, isAdmin, isOwner, theme, onThemeChange, networkM
                 disabled={networkModeBusy}
               />
             )}
-            {!OPENOCTI && isAdmin && <AvatarToolButton icon={<MenuIcon type="portal" />} label={portalBusy ? 'Opening Client Portal' : 'Client Portal'} onClick={openPortal} disabled={portalBusy} />}
-            {!OPENOCTI && <AvatarToolButton icon={<MenuIcon type="external" />} label="Website" href="https://company.example.com" />}
+            {!CUSTOMER_EDITION && isAdmin && <AvatarToolButton icon={<MenuIcon type="portal" />} label={portalBusy ? 'Opening Client Portal' : 'Client Portal'} onClick={openPortal} disabled={portalBusy} />}
+            {!CUSTOMER_EDITION && <AvatarToolButton icon={<MenuIcon type="external" />} label="Website" href="https://company.example.com" />}
             <ThemeModeToggle theme={theme} onChange={onThemeChange} compact menuIcon />
           </div>
           <div className="avatar-menu-main-scroll">
@@ -1102,6 +1121,7 @@ function UserAvatarMenu({ user, isAdmin, isOwner, theme, onThemeChange, networkM
               <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Credentials" detail="Keys" onClick={() => go('credentials')} />
               {OPENOCTI && isAdmin && <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Models & Keys" detail="AI providers" onClick={() => { try { sessionStorage.setItem('fcc-settings-sub-pending', 'models') } catch {} go('settings') }} />}
               {isAdmin && <AvatarQuickAction icon={<MenuIcon type="settings" />} label="Admin" detail="Settings" onClick={() => go('settings')} />}
+              {!OPENOCTI && !OCTICC && <AvatarQuickAction icon={<MenuIcon type="switchboard" />} label="Rail layout (beta)" detail="New shell" onClick={() => { setOpen(false); window.location.assign('/rail?tab=dashboard') }} />}
             </div>
             <div className="avatar-menu-status-strip" aria-label="System status">
               <span>
@@ -1114,7 +1134,7 @@ function UserAvatarMenu({ user, isAdmin, isOwner, theme, onThemeChange, networkM
               </span>
             </div>
             {OPENOCTI && ['command', 'codex', 'codex-blue'].includes(theme) && <WorkspaceLayoutSettings />}
-            {!OPENOCTI && isAdmin && <PortalHeaderLink menuItem />}
+            {!CUSTOMER_EDITION && isAdmin && <PortalHeaderLink menuItem />}
             <div className="avatar-menu-divider" />
             <AvatarMenuItem icon={<MenuIcon type="logout" />} label="Log out" detail={`End this ${EDITION_BRAND.editionName} session`} onClick={logout} />
           </div>
@@ -1136,7 +1156,7 @@ function AvatarQuickAction({ icon, label, detail, onClick }) {
   )
 }
 
-function MobileAccountDrawer({ user, isAdmin, theme, onThemeChange, networkMode, networkModeBusy, onNetworkMode, activeWorkspace, onWorkspace, onNavigate, onClose }) {
+function MobileAccountDrawer({ user, isAdmin, theme, onThemeChange, networkMode, networkModeBusy, onNetworkMode, activeWorkspace, workspaces, onWorkspace, onNavigate, onClose, autoFocusClose = false }) {
   const [toolDrawer, setToolDrawer] = useState(null)
   const go = (tabId) => {
     onClose()
@@ -1176,7 +1196,7 @@ function MobileAccountDrawer({ user, isAdmin, theme, onThemeChange, networkMode,
         <button type="button" className="mobile-account-logout" onClick={logout} aria-label="Log out" data-tooltip="Log out" data-tooltip-side="bottom">
           <MenuIcon type="logout" />
         </button>
-        <button type="button" className="mobile-menu-close" onClick={onClose} aria-label="Close menu" data-tooltip="Close" data-tooltip-side="bottom">
+        <button type="button" className="mobile-menu-close" onClick={onClose} aria-label="Close menu" data-tooltip="Close" data-tooltip-side="bottom" data-mobile-nav-initial-focus autoFocus={autoFocusClose}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
           </svg>
@@ -1211,21 +1231,23 @@ function MobileAccountDrawer({ user, isAdmin, theme, onThemeChange, networkMode,
             <NetworkModeGlyph mode={networkMode} />
           </button>
         )}
-        {!OPENOCTI && isAdmin && <PortalHeaderLink compact />}
-        <a href="https://company.example.com" target="_blank" rel="noopener noreferrer"
+        {!CUSTOMER_EDITION && isAdmin && <PortalHeaderLink compact />}
+        {!CUSTOMER_EDITION && <a href="https://company.example.com" target="_blank" rel="noopener noreferrer"
           className="avatar-menu-tool-icon" aria-label="Open company.example.com"
           data-tooltip="Website" data-tooltip-side="bottom">
           <MenuIcon type="external" />
-        </a>
+        </a>}
         <ThemeModeToggle theme={theme} onChange={onThemeChange} compact menuIcon />
       </div>
 
       <div className="mobile-menu-separator" />
 
+      {!OPENOCTI && !OCTICC && <AvatarQuickAction icon={<MenuIcon type="switchboard" />} label="Rail layout (beta)" detail="New shell" onClick={() => { onClose(); window.location.assign('/rail/dashboard') }} />}
+
       {OPENOCTI && ['command', 'codex', 'codex-blue'].includes(theme) && <WorkspaceLayoutSettings />}
 
-      <div className="mobile-workspace-row" aria-label="Workspaces">
-        {WORKSPACES.map(w => {
+      <div className="mobile-workspace-row" role="group" aria-label="Workspaces">
+        {workspaces.map(w => {
           const on = activeWorkspace === w.id
           return (
             <button
@@ -1233,6 +1255,7 @@ function MobileAccountDrawer({ user, isAdmin, theme, onThemeChange, networkMode,
               type="button"
               onClick={() => onWorkspace(w.id)}
               aria-label={w.label}
+              aria-pressed={on}
               data-tooltip={w.label}
               data-tooltip-side="bottom"
               className={on ? 'is-active' : ''}
@@ -1311,32 +1334,6 @@ function LabCommandSurface({ tab, canOpenTab, onNavigate }) {
         </button>
 
         <div className="lab-command-switcher flex items-center gap-1 overflow-x-auto no-scrollbar" aria-label="Quick lab switcher">
-          {labs.map(lab => {
-            const isActive = lab.id === tab
-            return (
-              <button
-                className="lab-command-switcher-button"
-                key={lab.id}
-                type="button"
-                onClick={() => onNavigate(lab.id)}
-                aria-label={lab.label}
-                data-tooltip={lab.label}
-                data-tooltip-side="bottom"
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 8,
-                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: isActive ? 'var(--accent-soft)' : 'var(--surface2)',
-                  color: isActive ? 'var(--accent)' : 'var(--text-muted)',
-                  fontWeight: 800,
-                  flex: '0 0 auto',
-                }}
-              >
-                <LabWorkspaceIcon lab={lab} size={18} />
-              </button>
-            )
-          })}
           <button
             className="lab-command-switcher-button"
             type="button"
@@ -1403,7 +1400,7 @@ function LabCommandSurface({ tab, canOpenTab, onNavigate }) {
                   <LabWorkspaceIcon lab={lab} size={18} />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>{lab.lane}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}><LabWorkspaceDomainIcon lab={lab} />{lab.lane}</span>
                   <span style={{ display: 'block', fontSize: 14, fontWeight: 800 }}>{lab.label}</span>
                   <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.35 }}>{lab.desc}</span>
                 </span>
@@ -1436,6 +1433,9 @@ export default function Page() {
   const [networkModeBusy, setNetworkModeBusy] = useState(false)
   const [expanded, setExpanded] = useState({})
   const [navOpen, setNavOpen] = useState(false)
+  const mobileNavTriggerRef = useRef(null)
+  const mobileNavDialogRef = useRef(null)
+  const mobileNavWasOpenRef = useRef(false)
   const [compactFlyout, setCompactFlyout] = useState(null)
   const headerHoverMode = useHeaderHoverMode()
   const [sidebarHoverExpanded, setSidebarHoverExpanded] = useState(false)
@@ -1452,9 +1452,11 @@ export default function Page() {
   const userLoaded = !!user
   const displayBuild = runtimeBuild || APP_BUILD_VERSION
   const canOpenTab = (tabId) => canUseTab(user, tabId)
+  const visibleWorkspaces = WORKSPACES.filter(workspace => workspaceHasAllowedDestination(workspace, canOpenTab))
+  const activeWorkspaceDefinition = visibleWorkspaces.find(workspace => workspace.id === activeWorkspace) || null
   const topChromeHeight = 69
   const darkBrandTheme = theme === 'command' || theme === 'codex-dark'
-  const brandLogoSrc = OPENOCTI ? EDITION_BRAND.shellLogo : darkBrandTheme ? '/brand/fd-brand-light.png' : '/brand/fd-brand-dark.png'
+  const brandLogoSrc = CUSTOMER_EDITION ? EDITION_BRAND.shellLogo : darkBrandTheme ? '/brand/fd-brand-light.png' : '/brand/fd-brand-dark.png'
   const logoImgStyle = {
     display: 'block',
     width: '100%',
@@ -1524,6 +1526,51 @@ export default function Page() {
       else setTab('dashboard')
     }
   }, [userLoaded, user, tab])
+
+  useEffect(() => {
+    if (!navOpen) {
+      if (mobileNavWasOpenRef.current) {
+        mobileNavWasOpenRef.current = false
+        mobileNavTriggerRef.current?.focus()
+      }
+      return
+    }
+
+    mobileNavWasOpenRef.current = true
+    const dialog = mobileNavDialogRef.current
+    if (!dialog) return
+    const focusableSelector = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const focusableElements = () => Array.from(dialog.querySelectorAll(focusableSelector))
+      .filter(element => !element.closest('[aria-hidden="true"]') && element.getClientRects().length > 0)
+    const initialFocus = dialog.querySelector('[data-mobile-nav-initial-focus]') || focusableElements()[0]
+    initialFocus?.focus()
+
+    const handleMobileNavKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setNavOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = focusableElements()
+      if (!focusable.length) {
+        event.preventDefault()
+        dialog.focus()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleMobileNavKeyDown)
+    return () => document.removeEventListener('keydown', handleMobileNavKeyDown)
+  }, [navOpen])
 
   // Solo-mode banner: admins see a persistent indicator so they always know
   // public-web logins are locked down. Members never see this — if Solo is on
@@ -2001,10 +2048,11 @@ export default function Page() {
   }
 
   const handleWorkspaceNav = (workspaceId, options = {}) => {
-    const workspace = WORKSPACES.find(w => w.id === workspaceId) || WORKSPACES[0]
-    const firstAllowed = workspace.ids.find(id => canOpenTab(id)) || 'dashboard'
+    const workspace = visibleWorkspaces.find(w => w.id === workspaceId) || visibleWorkspaces[0] || WORKSPACES[0]
+    const firstAllowed = workspaceDestination(workspace, tab, canOpenTab) || 'dashboard'
     setActiveWorkspace(workspace.id)
     if (options.navigate !== true) return
+    if (firstAllowed === tab) return
     navigateToTab(firstAllowed)
   }
 
@@ -2162,7 +2210,7 @@ export default function Page() {
   useEffect(() => { setActiveWorkspace(WORKSPACE_OF(tab)) }, [tab])
 
   const isActive = (item) => {
-    if (item.id === tab) return true
+    if (isNavigationDestinationActive(item.id, tab)) return true
     if (item.children?.some(c => c.id === tab)) return true
     return false
   }
@@ -2203,6 +2251,7 @@ export default function Page() {
       >
         <button onClick={onItemClick}
           className="group w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left"
+          aria-current={active ? 'page' : undefined}
           aria-haspopup={hasCompactFlyout ? 'menu' : undefined}
           aria-expanded={hasCompactFlyout ? compactFlyoutOpen : undefined}
           style={{
@@ -2228,6 +2277,7 @@ export default function Page() {
                 key={child.id}
                 type="button"
                 role="menuitem"
+                aria-current={tab === child.id ? 'page' : undefined}
                 onClick={() => {
                   if (child.postizPath) openSocialSub(child.postizPath); else handleNavTo(child.id)
                   setCompactFlyout(null)
@@ -2320,14 +2370,16 @@ export default function Page() {
       <div className="mobile-topbar lg:hidden fixed top-0 left-0 right-0 z-30 grid items-center gap-2 px-3 py-2" style={{ gridTemplateColumns: 'minmax(0, 1fr) auto', background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         <button type="button" onClick={() => { handleNavTo('dashboard'); setNavOpen(false) }} aria-label={`Go to ${EDITION_BRAND.editionName}`} style={{ minWidth: 0, justifySelf: 'start', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}>
           <span style={mobileLogoFrameStyle}>
-            <img src={brandLogoSrc} alt={OPENOCTI ? 'OpenOcti' : 'Your organization'} style={mobileLogoImgStyle} />
+            <img src={brandLogoSrc} alt={EDITION_BRAND.productName} style={mobileLogoImgStyle} />
           </span>
         </button>
         <div className="flex items-center gap-2 shrink-0">
+          {isAdmin && <div id="mobile-agent-approvals" className="flex items-center" />}
           {isAdmin && (
             <SettingsGearButton size={34} onNavigate={handleNavTo} onClose={() => setNavOpen(false)} />
           )}
           <button
+            ref={mobileNavTriggerRef}
             type="button"
             onClick={() => setNavOpen(true)}
             className="avatar-menu-trigger mobile-nav-avatar-trigger"
@@ -2347,15 +2399,21 @@ export default function Page() {
       )}
 
       <aside
+        ref={mobileNavDialogRef}
+        data-active-workspace={activeWorkspaceDefinition?.id || ''}
+        role={navOpen ? 'dialog' : undefined}
+        aria-modal={navOpen ? 'true' : undefined}
+        aria-label={navOpen ? 'Account and navigation menu' : undefined}
+        tabIndex={navOpen ? -1 : undefined}
         onMouseLeave={() => {
           if (!sidebarHoverExpanded) return
           setSidebarHoverExpanded(false)
           setSidebarCompact(true)
         }}
-        className={`app-sidebar flex flex-col w-64 lg:w-56 shrink-0 fixed lg:static inset-y-0 right-0 lg:right-auto lg:left-0 z-50 transition-transform duration-200 ${navOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`} style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
+        className={`app-sidebar ${navOpen ? 'mobile-nav-open' : 'mobile-nav-closed'} flex flex-col w-64 lg:w-56 shrink-0 fixed lg:static inset-y-0 right-0 lg:right-auto lg:left-0 z-50 transition-transform duration-200 ${navOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`} style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', borderLeft: '1px solid var(--border)' }}>
         {sidebarCompact && !navOpen ? (
           /* Collapsed (slid-in) menu: slim vertical icon column with a slide-out handle */
-          <div className="flex flex-col items-center py-3 gap-2">
+          <div className="sidebar-compact-navigation flex flex-col items-center py-3 gap-2">
             <button
               type="button"
               onClick={() => { setSidebarHoverExpanded(false); setSidebarCompact(false); localStorage.setItem('fcc-sidebar-compact', '0') }}
@@ -2376,12 +2434,12 @@ export default function Page() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 9l2 3-2 3" />
               </svg>
             </button>
-            {WORKSPACES.map(w => {
+            {visibleWorkspaces.map(w => {
               const on = activeWorkspace === w.id
               return (
                 <button key={w.id} type="button"
-                  onClick={() => { handleWorkspaceNav(w.id, { navigate: false }); setSidebarCompact(false); localStorage.setItem('fcc-sidebar-compact', '0') }}
-                  aria-label={w.label} data-tooltip={w.label} data-tooltip-side="right"
+                  onClick={() => { handleWorkspaceNav(w.id, { navigate: true }); setSidebarCompact(false); localStorage.setItem('fcc-sidebar-compact', '0') }}
+                  aria-label={w.label} aria-pressed={on} data-tooltip={w.label} data-tooltip-side="right"
                   className="flex items-center justify-center"
                   style={{ width: 44, height: 44, borderRadius: 11, background: on ? 'var(--accent-soft)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-muted)', border: on ? '1px solid var(--accent)' : '1px solid transparent' }}>
                   {WS_GLYPH[w.id]}
@@ -2391,7 +2449,7 @@ export default function Page() {
           </div>
         ) : (
         <>
-          {/* Top horizontal workspace strip — slide handle + Sell / Build / Projects / System gear */}
+          {/* Top horizontal workspace strip — slide handle + Sell / Build / Work / System gear */}
           <div className="ws-topstrip flex items-center gap-1.5 px-2.5" style={{ height: topChromeHeight, boxSizing: 'border-box', borderBottom: '1px solid var(--border)' }}>
             <button
               type="button"
@@ -2409,12 +2467,12 @@ export default function Page() {
               </svg>
             </button>
             <div className="flex items-center flex-1 justify-between">
-              {WORKSPACES.map(w => {
+              {visibleWorkspaces.map(w => {
                 const on = activeWorkspace === w.id
                 return (
                   <button key={w.id} type="button"
-                    onClick={() => handleWorkspaceNav(w.id, { navigate: false })}
-                    aria-label={w.label} data-tooltip={w.label} data-tooltip-side="bottom"
+                    onClick={() => handleWorkspaceNav(w.id, { navigate: true })}
+                    aria-label={w.label} aria-pressed={on} data-tooltip={w.label} data-tooltip-side="bottom"
                     className="ws-tab flex items-center justify-center"
                     style={{ width: 38, height: 38, borderRadius: 10, background: on ? 'var(--accent-soft)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-muted)', border: on ? '1px solid var(--accent)' : '1px solid transparent', transition: 'all var(--transition-fast)' }}
                     onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'var(--surface2)' }}
@@ -2428,6 +2486,7 @@ export default function Page() {
 
           <div className="sidebar-mobile-actions lg:hidden" style={{ borderBottom: '1px solid var(--border)' }}>
             <MobileAccountDrawer
+              key={navOpen ? 'mobile-navigation-open' : 'mobile-navigation-closed'}
               user={user}
               isAdmin={isAdmin}
               theme={theme}
@@ -2436,53 +2495,71 @@ export default function Page() {
               networkModeBusy={networkModeBusy}
               onNetworkMode={toggleNetworkMode}
               activeWorkspace={activeWorkspace}
-              onWorkspace={(workspaceId) => handleWorkspaceNav(workspaceId, { navigate: false })}
+              workspaces={visibleWorkspaces}
+              onWorkspace={(workspaceId) => {
+                handleWorkspaceNav(workspaceId, { navigate: true })
+                setNavOpen(false)
+              }}
               onNavigate={handleNavTo}
               onClose={() => setNavOpen(false)}
+              autoFocusClose={navOpen}
             />
           </div>
 
-          <div className="px-4 pt-3 pb-1">
-            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: "'Inter Tight', sans-serif" }}>
-              {(WORKSPACES.find(w => w.id === activeWorkspace) || WORKSPACES[0]).label}
+          {activeWorkspaceDefinition ? (
+          <>
+            <div className="workspace-nav-heading px-4 pt-3 pb-1">
+              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: "'Inter Tight', sans-serif" }}>
+                {activeWorkspaceDefinition.label}
+              </div>
             </div>
-          </div>
 
-          <nav className="flex-1 px-2.5 pb-3 overflow-auto no-scrollbar">
-            {(WORKSPACES.find(w => w.id === activeWorkspace) || WORKSPACES[0]).ids
-              .filter(id => {
-                if (canOpenTab(id)) return true
-                const item = SECTION_BY_ID[id]
-                return item?.children?.some(child => child.postizPath || canOpenTab(child.id))
-              })
-              .map(id => SECTION_BY_ID[id])
-              .filter(Boolean)
-              .map(renderNavItem)}
-          </nav>
+            <nav className="workspace-section-navigation flex-1 px-2.5 pb-3 overflow-auto no-scrollbar">
+              {activeWorkspaceDefinition.groups.map(group => {
+                const items = group.ids
+                  .filter(id => {
+                    if (canOpenTab(id)) return true
+                    const item = SECTION_BY_ID[id]
+                    return item?.children?.some(child => child.postizPath || canOpenTab(child.id))
+                  })
+                  .map(id => SECTION_BY_ID[id])
+                  .filter(Boolean)
+                if (!items.length) return null
+                return (
+                  <div key={group.id} className="workspace-navigation-group" data-navigation-group={group.id}>
+                    <div className="workspace-navigation-group-label">{group.displayLabel}</div>
+                    {items.map(renderNavItem)}
+                  </div>
+                )
+              })}
+            </nav>
+          </>
+          ) : <div className="flex-1" data-auxiliary-navigation />}
 
-          {/* Bottom info */}
-          <div className="sidebar-footer-block px-5 py-3 text-[10px]" style={{ color: 'var(--text-muted)' }}>
-            <img
-              src={OPENOCTI ? EDITION_BRAND.productLogo : '/brand/command-center-logo.png'}
-              alt={OPENOCTI ? 'OpenOcti' : ''}
-              aria-hidden={OPENOCTI ? undefined : true}
-              className={`sidebar-footer-logo ${OPENOCTI ? 'openocti-sidebar-footer-logo' : ''}`}
-            />
-            {!OPENOCTI && <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 500, color: 'var(--text)' }}>{EDITION_BRAND.editionName}</div>}
-            <div className="mt-0.5 opacity-50" title={PRODUCT_BUILD_TITLE}>
-              Version {PRODUCT_BUILD_LABEL}
-              <span className="opacity-70"> · {BUILD_COMMIT || 'Local build'}</span>
-            </div>
-          </div>
         </>
         )}
+          {/* Reserved footer keeps branding clear of navigation. */}
+          <SidebarFooter copyright={!CUSTOMER_EDITION ? '© Farrington Development LLC' : undefined}>
+            <img
+              src={CUSTOMER_EDITION ? EDITION_BRAND.productLogo : '/brand/command-center-logo.png'}
+              alt={EDITION_BRAND.productName}
+              aria-hidden={undefined}
+              className={`sidebar-footer-logo ${OPENOCTI ? 'openocti-sidebar-footer-logo' : ''}`}
+            />
+            {!OPENOCTI && <div className="sidebar-footer-edition" style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 500, color: 'var(--text)' }}>{EDITION_BRAND.editionName}</div>}
+            <div className="sidebar-footer-metadata mt-0.5 opacity-50" title={PRODUCT_BUILD_TITLE}>
+              Version {PRODUCT_BUILD_LABEL}
+              <div className="opacity-70">Build {BUILD_COMMIT || 'local'}</div>
+            </div>
+          </SidebarFooter>
       </aside>
 
-      {/* Right column: masthead on top + main content below. Masthead sits to the RIGHT of the side menu only — logo stays in top-left of side menu. */}
+      {/* Right column: masthead on top + main content below. */}
       <div className="flex flex-col flex-1 overflow-hidden">
       <header className="desktop-toolbar hidden lg:flex shrink-0 items-center justify-end px-5 py-2.5 z-30 gap-2" style={{ height: topChromeHeight, boxSizing: 'border-box', background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         {OPENOCTI && <OpenOctiAskButton />}
         <GestureMode placement="header" />
+        {isAdmin && <AgentApprovals mobileHostId="mobile-agent-approvals" />}
         {isAdmin && (
           <SettingsGearButton size={32} onNavigate={handleNavTo} />
         )}
@@ -2517,6 +2594,9 @@ export default function Page() {
           backTarget={backStack[backStack.length - 1] || readMeetingCaptureReturn() || null}
           onBack={handleReturnBack}
         />
+        {LAB_TAB_IDS.has(tab) && tab !== 'labs' && (
+          <LabCommandSurface tab={tab} canOpenTab={canOpenTab} onNavigate={handleNavTo} />
+        )}
         <div className={`${FULL_BLEED_TABS.has(tab) ? 'w-full min-h-full' : 'w-full max-w-[1600px] mx-auto'} ${operatorMode && !FULL_BLEED_TABS.has(tab) ? 'operator-main-frame' : ''}`}>
           {tab === 'dashboard' && <Dashboard onNavigate={handleNavTo} />}
           {tab === 'feed' && <Feed onNavigate={handleNavTo} />}
@@ -2627,8 +2707,7 @@ export default function Page() {
           }}
         />
       )}
-      {isAdmin && <AgentApprovals />}
-      <ChatPanel />
+      <ChatPanel key={user?.chatScope || 'signed-out'} user={user} />
       {isOwner && <ApiSpendMonitor mode="floating" />}
       <CommandPalette />
     </div>

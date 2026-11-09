@@ -13,6 +13,7 @@ import CallButton from '../components/CallButton'
 import ImportCsvModal from './ImportCsvModal'
 import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
 import { isOpenOcti } from '@/lib/edition'
+import ActivityInlineList from '../components/ActivityInlineList'
 
 const initials = (n = '') => n.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?'
 
@@ -35,17 +36,6 @@ function Modal({ title, onClose, children }) {
 function Field({ label, children }) {
   return <div className="mb-3"><label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>{label}</label>{children}</div>
 }
-
-function timeAgo(d) {
-  const t = new Date(d).getTime(); if (!t) return ''
-  const s = Math.floor((Date.now() - t) / 1000)
-  if (s < 3600) return `${Math.max(1, Math.floor(s / 60))}m ago`
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
-  if (s < 604800) return `${Math.floor(s / 86400)}d ago`
-  return new Date(d).toLocaleDateString()
-}
-
-const ACT_LABELS = { note: 'Note', phone_call: 'Call', call: 'Call', voice_call: 'Call', call_logged: 'Call', email: 'Email', email_sent: 'Email', support_ticket: 'Ticket', document: 'Document', video_invite: 'Video', calendar: 'Calendar', time_tracked: 'Time', invoice_sent: 'Invoice', invoice_created: 'Invoice', payment: 'Payment', lead_qualified: 'Lead', status_change: 'Status', transcript: 'Transcript', website_intake: 'Web' }
 
 const isFollowUpDue = (c) => c?.followUpAt && new Date(c.followUpAt).getTime() <= Date.now()
 
@@ -111,21 +101,12 @@ function ContactDrawer({ contact, account, onClose, onEdit, onChanged }) {
       </div>
       {acts === null ? (
         <div className="text-center py-6 text-sm" style={{ color: 'var(--text-muted)' }}>Loading activity…</div>
-      ) : acts.length === 0 ? (
-        <div className="text-center py-6 text-sm" style={{ color: 'var(--text-muted)' }}>No activity yet. Notes, calls, emails, and tickets will show up here.</div>
       ) : (
-        <div className="grid gap-2">
-          {acts.map(a => (
-            <div key={a.id} className="rounded-lg p-2.5" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-              <div className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                <span className="font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: 'var(--accent-soft)', color: 'var(--accent)', fontSize: 9 }}>{ACT_LABELS[a.type] || a.type}</span>
-                <span>{timeAgo(a.at || a.createdAt)}</span>
-              </div>
-              <div className="text-sm mt-1" style={{ color: 'var(--text)' }}>{a.subject || '(no subject)'}</div>
-              {a.body && <div className="text-xs mt-0.5 line-clamp-3" style={{ color: 'var(--text-muted)' }}>{a.body}</div>}
-            </div>
-          ))}
-        </div>
+        <ActivityInlineList
+          variant="contact"
+          activities={acts}
+          emptyState={<div className="text-center py-6 text-sm" style={{ color: 'var(--text-muted)' }}>No activity yet. Notes, calls, emails, and tickets will show up here.</div>}
+        />
       )}
     </Modal>
   )

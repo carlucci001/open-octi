@@ -91,6 +91,12 @@ export async function POST(request) {
         folder: body.folder,
         size: body.size,
         provider: body.provider,
+        websiteUrl: body.websiteUrl,
+        referenceImageUrl: body.referenceImageUrl,
+        referenceMediaId: body.referenceMediaId,
+        logoRequired: body.logoRequired,
+        logoImageUrl: body.logoImageUrl,
+        logoMediaId: body.logoMediaId,
       })
       return NextResponse.json({ ok: true, item })
     }

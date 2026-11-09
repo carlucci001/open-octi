@@ -1,8 +1,12 @@
 import { clientCapabilityStatus } from '@/lib/client-capabilities'
 import { isOpenOcti } from '@/lib/edition'
 
+import { cacheLoginWelcomeAudio, readLoginWelcomeAudio } from './loginWelcomeCache'
+
 const MAGGIE_WELCOME_AGENT_ID = 'main'
-const MAGGIE_WELCOME_MODEL = 'eleven_turbo_v2_5'
+const MAGGIE_WELCOME_MODEL = 'gemini-3.1-flash-tts-preview'
+const MAGGIE_WELCOME_VOICE = 'Leda'
+const OPENOCTI_WELCOME_MODEL = 'eleven_turbo_v2_5'
 const LOGIN_WELCOME_FETCH_TIMEOUT_MS = 7000
 const LOGIN_WELCOME_PLAY_TIMEOUT_MS = 6500
 const LOGIN_WELCOME_PENDING_KEY = 'fcc-login-welcome-pending'
@@ -70,7 +74,7 @@ function logLoginWelcomeStage(stage, extra = {}) {
         stage: `login-welcome-${stage}`,
         to: 'Maggie',
         agentId: MAGGIE_WELCOME_AGENT_ID,
-        provider: extra.provider || 'elevenlabs',
+        provider: extra.provider || (isOpenOcti() ? 'elevenlabs' : 'gemini'),
         status: extra.status || '',
         reason: extra.reason || '',
       }),
@@ -78,9 +82,61 @@ function logLoginWelcomeStage(stage, extra = {}) {
   } catch {}
 }
 
+function announceLoginWelcome(phase) {
+  // Tells the header who is greeting, so her face is up while she speaks.
+  if (typeof window === 'undefined' || isOpenOcti()) return
+  try {
+    window.dispatchEvent(new CustomEvent('fcc:voice-greeting', {
+      detail: { phase, agentId: MAGGIE_WELCOME_AGENT_ID, name: 'Maggie' },
+    }))
+  } catch {}
+}
+
+// Generating the greeting takes the speech provider a few seconds. Asking for
+// it the moment sign-in succeeds lets that overlap with loading the dashboard
+// instead of starting after it.
+function prefetchLoginWelcomeBlob(user, fallbackUsername) {
+  if (typeof window === 'undefined' || typeof fetch === 'undefined' || isOpenOcti()) return null
+  const requestBody = {
+    provider: 'gemini',
+    model: MAGGIE_WELCOME_MODEL,
+    voiceName: MAGGIE_WELCOME_VOICE,
+    agentId: MAGGIE_WELCOME_AGENT_ID,
+    text: buildLoginWelcomeText(user, fallbackUsername),
+  }
+  const cacheIdentity = { ...requestBody, user, fallbackUsername }
+  return (async () => {
+    const cached = await readLoginWelcomeAudio(cacheIdentity)
+    if (cached) return cached
+    logLoginWelcomeStage('prefetch-started')
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+    const timeoutId = controller ? window.setTimeout(() => controller.abort(), LOGIN_WELCOME_FETCH_TIMEOUT_MS) : null
+    try {
+      const response = await fetch('/api/voice/lab-tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        credentials: 'same-origin',
+        signal: controller?.signal,
+        body: JSON.stringify(requestBody),
+      })
+      if (!response.ok) return null
+      const blob = await response.blob()
+      if (!blob.size) return null
+      void cacheLoginWelcomeAudio(cacheIdentity, blob)
+      logLoginWelcomeStage('prefetch-ready')
+      return blob
+    } finally {
+      if (timeoutId) window.clearTimeout(timeoutId)
+    }
+  })().catch(() => null)
+}
+
 export function queueLoginWelcomeAudio(user, fallbackUsername, primedAudio) {
   queuedLoginWelcome = { user, fallbackUsername, primedAudio }
   if (typeof window === 'undefined') return
+  queuedLoginWelcome.prefetched = prefetchLoginWelcomeBlob(user, fallbackUsername)
+  announceLoginWelcome('queued')
   try {
     window.sessionStorage.setItem(LOGIN_WELCOME_PENDING_KEY, JSON.stringify({
       user: {
@@ -113,7 +169,7 @@ export async function playQueuedLoginWelcomeAudio({ delayMs = 120 } = {}) {
   const queued = consumeLoginWelcomeAudio()
   if (!queued) return false
   if (delayMs > 0) await wait(delayMs)
-  await playLoginWelcomeAudio(queued.user, queued.fallbackUsername, queued.primedAudio)
+  await playLoginWelcomeAudio(queued.user, queued.fallbackUsername, queued.primedAudio, queued.prefetched)
   return true
 }
 
@@ -232,10 +288,11 @@ export function primeLoginWelcomeAudio() {
   }
 }
 
-export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio) {
+export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio, prefetched) {
   if (typeof window === 'undefined' || typeof Audio === 'undefined' || typeof URL === 'undefined') return
   const text = buildLoginWelcomeText(user, fallbackUsername)
   const openOcti = isOpenOcti()
+  const provider = openOcti ? 'elevenlabs' : 'gemini'
   const openOctiState = openOcti ? await openOctiWelcomeState() : null
 
   if (openOctiState?.firstLogin) {
@@ -256,35 +313,51 @@ export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio)
   const timeoutId = controller ? window.setTimeout(() => controller.abort(), LOGIN_WELCOME_FETCH_TIMEOUT_MS) : null
   let audioUrl = ''
   let audio = null
+  let announced = false
   try {
-    const capability = openOctiState
-      ? { status: openOctiState.elevenLabsConfigured ? 'configured' : 'not_configured' }
-      : await clientCapabilityStatus('elevenlabs')
+    // Audio requested at sign-in. A delivered clip also proves the provider is configured.
+    const prefetchedBlob = !openOcti && prefetched ? await Promise.resolve(prefetched).catch(() => null) : null
+    const capability = prefetchedBlob
+      ? { status: 'configured' }
+      : openOctiState
+        ? { status: openOctiState.elevenLabsConfigured ? 'configured' : 'not_configured' }
+        : await clientCapabilityStatus(provider)
     if (capability.status !== 'configured') {
-      if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: 'elevenlabs not configured' })
+      if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: `${provider} not configured` })
       return
     }
     logLoginWelcomeStage('requested')
-    const response = await fetch('/api/voice/lab-tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      cache: 'no-store',
-      credentials: 'same-origin',
-      signal: controller?.signal,
-      body: JSON.stringify({
-        provider: 'elevenlabs',
-        model: MAGGIE_WELCOME_MODEL,
-        agentId: MAGGIE_WELCOME_AGENT_ID,
-        text,
-      }),
-    })
-    if (!response.ok) {
-      logLoginWelcomeStage('tts-failed', { status: String(response.status), reason: `lab-tts ${response.status}` })
-      if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: `lab-tts ${response.status}` })
-      return
+    const requestBody = {
+      provider,
+      model: openOcti ? OPENOCTI_WELCOME_MODEL : MAGGIE_WELCOME_MODEL,
+      ...(!openOcti ? { voiceName: MAGGIE_WELCOME_VOICE } : {}),
+      agentId: MAGGIE_WELCOME_AGENT_ID,
+      text,
+    }
+    const cacheIdentity = { ...requestBody, user, fallbackUsername }
+    let blob = prefetchedBlob || (openOcti ? null : await readLoginWelcomeAudio(cacheIdentity))
+    if (prefetchedBlob) {
+      logLoginWelcomeStage('prefetch-hit')
+    } else if (blob) {
+      logLoginWelcomeStage('cache-hit')
+    } else {
+      const response = await fetch('/api/voice/lab-tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        credentials: 'same-origin',
+        signal: controller?.signal,
+        body: JSON.stringify(requestBody),
+      })
+      if (!response.ok) {
+        logLoginWelcomeStage('tts-failed', { status: String(response.status), reason: `lab-tts ${response.status}` })
+        if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: `lab-tts ${response.status}` })
+        return
+      }
+      blob = await response.blob()
+      if (!openOcti) void cacheLoginWelcomeAudio(cacheIdentity, blob)
     }
 
-    const blob = await response.blob()
     if (!blob.size) {
       logLoginWelcomeStage('tts-failed', { reason: 'empty audio blob' })
       if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: 'empty audio blob' })
@@ -307,6 +380,8 @@ export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio)
     })
 
     await audio.play()
+    announced = true
+    announceLoginWelcome('playing')
     logLoginWelcomeStage('played')
     await Promise.race([ended, wait(LOGIN_WELCOME_PLAY_TIMEOUT_MS)])
   } catch (error) {
@@ -314,6 +389,7 @@ export async function playLoginWelcomeAudio(user, fallbackUsername, primedAudio)
     if (!(await prerecordedFallback())) logLoginWelcomeStage('silent', { reason: error?.name || error?.message || 'playback failed' })
     // Login must remain fail-open if the browser blocks audio or the TTS service is unavailable.
   } finally {
+    if (announced) announceLoginWelcome('ended')
     if (timeoutId) window.clearTimeout(timeoutId)
     if (audio) {
       audio.pause()

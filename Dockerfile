@@ -21,7 +21,7 @@ ARG FCC_EDITION=openocti
 ENV NEXT_TELEMETRY_DISABLED=1 \
     FCC_EDITION=${FCC_EDITION} \
     NEXT_PUBLIC_FCC_EDITION=${FCC_EDITION}
-RUN npm run build
+RUN npm run build && rm -rf .next/cache
 
 FROM build-base AS production-dependencies
 WORKDIR /app
@@ -47,9 +47,10 @@ COPY --from=builder --chown=node:node /app/package.json /app/package-lock.json .
 COPY --chown=node:node data-demo ./data-demo
 COPY --chown=node:node knowledge ./knowledge
 COPY --chown=node:node docs/guides ./docs/guides
-COPY --chown=node:node vault ./vault
+COPY --chown=node:node knowledge/vault ./vault
 COPY --chown=node:node deploy/starter-vault.mjs ./deploy/starter-vault.mjs
-COPY --chown=node:node deploy/start-app.mjs deploy/machine-secrets.mjs ./deploy/
+COPY --chown=node:node deploy/start-app.mjs deploy/native-knowledge.mjs deploy/machine-secrets.mjs ./deploy/
+COPY --chown=node:node deploy/openclaw/seed-knowledge.mjs ./deploy/openclaw/seed-knowledge.mjs
 COPY --chown=node:node deploy/session-secret.mjs ./deploy/
 COPY --chown=node:node deploy/openocti-server.mjs deploy/openclaw-dashboard-proxy.mjs ./deploy/
 COPY --chown=node:node lib/openclaw-dashboard.js ./lib/

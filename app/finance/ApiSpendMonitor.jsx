@@ -7,7 +7,9 @@ import UsageAttribution from './UsageAttribution'
 
 const SETTINGS_KEY = 'fcc-api-spend-settings-v1'
 const BASELINE_KEY = 'fcc-api-spend-baseline-v1'
-const DEFAULTS = { dailyLimit: 40, burstLimit: 40, warningPercent: 80, lowBalance: 10, refreshSeconds: 60, floating: true }
+// excludedProviders: credential ids the owner has switched off — still listed, but
+// left out of the daily total and the alerts until switched back on.
+const DEFAULTS = { dailyLimit: 40, burstLimit: 40, warningPercent: 80, lowBalance: 10, refreshSeconds: 60, floating: true, excludedProviders: [] }
 let sharedSnapshot = null
 let sharedFetchedAt = 0
 let sharedRequest = null
@@ -74,10 +76,10 @@ function tone(percent, warningPercent) {
   return 'var(--green)'
 }
 
-function ProviderRow({ record, settings, burst = 0 }) {
+function ProviderRow({ record, settings, burst = 0, counted = true, onToggleCounted }) {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const metric = providerMetric(record)
-  const color = tone(metric.percent, settings.warningPercent)
+  const color = counted ? tone(metric.percent, settings.warningPercent) : 'var(--text-muted)'
   const detail = metric.remaining != null
     ? `${money(metric.remaining)} left`
     : metric.characterRemaining != null
@@ -88,11 +90,11 @@ function ProviderRow({ record, settings, burst = 0 }) {
           ? `${money(record.usage.costMonth)} this month`
         : record.status === 'active' ? 'Connected' : record.error || record.note || record.status
   return (
-    <div>
+    <div style={counted ? undefined : { opacity: 0.65 }}>
       <button type="button" className={`${styles.providerRow} ${styles.providerButton}`} onClick={() => setDetailsOpen(value => !value)} aria-expanded={detailsOpen} title={`Open ${record.provider || record.name} usage details`}>
         <div className="min-w-0 text-left">
           <div className="truncate text-sm font-semibold">{record.provider || record.name}</div>
-          <div className="truncate text-[11px]" style={{ color: 'var(--text-muted)' }}>{detail}{burst > 0 ? ` · +${money(burst)}` : ''}</div>
+          <div className="truncate text-[11px]" style={{ color: 'var(--text-muted)' }}>{detail}{burst > 0 ? ` · +${money(burst)}` : ''}{counted ? '' : ' · not counted'}</div>
         </div>
         <div>
           <div className={styles.track} aria-label={metric.percent == null ? 'No quota percentage reported' : `${Math.round(metric.percent)} percent used`}>
@@ -115,6 +117,10 @@ function ProviderRow({ record, settings, burst = 0 }) {
           <div className="mt-1" style={{ color: 'var(--text-muted)' }}>{record.attribution?.note || 'Exact attribution requires local per-call logging with agent, workflow, automation, and run IDs.'}</div>
         </div>
         {record.note && <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>{record.note}</p>}
+        {onToggleCounted && <label className="mt-3 flex min-h-10 cursor-pointer items-center gap-2 text-xs font-semibold">
+          <input type="checkbox" checked={counted} onChange={onToggleCounted} aria-label={`Count ${record.provider || record.name} toward the daily total and alerts`} />
+          <span>Count toward the daily total and alerts</span>
+        </label>}
       </div>}
     </div>
   )
@@ -156,9 +162,12 @@ export default function ApiSpendMonitor({ mode = 'floating', onNavigate }) {
   const visibleRecords = mode !== 'panel' || providerFilter === 'active'
     ? activeRecords
     : providerFilter === 'inactive' ? inactiveRecords : records
-  const dailySpend = activeRecords.reduce((sum, record) => sum + providerMetric(record).today, 0)
+  const excluded = Array.isArray(settings.excludedProviders) ? settings.excludedProviders : []
+  // Switched-off providers stay listed but do not feed the total or the alerts.
+  const countedRecords = activeRecords.filter(record => !excluded.includes(record.id))
+  const dailySpend = countedRecords.reduce((sum, record) => sum + providerMetric(record).today, 0)
   const dailyPercent = settings.dailyLimit > 0 ? Math.min(100, (dailySpend / settings.dailyLimit) * 100) : 0
-  const alarms = useMemo(() => activeRecords.flatMap(record => {
+  const alarms = useMemo(() => countedRecords.flatMap(record => {
     const metric = providerMetric(record)
     const name = record.provider || record.name
     const items = []
@@ -167,15 +176,22 @@ export default function ApiSpendMonitor({ mode = 'floating', onNavigate }) {
     if (metric.percent != null && metric.percent >= settings.warningPercent) items.push(`${name} has used ${Math.round(metric.percent)}% of its quota`)
     if (metric.remaining != null && metric.remaining <= settings.lowBalance) items.push(`${name} has ${money(metric.remaining)} remaining`)
     return items
-  }), [activeRecords, settings, bursts])
+  }), [countedRecords, settings, bursts])
 
   const saveSetting = useCallback((key, raw) => {
-    const value = key === 'floating' ? Boolean(raw) : Math.max(0, Number(raw) || 0)
+    const value = key === 'floating' ? Boolean(raw)
+      : key === 'excludedProviders' ? (Array.isArray(raw) ? raw.filter(id => typeof id === 'string' && id) : [])
+      : Math.max(0, Number(raw) || 0)
     const next = { ...settings, [key]: value }
     setSettings(next)
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)) } catch {}
     window.dispatchEvent(new CustomEvent('fcc:api-spend-settings', { detail: next }))
   }, [settings])
+
+  const toggleCounted = useCallback(recordId => {
+    const current = Array.isArray(settings.excludedProviders) ? settings.excludedProviders : []
+    saveSetting('excludedProviders', current.includes(recordId) ? current.filter(id => id !== recordId) : [...current, recordId])
+  }, [settings, saveSetting])
 
   useEffect(() => {
     const sync = event => setSettings({ ...DEFAULTS, ...event.detail })
@@ -217,12 +233,12 @@ export default function ApiSpendMonitor({ mode = 'floating', onNavigate }) {
 
   if (mode === 'floating' && !expanded) {
     return (
-      <aside className={styles.floatingShell} aria-label="API spend monitor">
-        <button className={styles.meterButton} onClick={() => setExpanded(true)} aria-expanded="false">
+      <aside className={`${styles.floatingShell} ${styles.compactShell} api-spend-floating`} aria-label="API spend monitor">
+        <button className={styles.meterButton} onClick={() => setExpanded(true)} aria-expanded="false" aria-label={`Open API spend monitor, ${money(dailySpend)} today`}>
           <span className={styles.ring} style={{ '--meter-value': dailyPercent, '--meter-color': tone(dailyPercent, settings.warningPercent) }} />
           <span className="min-w-0 flex-1 text-left">
             <span className="block text-xs font-bold">API meter · {money(dailySpend)} today</span>
-            <span className="block truncate text-[11px]" style={{ color: alarms.length ? 'var(--amber)' : 'var(--text-muted)' }}>{alarms.length ? `${alarms.length} spend alert${alarms.length === 1 ? '' : 's'}` : `${activeRecords.length} live provider${activeRecords.length === 1 ? '' : 's'}`}</span>
+            <span className="block truncate text-[11px]" style={{ color: alarms.length ? 'var(--amber)' : 'var(--text-muted)' }}>{alarms.length ? `${alarms.length} spend alert${alarms.length === 1 ? '' : 's'}` : `${countedRecords.length} live provider${countedRecords.length === 1 ? '' : 's'}${activeRecords.length > countedRecords.length ? ` · ${activeRecords.length - countedRecords.length} not counted` : ''}`}</span>
           </span>
           <ChevronUp size={18} aria-hidden="true" />
         </button>
@@ -236,7 +252,7 @@ export default function ApiSpendMonitor({ mode = 'floating', onNavigate }) {
       {alarms.length > 0 && <div role="alert" className="flex gap-2 px-3 py-2 text-xs" style={{ color: 'var(--amber)', background: 'var(--amber-soft)' }}><AlertTriangle size={16} className="shrink-0" /><span>{alarms[0]}{alarms.length > 1 ? ` · ${alarms.length - 1} more` : ''}</span></div>}
       {loading && visibleRecords.length === 0 && <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>Reading provider balances…</div>}
       {!loading && visibleRecords.length === 0 && !error && <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>No providers match this filter.</div>}
-      {visibleRecords.map(record => <ProviderRow key={record.id} record={record} settings={settings} burst={bursts[record.id]} />)}
+      {visibleRecords.map(record => <ProviderRow key={record.id} record={record} settings={settings} burst={bursts[record.id]} counted={!excluded.includes(record.id)} onToggleCounted={record.status === 'active' || record.status === 'attention' ? () => toggleCounted(record.id) : undefined} />)}
     </>
   )
 
@@ -276,7 +292,7 @@ export default function ApiSpendMonitor({ mode = 'floating', onNavigate }) {
   }
 
   return (
-    <aside className={styles.floatingShell} aria-label="API spend monitor">
+    <aside className={`${styles.floatingShell} api-spend-floating`} aria-label="API spend monitor">
       <div className={styles.floatingCard}>
         <div className="flex min-h-12 items-center gap-2 px-3">
           <Gauge size={18} style={{ color: tone(dailyPercent, settings.warningPercent) }} />

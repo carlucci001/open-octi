@@ -3,6 +3,7 @@ import ThemedSelect from '../components/ThemedSelect'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { ChevronDown, ChevronRight, FileText, Film, Image as ImageIcon, Megaphone, MessageSquare, Newspaper, Smile, UploadCloud, Wand2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import KieMediaJobs from './KieMediaJobs'
 import { buildContentImageContext, buildImageRequestPrompt, requireGeneratedImageItem } from '../../lib/content-image-flow'
 
 const CONTENT_WORKFLOW_FALLBACKS = [
@@ -247,6 +248,7 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
 
   const folderName = (id) => folders.find(f => f.id === id)?.name || id || 'All Media'
   const isVideo = (item) => /^video\//i.test(item?.mimeType || '') || /\.(mp4|mov|webm|m4v)(?:[?#].*)?$/i.test(item?.url || '')
+  const isAudio = (item) => item?.mediaType === 'audio' || /^audio\//i.test(item?.mimeType || '') || /\.(mp3|wav|ogg|flac|m4a|aac)(?:[?#].*)?$/i.test(item?.url || '')
 
   const filtered = useMemo(() => {
     const allowed = activeFolder ? descendantsOf(activeFolder) : null
@@ -287,7 +289,7 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
   const activeGenerating = generating
   const generationTitle = 'Generating image'
   const generationDetail = 'The image provider is rendering the asset and saving it into the selected media folder.'
-  const imageItems = items.filter(item => !isVideo(item) && item.mediaType !== 'video')
+  const imageItems = items.filter(item => !isVideo(item) && !isAudio(item))
   const videoCount = items.filter(isVideo).length
   const providerBillingNote = genProvider === 'auto'
     ? 'Uses OpenAI first, then Fal.ai credits if needed'
@@ -594,6 +596,8 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
         subtitle={pageSubtitle}
       />
 
+      <KieMediaJobs onCompleted={load} endpoint="/api/media/veo" label="Veo 3.1 videos" hint="Ask Sasha to create a video. Its progress and saved result will appear here." />
+
       {!allowWorkspaceSwitch && !createMode && initialWorkspace === 'create' && (
         <button type="button" onClick={() => setWorkspaceMode('create')} className="text-sm inline-flex items-center gap-1" style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start', padding: 0 }}>← Content Lab</button>
       )}
@@ -887,7 +891,9 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
                   <div style={thumbStyle}>
                     {isVideo(item)
                       ? <video src={mediaAssetUrl(item)} muted playsInline preload="none" style={mediaStyle} />
-                      : <img src={mediaAssetUrl(item)} alt={item.title || 'media'} loading="lazy" decoding="async" style={mediaStyle} />
+                      : isAudio(item)
+                        ? <audio src={mediaAssetUrl(item)} controls preload="none" onClick={event => event.stopPropagation()} aria-label={item.title || 'Audio'} style={{ width: '100%' }} />
+                        : <img src={mediaAssetUrl(item)} alt={item.title || 'media'} loading="lazy" decoding="async" style={mediaStyle} />
                     }
                     {item.provider && <span style={providerBadge}>{item.provider}</span>}
                   </div>
@@ -928,7 +934,7 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
                 Choose Files
                 <input
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*,video/*,audio/*"
                   multiple
                   disabled={uploading}
                   style={{ display: 'none' }}
@@ -1103,7 +1109,9 @@ export default function MediaManager({ initialWorkspace = 'library', allowWorksp
             <div style={previewMediaPane}>
               {isVideo(previewItem)
                 ? <video src={mediaAssetUrl(previewItem)} controls style={previewMediaStyle} />
-                : <img src={mediaAssetUrl(previewItem)} alt={previewItem.title || 'media'} style={previewMediaStyle} />
+                : isAudio(previewItem)
+                  ? <audio src={mediaAssetUrl(previewItem)} controls aria-label={previewItem.title || 'Audio'} style={{ width: '100%' }} />
+                  : <img src={mediaAssetUrl(previewItem)} alt={previewItem.title || 'media'} style={previewMediaStyle} />
               }
             </div>
             <div style={previewMetaPane}>

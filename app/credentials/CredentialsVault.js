@@ -1,6 +1,6 @@
 'use client'
 import ThemedSelect from '../components/ThemedSelect'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import UsageDashboard from './UsageDashboard'
 import PageHeader, { ViewToggle } from '../components/PageHeader'
 import ViewModeToggle from '../components/ViewModeToggle'
@@ -12,6 +12,7 @@ import Link from 'next/link'
 const CATS = ['All','AI Providers','Payment Processing','Hosting & Domains','Database','Cloud','Other']
 const CC = {'AI Providers':'var(--accent)','Payment Processing':'var(--green)','Hosting & Domains':'var(--peach)',Database:'var(--purple)',Cloud:'var(--teal)',Other:'var(--text-muted)'}
 const KEY_PAGES = [
+  { test: /^kie(?:[.\s_-]?ai)?(?:\b|$)/i, label: 'Kie.AI API keys', url: 'https://kie.ai/api-key' },
   { test: /anthropic|claude/i, label: 'Anthropic keys', url: 'https://console.anthropic.com/settings/keys' },
   { test: /open\s*ai|openai/i, label: 'OpenAI keys', url: 'https://platform.openai.com/api-keys' },
   { test: /eleven\s*labs|elevenlabs/i, label: 'ElevenLabs keys', url: 'https://elevenlabs.io/app/settings/api-keys' },
@@ -41,7 +42,17 @@ function keyPageForCredential(cred) {
   return { label: 'Find key page', url: `https://www.google.com/search?q=${query}` }
 }
 
-function api(url, body) { return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }).then(r=>r.json()) }
+async function api(url, body, options = {}) {
+  const response = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), ...options })
+  const result = await response.json()
+  if (!response.ok) throw new Error('The credential request failed. Please try again.')
+  return result
+}
+async function revealField(id, label, fieldIndex, signal) {
+  const result = await api('/api/credentials/reveal', { id, label, fieldIndex }, { cache: 'no-store', signal })
+  if (typeof result.value !== 'string') throw new Error('The credential value could not be loaded.')
+  return result.value
+}
 function audit(action, payload = {}) {
   return fetch('/api/audit-log', {
     method: 'POST',
@@ -50,10 +61,143 @@ function audit(action, payload = {}) {
   }).catch(() => {})
 }
 
+const INPUT_STYLE = { background:'var(--surface)',border:'1px solid var(--border)',color:'var(--text)',padding:'8px 12px',borderRadius:8,fontSize:13,outline:'none' }
+function BusySpinner() {
+  return <span aria-hidden="true" className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-r-transparent" />
+}
+
+function CredentialField({ credential, field, fieldIndex, onCopied }) {
+  const [value, setValue] = useState(null)
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const request = useRef(null)
+  useEffect(() => () => request.current?.abort(), [])
+  const act = async action => {
+    if (request.current) return
+    if (action === 'reveal' && value !== null) { setValue(null); return }
+    const controller = new AbortController()
+    request.current = controller
+    setBusy(action)
+    setError('')
+    try {
+      const revealed = await revealField(credential.id, field.label, fieldIndex, controller.signal)
+      if (controller.signal.aborted) return
+      if (action === 'copy') {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard access is unavailable.')
+        await navigator.clipboard.writeText(revealed)
+        if (controller.signal.aborted) return
+        audit('credential_field_copied', { severity: 'warn', targetId: credential.id, targetName: credential.name, meta: { fieldLabel: field.label, sensitive: !!field.sensitive } })
+        onCopied()
+      } else setValue(revealed)
+    } catch (err) {
+      if (!controller.signal.aborted) setError(err.message || 'The credential value could not be loaded.')
+    } finally {
+      if (request.current === controller) {
+        request.current = null
+        if (!controller.signal.aborted) setBusy('')
+      }
+    }
+  }
+  return (
+    <div className="mb-2"><div className="text-[10px] uppercase mb-1 font-medium" style={{color:'var(--text-muted)'}}>{field.label}</div>
+      <div className="flex gap-1">
+        <div className="flex-1 px-2 py-1.5 rounded text-xs font-mono truncate" style={{background:'var(--surface2)',color:value !== null?'var(--text)':'var(--text-muted)'}}>{value ?? field.value}</div>
+        <button type="button" aria-label={`${value !== null ? 'Hide' : 'Reveal'} ${field.label}`} title={`${value !== null ? 'Hide' : 'Reveal'} ${field.label}`} disabled={!!busy} aria-busy={busy === 'reveal'} className="px-2 py-1.5 rounded text-xs" style={{background:'var(--surface2)',color:'var(--text-muted)'}} onClick={e=>{e.stopPropagation(); act('reveal')}}>{busy === 'reveal' ? <BusySpinner /> : value !== null ? '🙈' : '👁'}</button>
+        <button type="button" aria-label={`Copy ${field.label}`} title={`Copy ${field.label}`} disabled={!!busy} aria-busy={busy === 'copy'} className="px-2 py-1.5 rounded text-xs" style={{background:'var(--surface2)',color:'var(--text-muted)'}} onClick={e=>{e.stopPropagation(); act('copy')}}>{busy === 'copy' ? <BusySpinner /> : '📋'}</button>
+      </div>
+      {error && <p role="alert" className="mt-1 text-xs" style={{color:'var(--red)'}}>{error}</p>}
+    </div>
+  )
+}
+
+function CredForm({ cred, clients, onClose, onSave }) {
+  const [f, setF] = useState(() => cred ? { ...cred, fields: (cred.fields || []).map((field, index) => ({ label: field.label, sensitive: field.sensitive, originalLabel: field.label, originalIndex: index, maskedValue: field.value, present: field.present, localKey: index })) } : { name:'',description:'',category:'Other',clientId:'',fields:[{label:'',value:'',sensitive:true,localKey:0}] })
+  const nextFieldKey = useRef(f.fields.length)
+  const requests = useRef(new Map())
+  const mounted = useRef(true)
+  const savingRef = useRef(false)
+  const [pending, setPending] = useState({})
+  const [errors, setErrors] = useState({})
+  const [saveError, setSaveError] = useState('')
+  const [saving, setSaving] = useState(false)
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false; requests.current.forEach(controller => controller.abort()); requests.current.clear() }
+  }, [])
+  const updateField = (key, changes) => setF(prev => ({ ...prev, fields: prev.fields.map(field => field.localKey === key ? { ...field, ...changes } : field) }))
+  const editField = async field => {
+    const key = field.localKey
+    if (savingRef.current || field.value !== undefined || requests.current.has(key)) return
+    if (!field.present) { updateField(key, { value: '' }); return }
+    const controller = new AbortController()
+    requests.current.set(key, controller)
+    setPending(prev => ({ ...prev, [key]: true }))
+    setErrors(prev => ({ ...prev, [key]: '' }))
+    try {
+      const value = await revealField(cred.id, field.originalLabel, field.originalIndex, controller.signal)
+      if (mounted.current && !controller.signal.aborted) updateField(key, { value })
+    } catch (err) {
+      if (mounted.current && !controller.signal.aborted) setErrors(prev => ({ ...prev, [key]: err.message || 'The credential value could not be loaded.' }))
+    } finally {
+      requests.current.delete(key)
+      if (mounted.current) setPending(prev => ({ ...prev, [key]: false }))
+    }
+  }
+  const removeField = key => {
+    requests.current.get(key)?.abort()
+    requests.current.delete(key)
+    setF(prev => ({ ...prev, fields: prev.fields.filter(field => field.localKey !== key) }))
+    setPending(prev => ({ ...prev, [key]: false }))
+  }
+  const save = async () => {
+    if (savingRef.current || requests.current.size) return
+    savingRef.current = true
+    setSaving(true)
+    setSaveError('')
+    const fields = f.fields.map(field => ({ label: field.label, sensitive: field.sensitive, ...(field.originalLabel !== undefined ? { originalLabel: field.originalLabel, originalIndex: field.originalIndex } : {}), ...(field.originalLabel === undefined || field.dirty ? { value: field.value } : {}) }))
+    try { await onSave({ ...f, fields }) }
+    catch (err) { if (mounted.current) setSaveError(err.message || 'The credential could not be saved.') }
+    finally { savingRef.current = false; if (mounted.current) setSaving(false) }
+  }
+  const is = INPUT_STYLE
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.7)',backdropFilter:'blur(4px)'}} onClick={() => { if (!saving) onClose() }}>
+      <div role="dialog" aria-modal="true" aria-label={`${cred?'Edit':'Add'} Credential`} className="w-full max-w-lg rounded-xl p-6 animate-fade-in max-h-[85vh] overflow-auto" style={{background:'var(--surface)',border:'1px solid #2a2d42'}} onClick={e=>e.stopPropagation()}>
+        <h2 className="text-lg font-semibold mb-4" style={{color:'var(--text)'}}>{cred?'Edit':'Add'} Credential</h2>
+        <div className="mb-3"><label className="block text-xs mb-1" style={{color:'var(--text-muted)'}}>Name</label><input aria-label="Name" disabled={saving} style={{...is,width:'100%'}} value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))}/></div>
+        <div className="mb-3"><label className="block text-xs mb-1" style={{color:'var(--text-muted)'}}>Description</label><input aria-label="Description" disabled={saving} style={{...is,width:'100%'}} value={f.description} onChange={e=>setF(p=>({...p,description:e.target.value}))}/></div>
+        <div className="mb-3"><label className="block text-xs mb-1" style={{color:'var(--text-muted)'}}>Category</label>
+          <ThemedSelect style={{...is,width:'100%'}} value={f.category} disabled={saving} onChange={e=>setF(p=>({...p,category:e.target.value}))}>{CATS.filter(c=>c!=='All').map(c=><option key={c}>{c}</option>)}</ThemedSelect></div>
+        <div className="mb-3"><label className="block text-xs mb-1" style={{color:'var(--text-muted)'}}>Client</label>
+          <ThemedSelect style={{...is,width:'100%'}} value={f.clientId || ''} disabled={saving} onChange={e=>setF(p=>({...p,clientId:e.target.value}))}><option value="">Unassigned</option>{clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</ThemedSelect></div>
+        <div className="mb-3"><div className="flex justify-between mb-2"><label className="text-xs" style={{color:'var(--text-muted)'}}>Fields</label><button type="button" disabled={saving} className="text-xs px-2 py-1 rounded" style={{background:'var(--surface2)',color:'var(--accent)'}} onClick={() => { const localKey = nextFieldKey.current++; setF(p=>({...p,fields:[...p.fields,{label:'',value:'',sensitive:true,localKey}]})) }}>+ Field</button></div>
+          {f.fields.map((field,i)=>(
+            <div key={field.localKey} className="mb-2">
+              <div className="flex gap-2 items-start">
+                <input aria-label={`Field ${i+1} label`} disabled={saving} className="w-28" style={{...is,padding:'5px 8px',fontSize:12}} placeholder="Label" value={field.label} onChange={e=>updateField(field.localKey,{label:e.target.value})}/>
+                <input aria-label={`${field.label || `Field ${i+1}`} value`} aria-busy={!!pending[field.localKey]} disabled={saving} readOnly={field.value === undefined} className="flex-1" style={{...is,padding:'5px 8px',fontSize:12,fontFamily:'monospace'}} placeholder="Value" title={field.value === undefined ? 'Focus to load this field for editing' : undefined} value={field.value ?? field.maskedValue ?? ''} onFocus={()=>editField(field)} onChange={e=>{if(field.value !== undefined) updateField(field.localKey,{value:e.target.value,dirty:true})}}/>
+                {pending[field.localKey] && <span role="status" aria-label={`Loading ${field.label}`}><BusySpinner /></span>}
+                <label className="flex items-center gap-1 text-xs pt-1" style={{color:'var(--text-muted)'}}><input type="checkbox" aria-label={`${field.label || `Field ${i+1}`} sensitive`} disabled={saving} checked={!!field.sensitive} onChange={e=>updateField(field.localKey,{sensitive:e.target.checked})}/>🔒</label>
+                {f.fields.length>1 && <button type="button" aria-label={`Remove ${field.label || `Field ${i+1}`}`} disabled={saving} className="text-xs pt-1" style={{color:'var(--red)'}} onClick={()=>removeField(field.localKey)}>✕</button>}
+              </div>
+              {errors[field.localKey] && <div role="alert" className="mt-1 text-xs" style={{color:'var(--red)'}}>{errors[field.localKey]} <button type="button" onClick={()=>editField(field)}>Retry</button></div>}
+            </div>
+          ))}
+        </div>
+        {saveError && <p role="alert" className="text-xs" style={{color:'var(--red)'}}>{saveError}</p>}
+        <div className="flex gap-2 mt-4">
+          <button type="button" disabled={saving || Object.values(pending).some(Boolean)} aria-busy={saving} className="flex-1 py-2 rounded-lg text-sm font-medium" style={{background:'var(--accent)',color:'var(--accent-text)'}} onClick={save}>{saving ? <><BusySpinner /> Saving...</> : 'Save'}</button>
+          <button type="button" disabled={saving} className="px-4 py-2 rounded-lg text-sm" style={{background:'var(--surface2)',color:'var(--text-muted)'}} onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CredentialsVault({ returnTarget = null, onReturn = null }) {
   const [creds, setCreds] = useState([]); const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(''); const [catF, setCatF] = useState('All')
-  const [vis, setVis] = useState({}); const [edit, setEdit] = useState(null); const [showAdd, setShowAdd] = useState(false)
+  const [edit, setEdit] = useState(null); const [showAdd, setShowAdd] = useState(false)
   useActiveRecord('credential', edit ? { id: edit.id, name: edit.name, description: edit.description, category: edit.category, fieldLabels: (edit.fields || []).map(f => f.label), lastTest: edit.lastTest } : null, [edit?.id])
   const [toast, setToast] = useState('')
   const [tab, setTab] = useState('vault')
@@ -80,28 +224,6 @@ export default function CredentialsVault({ returnTarget = null, onReturn = null 
   const refresh = async () => { const d = await fetch('/api/credentials').then(r=>r.json()); setCreds(d.credentials||[]) }
 
   const flash = m => { setToast(m); setTimeout(()=>setToast(''),1500) }
-  const copy = (v, cred, field) => {
-    navigator.clipboard?.writeText(v)
-    audit('credential_field_copied', {
-      severity: 'warn',
-      targetId: cred?.id,
-      targetName: cred?.name,
-      meta: { fieldLabel: field?.label, sensitive: !!field?.sensitive },
-    })
-    flash('Copied!')
-  }
-  const toggleField = (cred, field, key) => {
-    setVis(v => ({ ...v, [key]: !v[key] }))
-    if (!vis[key]) {
-      audit('credential_field_revealed', {
-        severity: 'warn',
-        targetId: cred?.id,
-        targetName: cred?.name,
-        meta: { fieldLabel: field?.label, sensitive: !!field?.sensitive },
-      })
-    }
-  }
-
   const filtered = useMemo(() => creds.filter(c => {
     const clientName = clients.find(client => client.id === c.clientId)?.name || ''
     const s = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.description?.toLowerCase().includes(search.toLowerCase()) || clientName.toLowerCase().includes(search.toLowerCase())
@@ -151,40 +273,6 @@ export default function CredentialsVault({ returnTarget = null, onReturn = null 
       Back to {returnLabel}
     </button>
   ) : null
-
-  const CredForm = ({ cred, onClose }) => {
-    const [f, setF] = useState(cred || { name:'',description:'',category:'Other',clientId:'',fields:[{label:'',value:'',sensitive:true}] })
-    const addF = () => setF(p=>({...p,fields:[...p.fields,{label:'',value:'',sensitive:true}]}))
-    const rmF = i => setF(p=>({...p,fields:p.fields.filter((_,idx)=>idx!==i)}))
-    const upF = (i,k,v) => setF(p=>({...p,fields:p.fields.map((f,idx)=>idx===i?{...f,[k]:v}:f)}))
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.7)',backdropFilter:'blur(4px)'}} onClick={onClose}>
-        <div className="w-full max-w-lg rounded-xl p-6 animate-fade-in max-h-[85vh] overflow-auto" style={{background:'var(--surface)',border:'1px solid #2a2d42'}} onClick={e=>e.stopPropagation()}>
-          <h2 className="text-lg font-semibold mb-4" style={{color:'var(--text)'}}>{cred?'Edit':'Add'} Credential</h2>
-          <div className="mb-3"><label className="block text-xs mb-1" style={{color:'var(--text-muted)'}}>Name</label><input style={{...is,width:'100%'}} value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))}/></div>
-          <div className="mb-3"><label className="block text-xs mb-1" style={{color:'var(--text-muted)'}}>Description</label><input style={{...is,width:'100%'}} value={f.description} onChange={e=>setF(p=>({...p,description:e.target.value}))}/></div>
-          <div className="mb-3"><label className="block text-xs mb-1" style={{color:'var(--text-muted)'}}>Category</label>
-            <ThemedSelect style={{...is,width:'100%'}} value={f.category} onChange={e=>setF(p=>({...p,category:e.target.value}))}>{CATS.filter(c=>c!=='All').map(c=><option key={c}>{c}</option>)}</ThemedSelect></div>
-          <div className="mb-3"><label className="block text-xs mb-1" style={{color:'var(--text-muted)'}}>Client</label>
-            <ThemedSelect style={{...is,width:'100%'}} value={f.clientId || ''} onChange={e=>setF(p=>({...p,clientId:e.target.value}))}><option value="">Unassigned</option>{clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</ThemedSelect></div>
-          <div className="mb-3"><div className="flex justify-between mb-2"><label className="text-xs" style={{color:'var(--text-muted)'}}>Fields</label><button className="text-xs px-2 py-1 rounded" style={{background:'var(--surface2)',color:'var(--accent)'}} onClick={addF}>+ Field</button></div>
-            {f.fields.map((field,i)=>(
-              <div key={i} className="flex gap-2 mb-2 items-start">
-                <input className="w-28" style={{...is,padding:'5px 8px',fontSize:12}} placeholder="Label" value={field.label} onChange={e=>upF(i,'label',e.target.value)}/>
-                <input className="flex-1" style={{...is,padding:'5px 8px',fontSize:12,fontFamily:'monospace'}} placeholder="Value" value={field.value} onChange={e=>upF(i,'value',e.target.value)}/>
-                <label className="flex items-center gap-1 text-xs pt-1" style={{color:'var(--text-muted)'}}><input type="checkbox" checked={field.sensitive} onChange={e=>upF(i,'sensitive',e.target.checked)}/>🔒</label>
-                {f.fields.length>1 && <button className="text-xs pt-1" style={{color:'var(--red)'}} onClick={()=>rmF(i)}>✕</button>}
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2 mt-4">
-            <button className="flex-1 py-2 rounded-lg text-sm font-medium" style={{background:'var(--accent)',color:'var(--accent-text)'}} onClick={()=>saveCred(f)}>Save</button>
-            <button className="px-4 py-2 rounded-lg text-sm" style={{background:'var(--surface2)',color:'var(--text-muted)'}} onClick={onClose}>Cancel</button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="command-workspace p-6">
@@ -302,15 +390,7 @@ export default function CredentialsVault({ returnTarget = null, onReturn = null 
                   </a>
                 </div>
               </div>
-              {c.fields?.map((f,i)=>{const k=`${c.id}-${i}`;const show=vis[k];return(
-                <div key={i} className="mb-2"><div className="text-[10px] uppercase mb-1 font-medium" style={{color:'var(--text-muted)'}}>{f.label}</div>
-                  <div className="flex gap-1">
-                    <div className="flex-1 px-2 py-1.5 rounded text-xs font-mono truncate" style={{background:'var(--surface2)',color:show||!f.sensitive?'var(--text)':'var(--text-muted)'}}>{f.sensitive&&!show?'••••••••••••••••••':f.value}</div>
-                    {f.sensitive&&<button className="px-2 py-1.5 rounded text-xs" style={{background:'var(--surface2)',color:'var(--text-muted)'}} onClick={e=>{e.stopPropagation(); toggleField(c, f, k)}}>{show?'🙈':'👁'}</button>}
-                    <button className="px-2 py-1.5 rounded text-xs" style={{background:'var(--surface2)',color:'var(--text-muted)'}} onClick={e=>{e.stopPropagation(); copy(f.value, c, f)}}>📋</button>
-                  </div>
-                </div>
-              )})}
+              {c.fields?.map((field,i)=><CredentialField key={`${c.id}:${i}:${field.label}:${field.fingerprint}`} credential={c} field={field} fieldIndex={i} onCopied={()=>flash('Copied!')} />)}
               {c.lastTest && (
                 <div className="mt-3 pt-2 text-xs" style={{borderTop:'1px solid #1a1d30',color: c.lastTest.ok===true?'var(--green)':c.lastTest.ok===false?'var(--red)':'var(--text-muted)'}}>
                   <span className="font-semibold">{c.lastTest.ok===true?'✓':c.lastTest.ok===false?'✗':'•'}</span> <span className="font-mono">{c.lastTest.message}</span>
@@ -328,8 +408,8 @@ export default function CredentialsVault({ returnTarget = null, onReturn = null 
 
       </>}
 
-      {edit && <CredForm cred={edit} onClose={()=>setEdit(null)} />}
-      {showAdd && <CredForm cred={null} onClose={()=>setShowAdd(false)} />}
+      {edit && <CredForm key={edit.id} cred={edit} clients={clients} onSave={saveCred} onClose={()=>setEdit(null)} />}
+      {showAdd && <CredForm cred={null} clients={clients} onSave={saveCred} onClose={()=>setShowAdd(false)} />}
     </div>
   )
 }

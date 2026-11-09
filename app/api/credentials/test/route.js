@@ -2,6 +2,7 @@ import { readData, writeData } from '@/lib/dataStore'
 import { requireOwner } from '@/lib/auth'
 import { logAuditEvent } from '@/lib/auditLog'
 import { NextResponse } from 'next/server'
+import { createKieClient } from '@/lib/kie'
 
 function fieldVal(cred, labelRx) {
   const f = (cred.fields || []).find(x => labelRx.test(x.label || ''))
@@ -24,6 +25,24 @@ async function jfetch(url, opts = {}) {
 }
 
 const TESTS = {
+  'kie': async c => {
+    const key = (c.fields || []).find(field => /^(?:api[\s_-]*)?key$|^token$/i.test(String(field.label || '').trim()))?.value
+    if (typeof key !== 'string' || !key.trim()) return { ok: false, message: 'No API key field' }
+    try {
+      const client = createKieClient({ resolveApiKey: () => key.trim(), timeoutMs: 10000 })
+      const credits = await client.getCreditBalance()
+      return { ok: true, message: `Kie authentication valid. Credit balance: ${credits}. No generation was started.` }
+    } catch (error) {
+      const messages = {
+        AUTH_ERROR: 'Kie rejected this API key or its access permissions.',
+        INSUFFICIENT_CREDITS: 'Kie reported insufficient credits.',
+        RATE_LIMITED: 'Kie rate limited verification. Try again shortly.',
+        KEY_LIMIT: 'This Kie API key has reached its usage limit.',
+        INVALID_RESPONSE: 'Kie returned an invalid verification response.',
+      }
+      return { ok: false, message: messages[error?.code] || 'Kie verification could not complete. Try again shortly.' }
+    }
+  },
   'openai': async c => {
     const key = fieldVal(c, /key|token/i); if (!key) return { ok: false, message: 'No API key field' }
     const r = await jfetch('https://api.openai.com/v1/models', { headers: { Authorization: `Bearer ${key}` } })
@@ -133,7 +152,8 @@ const TESTS = {
 
 function matchTest(name) {
   const n = (name || '').toLowerCase().trim()
-  for (const k of Object.keys(TESTS)) if (n.includes(k)) return TESTS[k]
+  if (/^kie(?:[.\s_-]?ai)?(?:\b|$)/i.test(n)) return TESTS.kie
+  for (const k of Object.keys(TESTS)) if (k !== 'kie' && n.includes(k)) return TESTS[k]
   return null
 }
 

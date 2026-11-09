@@ -14,6 +14,8 @@ import { Bot, FlaskConical, Globe2, Hash, Link2, Mail, MessageSquare, Mic2, Phon
 import OpenOctiConfigurationNotice from '../components/OpenOctiConfigurationNotice'
 import { isOpenOcti } from '@/lib/edition'
 import { octiAvatarFor } from '@/lib/brand-assets'
+import { createResearchStreamTracker } from '@/lib/research-chat-stream'
+import ResearchChatText from '../components/ResearchChatText'
 
 const STORAGE_KEY = 'farrington.agents.viewState.v1'
 const DEFAULT_VIEW_MODE = 'list'
@@ -1648,7 +1650,6 @@ function Header({ ping, onAdd, labMode, presets, onEnablePreset, onRefresh, busy
           )}
         </div>
       )}
-      viewToggle={setViewMode ? <ViewModeToggle value={viewMode} onChange={setViewMode} modes={['list', 'card']} /> : null}
     >
       {unknownKeys > 0 && (
         <span title="Some agents have fields the manager does not know about - they are preserved on save"
@@ -1699,7 +1700,7 @@ function Filters({ categories, agents, filterCat, setFilterCat, filterStatus, se
   }
   return (
     <div
-      className="flex items-center justify-between flex-wrap gap-3 mb-4"
+      className="command-toolbar flex items-center justify-between flex-wrap gap-3 mb-4"
       style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface2)' }}
     >
       <div className="flex items-center gap-2 flex-wrap" style={{ flex: '1 1 520px', minWidth: 0 }}>
@@ -1758,6 +1759,7 @@ function Filters({ categories, agents, filterCat, setFilterCat, filterStatus, se
         </span>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
+        {setViewMode && <ViewModeToggle value={viewMode} onChange={setViewMode} modes={['list', 'card']} />}
         <button type="button" onClick={onAdd} style={{ ...control, padding: '8px 12px', background: 'var(--accent)', color: 'var(--accent-text)', fontWeight: 700, cursor: 'pointer' }}>New Agent</button>
         <BulkActionsMenu
           selectedCount={selectedCount}
@@ -4624,6 +4626,7 @@ function TalkPanel({ agent, categories, onClose }) {
     setErr(null)
     // Reserve an empty assistant slot so streaming chunks can render in place
     setMessages([...next, { role: 'assistant', content: '' }])
+    const researchStream = createResearchStreamTracker()
     try {
       const r = await fetch('/api/agent/openclaw-chat', {
         method: 'POST',
@@ -4670,7 +4673,15 @@ function TalkPanel({ agent, categories, onClose }) {
           if (!line) continue
           try {
             const obj = JSON.parse(line.slice(6))
-            if (obj.error) { streamErr = obj.error; continue }
+            researchStream.accept(obj)
+            if (obj.error) {
+              streamErr = obj.error
+              if (obj.research && typeof obj.text === 'string') {
+                fullText = obj.text
+                setMessages([...next, { role: 'assistant', content: fullText }])
+              }
+              continue
+            }
             if (typeof obj.text === 'string') {
               fullText = obj.text
               setMessages([...next, { role: 'assistant', content: fullText }])
@@ -4678,12 +4689,14 @@ function TalkPanel({ agent, categories, onClose }) {
           } catch { /* ignore malformed chunk */ }
         }
       }
+      if (researchStream.interruptionText()) throw new Error('Research chat disconnected before the final result.')
       if (streamErr) throw new Error(streamErr)
       if (!fullText) throw new Error('Empty response from agent')
     } catch (e) {
-      setErr(e.message)
-      // Drop the empty assistant placeholder so the failure is honest
-      setMessages(prev => prev.filter(m => !(m.role === 'assistant' && !m.content)))
+      const interrupted = researchStream.interruptionText()
+      setErr(interrupted ? 'The chat disconnected. Check the saved research status.' : e.message)
+      if (interrupted) setMessages([...next, { role: 'assistant', content: interrupted }])
+      else setMessages(prev => prev.filter(m => !(m.role === 'assistant' && !m.content)))
     } finally {
       setSending(false)
       setTimeout(() => inputRef.current?.focus(), 50)
@@ -4768,7 +4781,7 @@ function ChatBubble({ message, agent, accent, accentText }) {
         color: isUser ? (accentText || 'var(--accent-text, #fff)') : 'var(--text)',
         border: isUser ? 'none' : '1px solid var(--border)',
         maxWidth: '78%', whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 14.5,
-      }}>{message.content}</div>
+      }}>{isUser ? message.content : <ResearchChatText>{message.content}</ResearchChatText>}</div>
     </div>
   )
 }

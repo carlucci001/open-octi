@@ -6,6 +6,7 @@ import ActiveVideoCall from './components/ActiveVideoCall'
 import PWARegister from './components/PWARegister'
 import ClientErrorReporter from './components/ClientErrorReporter'
 import { brandAssetsFor, brandMetadataFor } from '@/lib/brand-assets'
+import { portalThemeBootScript } from '@/lib/portal-theme'
 const BRAND_ASSETS = brandAssetsFor()
 export const metadata = brandMetadataFor()
 export const viewport = { themeColor: '#020711' }
@@ -59,6 +60,7 @@ const storageGuardScript = `
 const themeBootScript = `
 (() => {
   try {
+    ${portalThemeBootScript}
     const colors = {
       command: '#020711',
       codex: '#F4F1EA',

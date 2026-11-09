@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { beforeEach, expect, it, vi } from 'vitest'
 const state = vi.hoisted(() => ({ openOcti: true, keys: [{ source: 'app', label: 'test', key: 'synthetic-voice-test-key' }], error: null }))
-vi.mock('@/lib/edition', () => ({ isOpenOcti: () => state.openOcti }))
+vi.mock('@/lib/edition', () => ({
+  editionFor: () => state.openOcti ? 'openocti' : 'commandcenter',
+  isOpenOcti: () => state.openOcti,
+  isOctiCc: () => false,
+}))
 vi.mock('@/lib/dataStore', () => ({ readData: file => file === 'agents.json' ? { agents: { 'octi-guide': { name: 'Octi', draft: false }, main: { name: 'Maggie', draft: false }, coding: { name: 'Craig', draft: false } } } : null }))
 vi.mock('@/lib/clients', () => ({ getClients: () => [] }))
 vi.mock('@/lib/permissions', () => ({ requireCapability: async () => ({ error: state.error }) }))

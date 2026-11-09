@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { findCredential } from '@/lib/vault'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -11,9 +10,7 @@ function getToken() {
   if (process.env.VERCEL_TOKEN) return process.env.VERCEL_TOKEN
   if (process.env.VERCEL_API_TOKEN) return process.env.VERCEL_API_TOKEN
   try {
-    const vaultPath = path.join(process.cwd(), 'data', 'credentials.json')
-    const vault = JSON.parse(fs.readFileSync(vaultPath, 'utf8'))
-    const entry = vault.credentials?.find(c => /vercel/i.test(c.name))
+    const entry = findCredential(/vercel/i)
     if (entry) {
       const field = entry.fields?.find(f => /token|key|secret/i.test(f.label))
       if (field?.value) return field.value

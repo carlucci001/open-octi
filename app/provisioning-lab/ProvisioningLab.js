@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Loader2, PhoneCall, RefreshCw, Search, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, FlaskConical, Loader2, PhoneCall, RefreshCw, Search, ShieldCheck } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import ThemedSelect from '../components/ThemedSelect'
 import ProvisionedTwilioLines from './ProvisionedTwilioLines'
@@ -133,7 +133,7 @@ export default function ProvisioningLab() {
   return (
     <div className="provisioning-lab-workspace command-workspace lab-mobile-dense p-6">
       <PageHeader
-        icon={<PhoneCall size={20} />}
+        icon={<FlaskConical size={20} />}
         title="Provisioning Lab"
         subtitle={`${activeLeases.length} active lease${activeLeases.length === 1 ? '' : 's'} / Area ${areaCode || 'n/a'}`}
         actions={(

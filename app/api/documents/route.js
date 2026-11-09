@@ -4,7 +4,6 @@ import { buildEmail } from '@/lib/emailSignature'
 import { logActivity } from '@/lib/entityStore'
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
-import PDFDocument from 'pdfkit'
 import path from 'path'
 import fs from 'fs'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
@@ -18,10 +17,16 @@ import {
   publicOrigin,
   saveDocumentData,
   signingConfiguration,
-  signatureCertificateLines,
 } from '@/lib/documentSignatures'
 import { isOpenOcti } from '@/lib/edition'
-import { brandAssetsFor } from '@/lib/brand-assets'
+import { renderDocumentPdf } from '@/lib/documentPdf'
+import { emailDocumentToClient } from '@/lib/documentEmail'
+import {
+  DocumentFileError,
+  MAX_ATTACHMENT_BYTES,
+  attachDocumentFile,
+  removeDocumentAttachment,
+} from '@/lib/documentFiles'
 import { openclawChat } from '@/lib/openclaw-client'
 
 const TEMPLATES_DIR = path.join(process.cwd(), 'data', 'document-templates')
@@ -411,6 +416,12 @@ function defaultFieldsFromClient(client, templateId) {
     term_years: '2',
     response_time_hours: '24',
     uptime_sla: '99.5%',
+    // Business-deal / entity templates: OpenOcti's own side and entity defaults
+    farrington_entity: 'Your organization',
+    farrington_entity_state: 'Wyoming',
+    farrington_address: '279 Paragon Parkway, #208, Clyde, NC 28721',
+    llc_state: 'Wyoming',
+    start_date: today,
   }
   return base
 }
@@ -501,83 +512,6 @@ async function sendSignatureEmail({ to, signerName, title, signUrl }) {
   return { ok: true, id: result.data?.id }
 }
 
-function buildPdf({ title, body, signature }) {
-  return new Promise((resolve) => {
-    const doc = new PDFDocument({ size: 'letter', margin: 50 })
-    const chunks = []
-    doc.on('data', c => chunks.push(c))
-    doc.on('end', () => resolve(Buffer.concat(chunks)))
-
-    const brand = brandAssetsFor()
-    const logoPath = path.join(process.cwd(), 'public', ...(brand.openOcti ? ['openocti', 'logo-horizontal.png'] : ['brand', 'fd-brand-dark.png']))
-    if (fs.existsSync(logoPath)) doc.image(logoPath, 50, 40, { width: 240 })
-    doc.fontSize(9).font('Helvetica').fillColor('#6B6F78')
-    doc.text(brand.openOcti ? 'OpenOcti' : 'Your organization', 50, 115)
-    if (!brand.openOcti) doc.text('City, STrth Carolina')
-    doc.text(brand.openOcti ? 'openocti.com' : 'company.example.com')
-
-    doc.moveTo(50, 150).lineTo(562, 150).strokeColor('#6B6F78').lineWidth(0.5).stroke()
-
-    doc.fontSize(18).font('Helvetica-Bold').fillColor('#0A0B0D').text(title, 50, 170, { width: 512 })
-
-    // Render body. Markdown-ish: handle headings and plain text lines.
-    doc.moveDown(1)
-    const lines = (body || '').split('\n')
-    for (const raw of lines) {
-      const line = raw
-      if (!line.trim()) { doc.moveDown(0.5); continue }
-      if (line.startsWith('# ')) {
-        doc.fontSize(16).font('Helvetica-Bold').fillColor('#0A0B0D').text(line.slice(2))
-        doc.moveDown(0.3)
-      } else if (line.startsWith('## ')) {
-        doc.fontSize(13).font('Helvetica-Bold').fillColor('#0A0B0D').text(line.slice(3))
-        doc.moveDown(0.2)
-      } else if (line.startsWith('### ')) {
-        doc.fontSize(11).font('Helvetica-Bold').fillColor('#333').text(line.slice(4))
-        doc.moveDown(0.1)
-      } else if (line.startsWith('> ')) {
-        doc.fontSize(9).font('Helvetica-Oblique').fillColor('#6B6F78').text(line.slice(2), { width: 512 })
-        doc.moveDown(0.2)
-      } else if (/^\s*[-*]\s/.test(line)) {
-        doc.fontSize(10).font('Helvetica').fillColor('#0A0B0D').text('â€¢ ' + line.replace(/^\s*[-*]\s/, ''), { width: 500, indent: 10 })
-      } else if (line === '---') {
-        doc.moveDown(0.3)
-        const y = doc.y
-        doc.moveTo(50, y).lineTo(562, y).strokeColor('#6B6F78').lineWidth(0.5).stroke()
-        doc.moveDown(0.3)
-      } else {
-        // Bold handling for **...**
-        const hasBold = /\*\*[^*]+\*\*/.test(line)
-        if (hasBold) {
-          const parts = line.split(/(\*\*[^*]+\*\*)/)
-          doc.fontSize(10).fillColor('#0A0B0D')
-          parts.forEach((p, i) => {
-            if (p.startsWith('**') && p.endsWith('**')) {
-              doc.font('Helvetica-Bold').text(p.slice(2, -2), { continued: i < parts.length - 1 })
-            } else {
-              doc.font('Helvetica').text(p, { continued: i < parts.length - 1 })
-            }
-          })
-          doc.text('')
-        } else {
-          doc.fontSize(10).font('Helvetica').fillColor('#0A0B0D').text(line, { width: 512 })
-        }
-      }
-    }
-
-    const cert = signatureCertificateLines(signature)
-    if (cert.length) {
-      doc.addPage()
-      doc.fontSize(15).font('Helvetica-Bold').fillColor('#0A0B0D').text(cert[0])
-      doc.moveDown(0.8)
-      doc.fontSize(10).font('Helvetica').fillColor('#0A0B0D')
-      for (const line of cert.slice(1)) doc.text(line, { width: 512 })
-    }
-
-    doc.end()
-  })
-}
-
 export async function GET(request) {
   const { error } = await requireCrmRead(request)
   if (error) return error
@@ -599,10 +533,79 @@ export async function GET(request) {
   return NextResponse.json({ documents, templates, forms, eSign: signingConfiguration() })
 }
 
+function fileErrorResponse(error) {
+  if (error instanceof DocumentFileError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status })
+  console.error('[documents] attachment error:', error?.message || error)
+  return NextResponse.json({ ok: false, error: 'Attachment failed' }, { status: 500 })
+}
+
+function documentWithFlags(documentId) {
+  const doc = (loadDocs().documents || []).find(d => d.id === documentId)
+  return doc ? withSignatureFlags(doc) : null
+}
+
+// Multipart bodies (file upload) only carry attach_file; everything else is JSON.
+async function readPostBody(request) {
+  const contentType = request.headers.get('content-type') || ''
+  if (!/multipart\/form-data/i.test(contentType)) return { body: await request.json() }
+  const form = await request.formData()
+  const file = form.get('file')
+  return {
+    body: { action: String(form.get('action') || ''), documentId: String(form.get('documentId') || '') },
+    file: file && typeof file === 'object' && typeof file.arrayBuffer === 'function' ? file : null,
+  }
+}
+
 export async function POST(request) {
   const { error, user } = await requireCrmWrite(request)
   if (error) return error
-  const body = await request.json()
+  const { body, file } = await readPostBody(request)
+
+  if (body.action === 'attach_file') {
+    try {
+      let buffer
+      let fileName
+      let mimeType
+      if (file) {
+        if (file.size > MAX_ATTACHMENT_BYTES) return NextResponse.json({ ok: false, error: 'file is larger than the 25 MB limit' }, { status: 413 })
+        buffer = Buffer.from(await file.arrayBuffer())
+        fileName = file.name
+        mimeType = file.type
+      } else if (typeof body.base64 === 'string' && body.base64) {
+        buffer = Buffer.from(body.base64.replace(/^data:[^,]*,/, ''), 'base64')
+        fileName = body.fileName
+        mimeType = body.mimeType
+      } else {
+        return NextResponse.json({ ok: false, error: 'file required' }, { status: 400 })
+      }
+      const attachment = attachDocumentFile({ documentId: body.documentId, buffer, fileName, mimeType, actor: user?.displayName || user?.username || user?.id })
+      return NextResponse.json({ ok: true, attachment, document: documentWithFlags(body.documentId) })
+    } catch (e) {
+      return fileErrorResponse(e)
+    }
+  }
+
+  if (body.action === 'remove_attachment') {
+    try {
+      const attachment = removeDocumentAttachment(body.documentId, body.attachmentId, user?.displayName || user?.username || user?.id)
+      return NextResponse.json({ ok: true, attachment, document: documentWithFlags(body.documentId) })
+    } catch (e) {
+      return fileErrorResponse(e)
+    }
+  }
+
+  if (body.action === 'email') {
+    const result = await emailDocumentToClient({
+      documentId: body.id,
+      to: body.to,
+      note: body.note,
+      actor: user?.displayName || user?.username || user?.id,
+      request,
+    })
+    if (!result.ok) return NextResponse.json({ ok: false, error: result.error }, { status: result.status === 404 ? 404 : 400 })
+    return NextResponse.json({ ...result, document: documentWithFlags(body.id) })
+  }
+
   const data = ensureDocumentStore(loadDocs())
 
   if (body.action === 'get_template') {
@@ -910,6 +913,12 @@ export async function POST(request) {
       status: 'draft',
       signature: null,
       portalVisible: false,
+      // Files are stored per document id, so the copy starts with none of the original's
+      // attachments or email history.
+      attachments: [],
+      emailLog: [],
+      lastEmailedAt: undefined,
+      lastEmailedTo: undefined,
       createdAt: now,
       updatedAt: now,
     }
@@ -1004,6 +1013,10 @@ export async function POST(request) {
     const template = loadTemplateIndex().find(t => t.id === (body.document?.templateId || prior.templateId))
     const next = { ...prior, ...body.document, updatedAt: new Date().toISOString() }
     next.requiresSignature = isSignatureRequired(template, next.body || '')
+    // Attachments and the email log only change through attach_file / remove_attachment / email,
+    // so a stale copy of the document posted back from the UI can't overwrite them.
+    next.attachments = prior.attachments
+    next.emailLog = prior.emailLog
     next.portalVisible = body.document?.portalVisible === undefined
       ? prior.portalVisible === true
       : body.document.portalVisible === true
@@ -1120,7 +1133,7 @@ export async function POST(request) {
   if (body.action === 'pdf') {
     const doc = data.documents.find(d => d.id === body.id)
     if (!doc) return NextResponse.json({ error: 'Document not found' }, { status: 404 })
-    const buf = await buildPdf({ title: doc.title, body: doc.body, signature: doc.signature })
+    const buf = await renderDocumentPdf({ title: doc.title, body: doc.body, signature: doc.signature })
     return new NextResponse(buf, {
       headers: {
         'Content-Type': 'application/octet-stream',

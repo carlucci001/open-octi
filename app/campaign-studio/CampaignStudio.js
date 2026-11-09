@@ -1,7 +1,7 @@
 'use client'
 import ThemedSelect from '../components/ThemedSelect'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
-import { CalendarClock, Check, ChevronDown, Image as Images, Megaphone, Pencil, Play, RotateCcw, Send, Sparkles, Trash2, Wand2 } from 'lucide-react'
+import { CalendarClock, Check, ChevronDown, Image as Images, Megaphone, MessageSquareText, Pencil, Play, RotateCcw, Send, Sparkles, Trash2, Wand2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import ViewModeToggle from '../components/ViewModeToggle'
 import BulkActionsMenu from '../components/BulkActionsMenu'
@@ -10,6 +10,11 @@ import ComponentSettings, { useComponentSettings } from '../components/Component
 import MediaPickerModal from '../components/MediaPickerModal'
 import SocialOperatorPanel from './SocialOperatorPanel'
 import SocialPublishing from '../social/SocialPublishing'
+import SmsWorkspace from '../sms/SmsWorkspace'
+import { isOctiCc, isOpenOcti } from '@/lib/edition'
+
+// SMS campaigns are a Command Center capability; customer editions resolve SmsWorkspace to the closed-module stub.
+const CUSTOMER_EDITION = isOpenOcti() || isOctiCc()
 
 const statusLabels = {
   draft: 'Draft',
@@ -312,7 +317,11 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
   useEffect(() => {
     try {
       const saved = JSON.parse(window.localStorage.getItem('fcc:campaigns-workspace-state') || '{}')
-      if (initialWorkspace !== 'planner' && ['campaigns', 'social_operator', 'planner'].includes(saved.workspace)) setWorkspace(saved.workspace)
+      const requestedWorkspace = new URLSearchParams(window.location.search).get('campaignWorkspace')
+      if (initialWorkspace !== 'planner') {
+        if (requestedWorkspace === 'sms') setWorkspace('sms')
+        else if (['campaigns', 'social_operator', 'planner', 'sms'].includes(saved.workspace)) setWorkspace(saved.workspace)
+      }
       if (saved.form && typeof saved.form === 'object') { restoredUiRef.current.form = true; setForm(current => ({ ...current, ...saved.form })) }
       if (['brief', 'generate', 'review', 'schedule', 'done'].includes(saved.wizardStep)) setWizardStep(saved.wizardStep)
       if (typeof saved.showGenerator === 'boolean') setShowGenerator(saved.showGenerator)
@@ -943,7 +952,7 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
           </Field>
           <div style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface2)' }}>
             <strong style={{ display: 'block', color: 'var(--text)' }}>{saving ? 'Generating campaign…' : (formEndpoint?.modelLabel || 'Campaign engine ready')}</strong>
-            <span style={{ display: 'block', color: 'var(--text-muted)', marginTop: 6 }}>{formEndpoint ? `${formEndpoint.vendor || 'Provider'} · ${formEndpoint.costPerImage === 0 ? 'Image generation is free' : `Images cost about $${Number(formEndpoint.costPerImage || 0).toFixed(2)} each`}` : 'Cost information will appear when the endpoint loads.'}</span>
+            <span style={{ display: 'block', color: 'var(--text-muted)', marginTop: 6 }}>{formEndpoint ? `${formEndpoint.vendor || 'Provider'} · ${formEndpoint.costPerImage == null ? 'Provider usage pricing applies' : formEndpoint.costPerImage === 0 ? 'Image generation is free' : `Images cost about $${Number(formEndpoint.costPerImage).toFixed(2)} each`}` : 'Cost information will appear when the endpoint loads.'}</span>
             <span style={{ display: 'block', color: 'var(--text-muted)', marginTop: 4 }}>Copy generates now. Images remain approval-gated in Review so no asset budget is spent without a clear action.</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}><button type="button" onClick={() => setWizardStep('brief')} style={wizardButtonStyle(false)}>Back</button><button type="button" onClick={create} disabled={saving} aria-busy={saving} style={wizardButtonStyle(true, saving)}><Wand2 size={18} /> {saving ? 'Generating…' : 'Generate campaign'}</button></div>
@@ -1027,6 +1036,7 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
         controls={workspace === 'campaigns' ? <ComponentSettings componentId="campaign-studio.campaigns" title="Campaigns list settings" onApplied={applyComponentSettings} /> : null}
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => setWorkspace('sms')} aria-label="Text message campaigns" aria-pressed={workspace === 'sms'} data-tooltip="Text message campaigns" data-tooltip-side="bottom" style={headerIconButtonStyle(workspace === 'sms')}><MessageSquareText size={16} /></button>
             {toast ? <Pill tone="active">{toast}</Pill> : null}
             {workspace === 'campaigns' ? (
               <>
@@ -1060,9 +1070,14 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
         <button type="button" role="tab" aria-selected={workspace === 'campaigns'} onClick={() => setWorkspace('campaigns')} style={workspaceTabStyle(workspace === 'campaigns')}>Campaigns</button>
         <button type="button" role="tab" aria-selected={workspace === 'planner'} onClick={() => setWorkspace('planner')} style={workspaceTabStyle(workspace === 'planner')}>Planner & channels</button>
         <button type="button" role="tab" aria-selected={workspace === 'social_operator'} onClick={() => setWorkspace('social_operator')} style={workspaceTabStyle(workspace === 'social_operator')}>Social Operator</button>
+        {!CUSTOMER_EDITION && (
+          <button type="button" role="tab" aria-selected={workspace === 'sms'} onClick={() => setWorkspace('sms')} style={workspaceTabStyle(workspace === 'sms')}>Text messages</button>
+        )}
       </div>
 
-      {workspace === 'social_operator' ? (
+      {workspace === 'sms' && !CUSTOMER_EDITION ? (
+        <SmsWorkspace embedded />
+      ) : workspace === 'social_operator' ? (
         <SocialOperatorPanel
           campaigns={campaigns}
           config={socialOperatorConfig}
@@ -1270,7 +1285,7 @@ export default function CampaignStudio({ onNavigate, initialWorkspace = 'campaig
                   </ThemedSelect>
                   {activeEndpoint?.modelLabel && (
                     <span style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 700, overflowWrap: 'anywhere' }}>
-                      {activeEndpoint.modelLabel} · {activeEndpoint.costPerImage === 0 ? 'free' : `~$${Number(activeEndpoint.costPerImage).toFixed(2)}/image`}
+                      {activeEndpoint.modelLabel} · {activeEndpoint.costPerImage == null ? 'provider usage pricing' : activeEndpoint.costPerImage === 0 ? 'free' : `~$${Number(activeEndpoint.costPerImage).toFixed(2)}/image`}
                     </span>
                   )}
                 </div>

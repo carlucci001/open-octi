@@ -11,6 +11,9 @@ const PUBLIC_PREFIXES = [
   '/portal',
   '/api/portal/',
   '/invoice/',
+  // Permanent pay-online link printed on quotes/invoices; mints a fresh Stripe
+  // Checkout Session per click and redirects. Rate-limited inside the route.
+  '/pay/',
   '/api/twilio/',
   '/api/voice/',
   '/api/leads/inbound',
@@ -112,6 +115,9 @@ const PUBLIC_EXACT = [
   // ElevenLabs Lucci booking tool posts here. The route itself now accepts
   // either a logged-in CRM session or Bearer CONCIERGE_TOOL_SECRET.
   '/api/calendar/book',
+  // Maggie's note bridge checks the concierge bearer or owner CRM session itself.
+  // Keep this exact so sibling note routes retain the normal session gate.
+  '/api/note',
   '/api/website/intake',
   '/api/licenses/verify',
   '/api/support-gateway',

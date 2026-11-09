@@ -2,7 +2,11 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 const create = vi.hoisted(() => vi.fn(async () => ({ name: 'synthetic-ephemeral-token' })))
 vi.mock('@google/genai', () => ({ GoogleGenAI: class { authTokens = { create } } }))
-vi.mock('@/lib/edition', () => ({ isOpenOcti: () => true }))
+vi.mock('@/lib/edition', () => ({
+  editionFor: () => 'openocti',
+  isOpenOcti: () => true,
+  isOctiCc: () => false,
+}))
 vi.mock('@/lib/permissions', () => ({ requireCapability: async () => ({ error: null }) }))
 vi.mock('@/lib/openocti-keys', () => ({ resolveProviderKey: () => ({ key: 'synthetic-test-key' }) }))
 vi.mock('@/lib/dataStore', () => ({ readData: () => ({ agents: { 'octi-guide': { name: 'Octi' } } }) }))

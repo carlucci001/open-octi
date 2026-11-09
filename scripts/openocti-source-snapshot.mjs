@@ -5,6 +5,8 @@ import { spawnSync } from 'node:child_process'
 import { isOpenOctiExcluded } from './openocti-excludes.mjs'
 
 const POLICY_PATH = 'openocti/export-source-allowlist.json'
+const JAVASCRIPT_SOURCE = /\.(?:[cm]?[jt]sx?)$/i
+const MODULE_EXTENSIONS = ['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.mts', '.cts', '.json', '.css', '.scss', '.sass', '.less', '.wasm']
 
 function git(root, args, input) {
   const result = spawnSync('git', ['-C', root, ...args], {
@@ -20,6 +22,79 @@ export function safeSourcePath(value) {
     !value.startsWith('/') && value.split('/').every(part => part && part !== '.' && part !== '..')
 }
 
+function localModuleSpecifiers(content) {
+  const source = content.toString('utf8')
+  const patterns = [
+    /(?:^|\n)\s*import\s+(?:[^'";()]*?\s+from\s+)?['"]([^'"]+)['"]/g,
+    /(?:^|\n)\s*export\s+[^'";()]*?\s+from\s+['"]([^'"]+)['"]/g,
+    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+    /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+  ]
+  const specifiers = new Set()
+  for (const pattern of patterns) {
+    for (const match of source.matchAll(pattern)) specifiers.add(match[1])
+  }
+  return specifiers
+}
+
+function resolveLocalModule(importer, specifier, entries) {
+  const clean = specifier.split(/[?#]/, 1)[0]
+  let unresolved
+  if (clean.startsWith('@/')) unresolved = clean.slice(2)
+  else if (clean.startsWith('./') || clean.startsWith('../')) unresolved = path.posix.join(path.posix.dirname(importer), clean)
+  else return null
+
+  const base = path.posix.normalize(unresolved)
+  if (!safeSourcePath(base)) throw new Error('SOURCE_DEPENDENCY_NOT_APPROVED')
+  const hasExtension = path.posix.extname(base).length > 0
+  const candidates = hasExtension
+    ? [base]
+    : [base, ...MODULE_EXTENSIONS.map(extension => `${base}${extension}`), ...MODULE_EXTENSIONS.map(extension => `${base}/index${extension}`)]
+  return candidates.find(candidate => entries.has(candidate)) || undefined
+}
+
+function assertApprovedDependencyClosure(files, entries, names, rules) {
+  const approved = new Set(names)
+  const filesByPath = new Map(files.map(file => [file.path, file]))
+  const queue = []
+  const seenEdges = new Set()
+  for (const rule of rules) {
+    if (!rule || typeof rule !== 'object' || Array.isArray(rule) ||
+      Object.keys(rule).sort().join(',') !== 'dependency,importer' ||
+      !safeSourcePath(rule.importer) || !safeSourcePath(rule.dependency)) {
+      throw new Error('SOURCE_POLICY_INVALID')
+    }
+    const edge = `${rule.importer}\0${rule.dependency}`
+    if (seenEdges.has(edge)) throw new Error('SOURCE_POLICY_INVALID')
+    seenEdges.add(edge)
+    if (!approved.has(rule.importer) || !approved.has(rule.dependency)) {
+      throw new Error('SOURCE_DEPENDENCY_NOT_APPROVED')
+    }
+    const importer = filesByPath.get(rule.importer)
+    if (!importer || !JAVASCRIPT_SOURCE.test(importer.path)) throw new Error('SOURCE_POLICY_INVALID')
+    const resolved = [...localModuleSpecifiers(importer.content)]
+      .map(specifier => resolveLocalModule(importer.path, specifier, entries))
+      .filter(Boolean)
+    if (!resolved.includes(rule.dependency)) throw new Error('SOURCE_POLICY_INVALID')
+    queue.push(rule.dependency)
+  }
+
+  const visited = new Set()
+  while (queue.length) {
+    const current = queue.shift()
+    if (visited.has(current)) continue
+    visited.add(current)
+    const file = filesByPath.get(current)
+    if (!file || !JAVASCRIPT_SOURCE.test(file.path)) continue
+    for (const specifier of localModuleSpecifiers(file.content)) {
+      const dependency = resolveLocalModule(file.path, specifier, entries)
+      if (dependency === null) continue
+      if (!dependency || !approved.has(dependency)) throw new Error('SOURCE_DEPENDENCY_NOT_APPROVED')
+      if (JAVASCRIPT_SOURCE.test(dependency)) queue.push(dependency)
+    }
+  }
+}
+
 // The approved source list lives in the same immutable commit as the code.
 // No recursive filesystem copy, worktree file contents, credentials, or live data are read.
 export function readApprovedSource(root, { ref = 'HEAD' } = {}) {
@@ -27,7 +102,8 @@ export function readApprovedSource(root, { ref = 'HEAD' } = {}) {
   let policy
   try { policy = JSON.parse(git(root, ['show', `${commit}:${POLICY_PATH}`]).toString('utf8')) }
   catch { throw new Error('SOURCE_POLICY_INVALID') }
-  if (policy.schemaVersion !== 1 || !Array.isArray(policy.files) || !policy.files.length) {
+  if (policy.schemaVersion !== 1 || !Array.isArray(policy.files) || !policy.files.length ||
+    (policy.dependencyClosure !== undefined && !Array.isArray(policy.dependencyClosure))) {
     throw new Error('SOURCE_POLICY_INVALID')
   }
   const names = policy.files
@@ -66,6 +142,7 @@ export function readApprovedSource(root, { ref = 'HEAD' } = {}) {
     offset = end + 1 + size + 1
     return { path: name, content, executable: entries.get(name).mode === '100755' }
   })
+  assertApprovedDependencyClosure(files, entries, names, policy.dependencyClosure || [])
   return { commit, files }
 }
 

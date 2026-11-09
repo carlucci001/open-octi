@@ -5,12 +5,14 @@ import { NextResponse } from 'next/server'
 import PDFDocument from 'pdfkit'
 import path from 'path'
 import fs from 'fs'
-import { Resend } from 'resend'
 import { wrapEmailBody } from '@/lib/emailSignature'
 import { requireCrmRead, requireCrmWrite } from '@/lib/permissions'
-import { recordCheckoutSessionPayment } from '@/lib/paymentLedger'
+import { checkLegacyInvoicePayment } from '@/lib/legacy-invoice-settlement'
+import { sendLegacyInvoiceEmail } from '@/lib/legacy-invoice-email'
+import { sendStripeInvoice } from '@/lib/stripe-invoice-lifecycle'
+import { reconcileStripeInvoice } from '@/lib/stripe-invoice-settlement'
+import { changeInvoice, invoicePayUrl, invoiceRecord, isLegacyCheckoutInvoice, usesStripeInvoice } from '@/lib/invoice-lifecycle-state'
 import {
-  createInvoiceCheckoutSession,
   getInvoiceBaseUrl,
   getInvoiceStripeClient,
 } from '@/lib/invoice-checkout'
@@ -72,18 +74,27 @@ async function checkStripePayment(body, data, { requireSessionMatch = false } = 
   const idx = data.invoices.findIndex(i => i.id === body.id)
   if (idx < 0) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
   const invoice = data.invoices[idx]
+  if (usesStripeInvoice(invoice)) {
+    if (requireSessionMatch) return NextResponse.json({ error: 'Authentication required to check this invoice' }, { status: 401 })
+    try {
+      const result = await reconcileStripeInvoice(invoice.id)
+      return NextResponse.json({ ok: true, ...result })
+    } catch (err) {
+      return NextResponse.json({ error: err.message }, { status: 502 })
+    }
+  }
   if (!invoice.stripeSessionId) return NextResponse.json({ error: 'Invoice has not been sent yet' }, { status: 400 })
-  if (requireSessionMatch && body.sessionId !== invoice.stripeSessionId) {
+  // An older session retained from an earlier email may still receive payment.
+  const knownSessionIds = [invoice.stripeSessionId, ...(Array.isArray(invoice.stripeSessionIds) ? invoice.stripeSessionIds : [])]
+  const matchedSessionId = body.sessionId && knownSessionIds.includes(body.sessionId) ? body.sessionId : null
+  if (requireSessionMatch && !matchedSessionId) {
     return NextResponse.json({ error: 'Payment session required' }, { status: 401 })
   }
   const stripe = getInvoiceStripeClient()
   if (!stripe) return NextResponse.json({ error: 'Stripe not configured' }, { status: 400 })
   try {
-    const session = await stripe.checkout.sessions.retrieve(invoice.stripeSessionId, { expand: ['payment_intent'] })
-    const result = session.payment_status === 'paid'
-      ? recordCheckoutSessionPayment(session, { source: 'invoice_check' })
-      : null
-    return NextResponse.json({ ok: true, invoice: result?.invoice || data.invoices[idx], payment: result?.payment || null, paymentStatus: session.payment_status })
+    const result = await checkLegacyInvoicePayment(invoice.id, { stripe, sessionId: matchedSessionId })
+    return NextResponse.json({ ok: true, invoice: result.invoice, payment: result.payment || null, paymentStatus: result.paymentStatus })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
@@ -126,7 +137,7 @@ function buildPdf(invoice, client) {
     doc.on('data', c => chunks.push(c))
     doc.on('end', () => resolve(Buffer.concat(chunks)))
 
-    const logoPath = path.join(process.cwd(), 'public', 'openocti', 'logo-horizontal.png')
+    const logoPath = path.join(process.cwd(), 'public', 'brand', 'fd-brand-dark.png')
     if (fs.existsSync(logoPath)) {
       doc.image(logoPath, 50, 40, { width: 240 })
     } else {
@@ -217,17 +228,18 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const invoiceId = searchParams.get('id')
   if (invoiceId && searchParams.get('pdf') === '1') {
-    const portalSession = getSessionFromRequest(request)
+    // The CRM and portal can both be signed in on this host. A portal cookie
+    // must not narrow an authorized CRM reader's access to the invoices list.
+    const { error } = await requireCrmRead(request)
     const invoice = (data.invoices || []).find(item => item.id === invoiceId)
-    if (portalSession) {
+    if (error) {
+      const portalSession = getSessionFromRequest(request)
+      if (!portalSession) return error
       if (!invoice || invoice.clientId !== portalSession.accountId || invoice.status === 'draft') {
         return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
       }
-    } else {
-      const { error } = await requireCrmRead(request)
-      if (error) return error
-      if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
     }
+    if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
     const client = findClient(invoice.clientId)
     const buf = await buildPdf(invoice, client)
     return new NextResponse(buf, {
@@ -278,6 +290,10 @@ export async function POST(request) {
       date: body.date || new Date().toISOString(),
       dueDate: body.dueDate || null,
       status: 'draft',
+      billingWorkflow: 'stripe_invoice',
+      paymentStatus: 'unpaid',
+      deliveryStatus: 'not_sent',
+      currency: 'usd',
       amount: computeSubtotal(body.items),
       stripeInvoiceId: null,
       hostedUrl: null,
@@ -305,12 +321,15 @@ export async function POST(request) {
   if (body.action === 'update') {
     const idx = data.invoices.findIndex(i => i.id === body.invoice?.id)
     if (idx < 0) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    if (data.invoices[idx].stripeInvoiceId || data.invoices[idx].stripeIssuance) return NextResponse.json({ error: 'Stripe issuance has started. Review the linked Stripe invoice before changing its details.' }, { status: 409 })
     data.invoices[idx] = { ...data.invoices[idx], ...body.invoice, amount: computeSubtotal(body.invoice.items || data.invoices[idx].items) }
     saveInvoices(data)
     return NextResponse.json({ ok: true, invoice: data.invoices[idx] })
   }
 
   if (body.action === 'delete') {
+    const invoice = data.invoices.find(item => item.id === body.id)
+    if (invoice?.stripeInvoiceId || invoice?.stripeIssuance) return NextResponse.json({ error: 'A linked Stripe invoice must be retained for reconciliation.' }, { status: 409 })
     data.invoices = data.invoices.filter(i => i.id !== body.id)
     saveInvoices(data)
     return NextResponse.json({ ok: true })
@@ -318,14 +337,17 @@ export async function POST(request) {
 
   if (body.action === 'bulk_delete') {
     const ids = new Set(body.ids || [])
+    if (data.invoices.some(invoice => ids.has(invoice.id) && (invoice.stripeInvoiceId || invoice.stripeIssuance))) return NextResponse.json({ error: 'Linked Stripe invoices must be retained for reconciliation.' }, { status: 409 })
+    const deleted = data.invoices.filter(invoice => ids.has(invoice.id)).length
     data.invoices = data.invoices.filter(i => !ids.has(i.id))
     saveInvoices(data)
-    return NextResponse.json({ ok: true, deleted: ids.size })
+    return NextResponse.json({ ok: true, deleted })
   }
 
   if (body.action === 'set_status') {
     const idx = data.invoices.findIndex(i => i.id === body.id)
     if (idx < 0) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    if (usesStripeInvoice(data.invoices[idx])) return NextResponse.json({ error: 'Stripe invoice status must be verified with Stripe' }, { status: 409 })
     data.invoices[idx].status = body.status
     data.invoices[idx].updatedAt = new Date().toISOString()
     saveInvoices(data)
@@ -346,7 +368,7 @@ export async function POST(request) {
     })
   }
 
-  if (body.action === 'send') {
+  if (body.action === 'send' || body.action === 'resend') {
     const idx = data.invoices.findIndex(i => i.id === body.id)
     if (idx < 0) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
     const invoice = data.invoices[idx]
@@ -354,23 +376,27 @@ export async function POST(request) {
     const email = body.to || client?.email
     if (!email || !email.includes('@')) return NextResponse.json({ error: 'Client has no email on file' }, { status: 400 })
 
+    if (!isLegacyCheckoutInvoice(invoice)) {
+      try {
+        const result = await sendStripeInvoice(invoice.id, { ...client, email }, { resend: body.action === 'resend', requestId: body.requestId })
+        return NextResponse.json({ ok: true, ...result })
+      } catch (err) {
+        return NextResponse.json({ error: err.message, invoice: invoiceRecord(invoice.id) }, { status: 502 })
+      }
+    }
+    if (invoice.status === 'paid' || invoice.paidAt) return NextResponse.json({ ok: true, alreadyPaid: true, invoice })
+    if (body.action !== 'resend' && invoice.sentAt) return NextResponse.json({ ok: true, alreadySent: true, invoice, payUrl: invoicePayUrl(invoice) })
+
     const resendKey = process.env.RESEND_API_KEY
     if (!resendKey) return NextResponse.json({ error: 'RESEND_API_KEY not set' }, { status: 400 })
 
     const amount = computeSubtotal(invoice.items)
     if (amount <= 0) return NextResponse.json({ error: 'Invoice amount must be greater than zero' }, { status: 400 })
 
-    const baseUrl = getInvoiceBaseUrl()
     try {
-      const session = await createInvoiceCheckoutSession(invoice, { ...client, email }, {
-        successUrl: `${baseUrl}/invoice/${invoice.id}/paid?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${baseUrl}/invoice/${invoice.id}`,
-      })
-
+      const sent = await sendLegacyInvoiceEmail(invoice.id, { resend: body.action === 'resend', requestId: body.requestId, email, apiKey: resendKey }, async () => {
       const nextInvoice = {
         ...invoice,
-        stripeSessionId: session.id,
-        stripeSessionUrl: session.url,
         amount,
       }
 
@@ -386,56 +412,23 @@ export async function POST(request) {
           ${invoice.project ? `<tr><td style="padding:4px 16px 4px 0;color:#6b7084">Project:</td><td>${invoice.project}</td></tr>` : ''}
         </table>
         <p style="text-align:center;margin:28px 0">
-          <a href="${session.url}" style="background:#16a34a;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;font-size:16px">Pay ${fmtUSD(amount)} Now</a>
+          <a href="${invoicePayUrl(invoice)}" style="background:#16a34a;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;font-size:16px">Pay ${fmtUSD(amount)} Now</a>
         </p>
         <p style="font-size:13px;color:#6b7084;text-align:center">Secure payment by Stripe. A receipt will be emailed automatically after payment.</p>
         <p style="font-size:12px;color:#6b7084">The full invoice PDF is attached for your records.</p>
       `
 
-      const resend = new Resend(resendKey)
       const fromAddr = process.env.FARRINGTON_FROM_EMAIL || process.env.RESEND_FROM || 'Your organization <redacted@example.invalid>'
-      const fallbackFromAddr = process.env.RESEND_FALLBACK_FROM || process.env.RESEND_FROM || 'Your organization <redacted@example.invalid>'
-      const timeTag = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-      let result = await resend.emails.send({
+      return {
         from: fromAddr,
         to: [email],
         replyTo: 'personal@example.invalid',
-        subject: `Invoice ${invoice.number} from Your organization · ${timeTag}`,
+        subject: `Invoice ${invoice.number} from Your organization`,
         html: wrapEmailBody(bodyHtml),
         attachments: [{ filename: `invoice-${invoice.number}.pdf`, content: pdfBuf.toString('base64') }],
+      }
       })
-      if (result.error && fallbackFromAddr !== fromAddr) {
-        result = await resend.emails.send({
-          from: fallbackFromAddr,
-          to: [email],
-          replyTo: 'personal@example.invalid',
-          subject: `Invoice ${invoice.number} from Your organization - ${timeTag}`,
-          html: wrapEmailBody(bodyHtml),
-          attachments: [{ filename: `invoice-${invoice.number}.pdf`, content: pdfBuf.toString('base64') }],
-        })
-      }
-      if (result.error) {
-        data.invoices[idx] = {
-          ...nextInvoice,
-          status: invoice.status || 'draft',
-          lastSendError: result.error.message,
-          lastSendErrorAt: new Date().toISOString(),
-        }
-        saveInvoices(data)
-        return NextResponse.json({ error: result.error.message }, { status: 502 })
-      }
-
-      const resendEmailId = result.data?.id || result.id || null
-      data.invoices[idx] = {
-        ...nextInvoice,
-        status: 'sent',
-        sentAt: new Date().toISOString(),
-        sentTo: email,
-        resendEmailId,
-        lastSendError: null,
-        lastSendErrorAt: null,
-      }
-      saveInvoices(data)
+      data.invoices[idx] = sent.invoice
       if (data.invoices[idx].clientId) {
         try {
           logActivity({
@@ -450,7 +443,7 @@ export async function POST(request) {
         }
       }
 
-      return NextResponse.json({ ok: true, invoice: data.invoices[idx], payUrl: session.url, sentTo: email, resendEmailId })
+      return NextResponse.json({ ok: true, ...sent })
     } catch (err) {
       return NextResponse.json({ error: err.message }, { status: 500 })
     }
@@ -459,6 +452,7 @@ export async function POST(request) {
   if (body.action === 'mark_paid_manual') {
     const idx = data.invoices.findIndex(i => i.id === body.id)
     if (idx < 0) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    if (usesStripeInvoice(data.invoices[idx])) return NextResponse.json({ error: 'Check Stripe payment status instead of marking this invoice paid manually' }, { status: 409 })
     data.invoices[idx] = {
       ...data.invoices[idx],
       status: 'paid',

@@ -895,6 +895,16 @@ export default function LeadsManager({ onNavigate }) {
       setFilterCategory('all')
     }
   }, [filterBrand, filterCategory])
+  // A saved lead-list filter can outlive its list (list removed, or saved on
+  // another device). Once the lists have loaded, drop a stale id so it cannot
+  // silently hide every lead. A live pick always matches a loaded list, so it
+  // is never overridden.
+  useEffect(() => {
+    if (leadListsQ.data == null || leadListsQ.refreshing || leadListsQ.error) return
+    if (filterLeadList === 'all' || filterLeadList === 'unassigned') return
+    const known = leadLists.some(list => list.id === filterLeadList || list.legacyPipelineId === filterLeadList)
+    if (!known) setFilterLeadList('all')
+  }, [leadListsQ.data, leadListsQ.refreshing, leadListsQ.error, filterLeadList])
   useEffect(() => { setPage(1) }, [search, filterBrand, filterCategory, filterStatus, filterSource, sortBy, sortDir, view, setPage])
   // A hidden lead must never stay selected - clear the selection whenever the
   // visible set can change, so bulk actions can only ever touch what's on
@@ -927,6 +937,23 @@ export default function LeadsManager({ onNavigate }) {
     setFilterStatus('all')
     setSearch('')
     setPage(1)
+  }
+
+  // Leads the filter bar is hiding: the leads the status tile would show on
+  // its own (open leads by default) minus what the filters actually leave.
+  const filtersNarrowList = search.trim() !== '' || filterBrand !== 'all' || filterCategory !== 'all' || filterSource !== 'all' || filterLeadList !== 'all'
+  const hiddenByFiltersCount = useMemo(() => {
+    if (!filtersNarrowList) return 0
+    const base = leads.filter(l => (filterStatus !== 'all' ? l.status === filterStatus : l.status !== 'converted')).length
+    return Math.max(0, base - filtered.length)
+  }, [leads, filtered, filtersNarrowList, filterStatus])
+  const showAllLeads = () => {
+    userTouchedListPrefs.current = true
+    setSearch('')
+    setFilterBrand('all')
+    setFilterCategory('all')
+    setFilterSource('all')
+    setFilterLeadList('all')
   }
 
   const sel = { background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 10px', borderRadius: 6, fontSize: 12, outline: 'none', minWidth: 150 }
@@ -1224,6 +1251,13 @@ export default function LeadsManager({ onNavigate }) {
           onMove={bulkMoveSelected}
           onClear={clearBulkSelection}
         />
+      )}
+
+      {!firstLoad && hiddenByFiltersCount > 0 && (
+        <div data-leads-hidden-notice className="flex items-center gap-2 mb-2 px-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+          <span>{hiddenByFiltersCount} {hiddenByFiltersCount === 1 ? 'lead' : 'leads'} hidden by filters</span>
+          <button type="button" aria-label="Show all leads" onClick={showAllLeads} className="font-semibold" style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--accent)', borderRadius: 6, padding: '2px 8px', cursor: 'pointer' }}>Show all</button>
+        </div>
       )}
 
       {firstLoad ? <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}><span className="inline-block w-3 h-3 rounded-full mr-2 animate-pulse" style={{ background: 'var(--accent)' }}></span>Fetching leads…</div>

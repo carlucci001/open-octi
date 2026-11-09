@@ -3,7 +3,7 @@
 import ThemedSelect from '../components/ThemedSelect'
 import PageHeader from '../components/PageHeader'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, ArchiveRestore, Copy, DatabaseZap, DollarSign, Gauge, GitBranch, Headphones, Info, PhoneCall, Plus, RefreshCw, Rocket, Search, Star, Square, Trash2, Volume2, Wand2, Wrench, X } from 'lucide-react'
+import { Activity, ArchiveRestore, Copy, DatabaseZap, DollarSign, FlaskConical, Gauge, GitBranch, Headphones, Info, PhoneCall, Plus, RefreshCw, Rocket, Search, Star, Square, Trash2, Volume2, Wand2, Wrench, X } from 'lucide-react'
 import { isOpenOcti } from '@/lib/edition'
 import VoiceProviderNotice, { VoiceProviderSelect, useVoiceProviderReady } from '../components/VoiceProviderNotice'
 
@@ -2656,8 +2656,8 @@ export default function OpsManager({ voiceOnly = false }) {
   return (
     <div className="command-workspace p-6">
       <PageHeader
-        icon={voiceOnly ? <Headphones size={20} /> : <Wrench size={20} />}
-        title={voiceOnly ? 'Voice Labs' : 'Ops'}
+        icon={<FlaskConical size={20} />}
+        title={voiceOnly ? 'Voice Labs' : 'Ops Lab'}
         subtitle={voiceOnly ? voiceBreadcrumb : META[active]?.title || 'Diagnostics'}
         actions={(
           <button type="button" onClick={() => load()} aria-label={voiceOnly ? 'Refresh Voice Labs' : 'Refresh Ops'} data-tooltip={busy ? 'Checking' : 'Refresh'} data-tooltip-side="bottom" className="rounded-lg p-2 font-semibold inline-flex items-center justify-center" style={{ width: 40, height: 40, background: 'var(--surface2)', color: 'var(--text)', border: '1px solid var(--border)' }}>

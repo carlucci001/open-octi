@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { findCredential } from '@/lib/vault'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,8 +14,7 @@ const BASE = {
 function getRegularKey() {
   if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY
   try {
-    const c = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'credentials.json'), 'utf-8'))
-    const item = (c.credentials || []).find(x => /anthropic/i.test(x.name || ''))
+    const item = findCredential(/anthropic/i)
     return item?.fields?.find(f => /api|key/i.test(f.label))?.value || null
   } catch { return null }
 }

@@ -40,6 +40,8 @@ This inventory was generated from `npm ls --prod --json --long --all`.
 | recharts | unknown | UNKNOWN |
 | remotion | unknown | UNKNOWN |
 | resend | unknown | UNKNOWN |
+| sharp | unknown | UNKNOWN |
+| sqlite-vec | unknown | UNKNOWN |
 | stripe | unknown | UNKNOWN |
 | three | unknown | UNKNOWN |
 | truthdiff | unknown | UNKNOWN |

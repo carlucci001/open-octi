@@ -167,7 +167,7 @@
   },
   "examples": {
     ".env.example": {
-      "sha256": "829d4eb38b93986779eaafee03a3ca64748fadcd508eec4a9a4ac05fbb45d3be",
+      "sha256": "750ad44a1047ef7fb2cc9acc0d8c728d9c7fb0a789d1319dfa45dfcf2a40bc07",
       "kind": "text"
     },
     "config/monitoring/community.example.json": {

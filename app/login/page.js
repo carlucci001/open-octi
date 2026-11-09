@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { railLoginTarget } from './railLoginTarget'
 import { primeLoginWelcomeAudio, queueLoginWelcomeAudio } from './loginWelcomeAudio'
 import { brandAssetsFor } from '@/lib/brand-assets'
 import FirstRunAccountSetup from './FirstRunAccountSetup'
 
 const BRAND_ASSETS = brandAssetsFor()
-const EDITION_NAME = BRAND_ASSETS.openOcti ? 'OpenOcti' : 'OpenOcti'
+const EDITION_NAME = BRAND_ASSETS.productName
 
 function LoginStarfield() {
   return (
@@ -27,22 +28,23 @@ function LoginStarfield() {
 
 function LoginLogoHeader() {
   return (
-    <div className={`command-dashboard-loader login-command-loader ${BRAND_ASSETS.openOcti ? 'openocti-brand-loader' : ''}`} data-logo-ready="true" aria-label={EDITION_NAME}>
-      {!BRAND_ASSETS.openOcti && <div className="command-dashboard-loader-vignette" />}
-      {!BRAND_ASSETS.openOcti && <div className="command-dashboard-loader-grid" />}
+    <div className={`command-dashboard-loader login-command-loader ${BRAND_ASSETS.openOcti ? 'openocti-brand-loader' : BRAND_ASSETS.octiCc ? 'octicc-brand-loader' : ''}`} data-logo-ready="true" aria-label={EDITION_NAME}>
+      {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <div className="command-dashboard-loader-vignette" />}
+      {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <div className="command-dashboard-loader-grid" />}
       <div className="command-dashboard-loader-stage">
         <img src={BRAND_ASSETS.loaderLogo} alt="" className="command-dashboard-loader-logo" />
-        {!BRAND_ASSETS.openOcti && <div className="command-dashboard-loader-radar">
+        {BRAND_ASSETS.octiCc && <div className="octicc-login-wordmark">Octi Command Center</div>}
+        {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <div className="command-dashboard-loader-radar">
           <div className="command-dashboard-loader-radar-sweep"><span className="command-dashboard-loader-radar-edge" /></div>
         </div>}
-        {!BRAND_ASSETS.openOcti && <span className="command-dashboard-loader-blip" />}
-        {!BRAND_ASSETS.openOcti && <span className="command-dashboard-loader-ping" />}
-        {!BRAND_ASSETS.openOcti && <span className="command-dashboard-loader-ping command-dashboard-loader-ping-delay" />}
-        {!BRAND_ASSETS.openOcti && <span className="command-dashboard-loader-antenna" />}
-        {!BRAND_ASSETS.openOcti && <span className="command-dashboard-loader-wing command-dashboard-loader-wing-left" />}
-        {!BRAND_ASSETS.openOcti && <span className="command-dashboard-loader-wing command-dashboard-loader-wing-right" />}
-        {!BRAND_ASSETS.openOcti && <span className="command-dashboard-loader-dot command-dashboard-loader-dot-left" />}
-        {!BRAND_ASSETS.openOcti && <span className="command-dashboard-loader-dot command-dashboard-loader-dot-right" />}
+        {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <span className="command-dashboard-loader-blip" />}
+        {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <span className="command-dashboard-loader-ping" />}
+        {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <span className="command-dashboard-loader-ping command-dashboard-loader-ping-delay" />}
+        {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <span className="command-dashboard-loader-antenna" />}
+        {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <span className="command-dashboard-loader-wing command-dashboard-loader-wing-left" />}
+        {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <span className="command-dashboard-loader-wing command-dashboard-loader-wing-right" />}
+        {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <span className="command-dashboard-loader-dot command-dashboard-loader-dot-left" />}
+        {!BRAND_ASSETS.openOcti && !BRAND_ASSETS.octiCc && <span className="command-dashboard-loader-dot command-dashboard-loader-dot-right" />}
       </div>
     </div>
   )
@@ -142,7 +144,7 @@ export default function LoginPage() {
       try { localStorage.setItem('fcc-tab', 'dashboard') } catch {}
       storeLoginCredential(j.user, loginUsername, loginPassword)
       queueLoginWelcomeAudio(j.user, loginUsername, welcomeAudio)
-      router.replace('/')
+      router.replace(railLoginTarget(window.location.search))
     } catch (err) {
       setError(err.message)
       setBusy(false)

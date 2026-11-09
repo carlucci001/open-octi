@@ -15,12 +15,9 @@ const labHeaderButtonStyle = {
   cursor: 'pointer',
 }
 
-// Header standard (Carl, 2026-08-21): every component page's controls live in
-// the header's right-hand cluster, on ONE row, in this order:
-//   [page actions: labs / tools / primary "+"]  [view-mode toggle]  [settings gear]
-// `actions` = page actions, `viewToggle` = the ViewModeToggle, `controls` = the
-// ComponentSettings gear (always last). Nothing from this cluster belongs in a
-// filter/toolbar row below the header. Default view for every list is 'list'.
+// PageHeader owns module identity and primary/top actions. Search, filter, sort,
+// view, and list-settings controls belong in the module toolbar immediately
+// below it. viewToggle/controls remain supported for modules awaiting migration.
 export default function PageHeader({ icon, title, subtitle, actions, viewToggle, controls, children, onBack, backLabel = 'Back', className = '' }) {
   return (
     <div

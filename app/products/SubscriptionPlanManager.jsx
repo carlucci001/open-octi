@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, Copy, Pencil, Plus, RefreshCw, Save, Search, ShieldCheck, Trash2, X } from 'lucide-react'
 import ThemedSelect from '../components/ThemedSelect'
+import ViewModeToggle from '../components/ViewModeToggle'
 import { Paginator, usePagination } from '../components/Paginator'
 
 const FIELD = {
@@ -270,7 +271,7 @@ export default function SubscriptionPlanManager({ view = 'grid', onViewChange, o
           ))}
         </div>
 
-        <div className="command-toolbar grid grid-cols-1 lg:grid-cols-[minmax(240px,1fr)_190px_190px] gap-3 items-end">
+        <div className="command-toolbar grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_190px_auto] gap-3 items-end">
           <label className="grid gap-1 text-sm font-semibold">
             Search
             <span className="relative block">
@@ -302,6 +303,7 @@ export default function SubscriptionPlanManager({ view = 'grid', onViewChange, o
               </>}
             </ThemedSelect>
           </Field>
+          {onViewChange && <ViewModeToggle value={view === 'grid' ? 'card' : 'list'} onChange={mode => onViewChange(mode === 'card' ? 'grid' : 'list')} modes={['list', 'card']} className="justify-self-start lg:justify-self-end" />}
         </div>
 
         <div className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>

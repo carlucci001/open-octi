@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser, updateCurrentUserProfile } from '@/lib/auth'
 import { logAuditEvent } from '@/lib/auditLog'
+import { chatHistoryScope } from '@/lib/chat-conversation'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request) {
   const user = await getCurrentUser(request)
   if (!user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
-  return NextResponse.json({ ok: true, user })
+  return NextResponse.json({ ok: true, user: { ...user, chatScope: chatHistoryScope(user) } })
 }
 
 export async function PUT(request) {
@@ -34,7 +35,7 @@ export async function PUT(request) {
       targetName: user.username,
       meta: { changed: Object.keys(body || {}).filter(k => !/password/i.test(k)) },
     })
-    return NextResponse.json({ ok: true, user: updated })
+    return NextResponse.json({ ok: true, user: { ...updated, chatScope: chatHistoryScope(updated) } })
   } catch (e) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 400 })
   }

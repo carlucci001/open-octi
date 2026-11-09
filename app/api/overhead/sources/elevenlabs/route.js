@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { findCredential } from '@/lib/vault'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -16,10 +15,7 @@ const TIER_PRICES = {
 
 function getApiKey() {
   try {
-    const filePath = path.join(process.cwd(), 'data', 'credentials.json')
-    const raw = fs.readFileSync(filePath, 'utf8')
-    const { credentials } = JSON.parse(raw)
-    const entry = credentials.find(c => c.name === 'ElevenLabs') || credentials.find(c => c.id === 'cred_005')
+    const entry = findCredential('ElevenLabs') || findCredential(c => c.id === 'cred_005')
     if (!entry) return null
     const field = entry.fields.find(f => /api/i.test(f.label))
     return field?.value || null

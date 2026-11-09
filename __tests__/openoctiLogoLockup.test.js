@@ -73,6 +73,25 @@ describe('OpenOcti octopus logo lockup', () => {
     expect(rendered).not.toMatch(/Command Center|Farrington/i)
   })
 
+  it('publishes dedicated OctiCC product branding', () => {
+    expect(brandAssetsFor({ FCC_EDITION: 'octicc' })).toMatchObject({
+      openOcti: false,
+      octiCc: true,
+      editionName: 'Octi Command Center',
+      productName: 'OctiCC',
+      loaderLogo: '/octicc/octopus-mark.png',
+    })
+
+    expect(brandMetadataFor({ FCC_EDITION: 'octicc' })).toMatchObject({
+      title: 'OctiCC',
+      applicationName: 'Octi Command Center',
+      appleWebApp: { title: 'Octi Command Center' },
+    })
+
+    expect(fs.readFileSync(path.join(root, 'app/login/page.js'), 'utf8'))
+      .toContain('const EDITION_NAME = BRAND_ASSETS.productName')
+  })
+
   it('routes every active app brand surface through the edition asset map', () => {
     const contracts = {
       'app/login/page.js': 'BRAND_ASSETS.loaderLogo',
@@ -85,7 +104,7 @@ describe('OpenOcti octopus logo lockup', () => {
       'app/favicon.ico/route.js': 'brand.faviconIco',
       'lib/emailSignature.js': 'OPENOCTI_EMAIL_LOGOS',
       'lib/signedDocumentArchive.js': "['openocti', 'logo-horizontal.png']",
-      'app/api/documents/route.js': "['openocti', 'logo-horizontal.png']",
+      'lib/documentPdf.js': "['openocti', 'logo-horizontal.png']",
     }
 
     for (const [file, marker] of Object.entries(contracts)) {

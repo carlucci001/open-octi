@@ -1,6 +1,6 @@
 'use client'
 import ThemedSelect from '../components/ThemedSelect'
-import { useState, useEffect, useMemo } from 'react'
+import { Fragment, useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import ProjectDetail from './ProjectDetail'
 import PageHeader from '../components/PageHeader'
 import { Paginator, usePagination } from '../components/Paginator'
@@ -8,6 +8,7 @@ import BoardWorkbench from '../components/BoardWorkbench'
 import ViewModeToggle from '../components/ViewModeToggle'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
+import InlineRecordDrawer from '../components/InlineRecordDrawer'
 import { FolderKanban } from 'lucide-react'
 import OpenOctiEmptyState from '../components/OpenOctiEmptyState'
 import { isOpenOcti } from '@/lib/edition'
@@ -272,7 +273,7 @@ function ProgressBar({ value }) {
   )
 }
 
-function ProjectCard({ p, tasks, onEdit, onDelete, onOpen, selected = false, onCheck }) {
+function ProjectCard({ p, tasks, onEdit, onDelete, onOpen, selected = false, onCheck, detailOpen = false, drawerId }) {
   const st = STATUS.find(s => s.id === p.status) || STATUS[0]
   const pr = PRIORITY.find(x => x.id === p.priority) || PRIORITY[1]
   const due = dueLabel(p.dueDate, p.status)
@@ -282,14 +283,15 @@ function ProjectCard({ p, tasks, onEdit, onDelete, onOpen, selected = false, onC
 
   return (
     <div className="rounded-lg p-3 cursor-pointer transition-all"
+      data-record-container="project"
       style={{ background: 'var(--surface)', border: selected ? '2px solid var(--accent)' : '1px solid var(--border)' }}
-      onClick={onOpen || onEdit}
+      onClick={event => { if (event.target.closest('button, input, a, select, textarea')) return; onOpen ? onOpen(event.currentTarget.querySelector('[data-project-trigger]')) : onEdit?.() }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}>
       <div className="flex items-start gap-3 mb-2">
         {onCheck && <input type="checkbox" checked={selected} onChange={onCheck} onClick={e => e.stopPropagation()} aria-label={`Select ${p.name}`} style={{ marginTop: 4 }} />}
         <div className="min-w-0 flex-1">
-          <div className="text-base font-semibold truncate" style={{ color: 'var(--text)' }}>{p.name}</div>
+          <button type="button" data-project-trigger={p.id} aria-label={`Open ${p.name} project details`} aria-expanded={detailOpen} aria-controls={detailOpen ? drawerId : undefined} className="text-base font-semibold truncate text-left block w-full" style={{ color: 'var(--text)', background: 'transparent', border: 0, padding: 0 }} onClick={event => { event.stopPropagation(); onOpen ? onOpen(event.currentTarget) : onEdit?.() }}>{p.name}</button>
           <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{getAccountName(p)}</div>
         </div>
         <span className="text-[9px] font-bold uppercase tracking-wider shrink-0" style={{ color: pr.color }}>{pr.label}</span>
@@ -328,7 +330,7 @@ function ProjectCard({ p, tasks, onEdit, onDelete, onOpen, selected = false, onC
   )
 }
 
-function KanbanColumn({ status, statuses, projects, tasks, onDrop, onEdit, onDelete, onOpen }) {
+function KanbanColumn({ status, statuses, projects, tasks, onDrop, onEdit, onDelete, onOpen, selectedProject, renderDrawer }) {
   const [over, setOver] = useState(false)
   return (
     <div
@@ -345,9 +347,13 @@ function KanbanColumn({ status, statuses, projects, tasks, onDrop, onEdit, onDel
         <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--surface2)', color: 'var(--text-muted)' }}>{projects.length}</span>
       </div>
       <div className="space-y-2">
-        {projects.map(p => (
+        {projects.map(p => {
+          const detailOpen = selectedProject?.id === p.id
+          const drawerId = `project-detail-${p.id}`
+          return (
           <div key={p.id} draggable onDragStart={e => e.dataTransfer.setData('text/plain', p.id)}>
-            <ProjectCard p={p} tasks={tasks} onOpen={onOpen ? () => onOpen(p.id) : undefined} onEdit={() => onEdit(p)} onDelete={() => onDelete(p)} />
+            <ProjectCard p={p} tasks={tasks} detailOpen={detailOpen} drawerId={drawerId} onOpen={onOpen ? trigger => onOpen(p.id, trigger) : undefined} onEdit={() => onEdit(p)} onDelete={() => onDelete(p)} />
+            {detailOpen && renderDrawer?.(p, drawerId)}
             <ThemedSelect
               className="board-card-move mt-2"
               value=""
@@ -366,7 +372,8 @@ function KanbanColumn({ status, statuses, projects, tasks, onDrop, onEdit, onDel
               ))}
             </ThemedSelect>
           </div>
-        ))}
+          )
+        })}
         {projects.length === 0 && <div className="text-center text-[11px] py-8" style={{ color: 'var(--text-muted)' }}>No projects</div>}
       </div>
     </div>
@@ -394,20 +401,23 @@ export default function ProjectsManager({ onNavigate }) {
   const [deleting, setDeleting] = useState(null)
   const [selectedProjects, setSelectedProjects] = useState(new Set())
   const [selectedProjectId, setSelectedProjectId] = useState(null)
+  const lastDetailTriggerRef = useRef(null)
 
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('fcc-projects-selected') : null
     if (saved) setSelectedProjectId(saved)
   }, [])
 
-  const openProject = (id) => {
+  const openProject = useCallback((id, trigger = null) => {
+    lastDetailTriggerRef.current = trigger || document.querySelector(`[data-project-trigger="${id}"]`)
     setSelectedProjectId(id)
     try { localStorage.setItem('fcc-projects-selected', id) } catch {}
-  }
-  const closeProject = () => {
+  }, [])
+  const closeProject = useCallback(() => {
     setSelectedProjectId(null)
     try { localStorage.removeItem('fcc-projects-selected') } catch {}
-  }
+    requestAnimationFrame(() => lastDetailTriggerRef.current?.focus?.({ preventScroll: true }))
+  }, [])
 
   const refresh = async () => {
     setLoadError('')
@@ -457,7 +467,7 @@ export default function ProjectsManager({ onNavigate }) {
     }
     window.addEventListener('fcc:select-record', handler)
     return () => window.removeEventListener('fcc:select-record', handler)
-  }, [projects])
+  }, [projects, openProject])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -465,7 +475,7 @@ export default function ProjectsManager({ onNavigate }) {
     if (!pending || Date.now() - pending.ts > 10000) return
     const match = projects.find(p => p.id === pending.id)
     if (match) { openProject(match.id); window.__fccPendingProjectSelect = null }
-  }, [projects])
+  }, [projects, openProject])
 
   const save = async (form) => {
     const action = form.id ? 'update' : 'add'
@@ -559,7 +569,15 @@ export default function ProjectsManager({ onNavigate }) {
     return out
   }, [projects, search, filterStatus, filterScope, filterAccount, filterPriority, filterDue, filterTag, sortBy, sortDir])
 
-  const { page, setPage, pageSize, setPageSize, paginated } = usePagination(filtered, 25)
+  const selectedProject = selectedProjectId ? projects.find(p => p.id === selectedProjectId) : null
+  const visibleProjects = useMemo(() => selectedProject && !filtered.some(project => project.id === selectedProject.id) ? [selectedProject, ...filtered] : filtered, [filtered, selectedProject])
+  const { page, setPage, pageSize, setPageSize, paginated } = usePagination(visibleProjects, 25)
+
+  useEffect(() => {
+    if (!selectedProject) return
+    const index = visibleProjects.findIndex(project => project.id === selectedProject.id)
+    if (index >= 0) setPage(Math.floor(index / pageSize) + 1)
+  }, [selectedProject, visibleProjects, pageSize, setPage])
 
   useEffect(() => {
     setPage(1)
@@ -589,25 +607,18 @@ export default function ProjectsManager({ onNavigate }) {
   const select = { background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 10px', borderRadius: 6, fontSize: 12, outline: 'none' }
   const fmtUSD = n => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
-  const selectedProject = selectedProjectId ? projects.find(p => p.id === selectedProjectId) : null
-  if (selectedProject) {
-    const accountName = getAccountName(selectedProject) || accounts.find(a => a.id === getAccountId(selectedProject))?.name
-    return (
-      <>
-        <ProjectDetail
-          project={selectedProject}
-          accountName={accountName}
-          onBack={closeProject}
-          onEdit={(p) => setEditing(p)}
-          onRefresh={refresh}
-        />
-        {editing && (
-          <ProjectForm project={editing} accounts={accounts}
-            onSave={save} onClose={() => setEditing(null)} />
-        )}
-      </>
-    )
-  }
+  const renderProjectDrawer = (project, drawerId, className = '') => (
+    <InlineRecordDrawer id={drawerId} label={`${project.name} project details`} onClose={closeProject} className={className}>
+      <ProjectDetail
+        project={project}
+        accountName={getAccountName(project) || accounts.find(a => a.id === getAccountId(project))?.name}
+        embedded
+        onBack={closeProject}
+        onEdit={setEditing}
+        onRefresh={refresh}
+      />
+    </InlineRecordDrawer>
+  )
 
   return (
     <div className="command-workspace p-6">
@@ -616,7 +627,6 @@ export default function ProjectsManager({ onNavigate }) {
         title="Projects"
         subtitle={`${stats.total} total / ${stats.active} active / ${fmtUSD(stats.totalValue)} pipeline`}
         actions={<button className="px-3 rounded-lg text-sm font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-text)', minHeight: 40 }} onClick={() => setShowAdd(true)}>New Project</button>}
-        viewToggle={<ViewModeToggle value={view} onChange={setView} modes={['list', 'card', 'kanban']} />}
       />
 
       <div className="command-stat-grid grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
@@ -635,6 +645,7 @@ export default function ProjectsManager({ onNavigate }) {
       </div>
 
       <div className="command-toolbar flex gap-2 items-center flex-wrap mb-4">
+        <ViewModeToggle value={view} onChange={setView} modes={['list', 'card', 'kanban']} />
         <input style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: 8, fontSize: 13, outline: 'none', flex: 1, minWidth: 200 }}
           placeholder="Search projects, accounts, tags..." value={search} onChange={e => setSearch(e.target.value)} />
 
@@ -698,7 +709,7 @@ export default function ProjectsManager({ onNavigate }) {
             <button className="px-4 py-2 rounded-lg text-sm font-medium" style={{ background: 'var(--accent)', color: 'var(--accent-text)' }} onClick={() => { setLoading(true); refresh() }}>Retry</button>
           </div>
         )
-        : filtered.length === 0 ? (
+        : visibleProjects.length === 0 ? (
           projects.length === 0 && isOpenOcti() ? <OpenOctiEmptyState objectType="projects" title="Plan the work" description="Projects connect delivery milestones and tasks to the accounts you serve." /> : <div className="text-center py-16">
             <div className="text-4xl mb-3">P</div>
             <p style={{ color: 'var(--text-muted)' }}>{projects.length === 0 ? 'No projects yet.' : 'No projects match these filters.'}</p>
@@ -706,14 +717,23 @@ export default function ProjectsManager({ onNavigate }) {
         ) : view === 'card' ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {paginated.map(p => <ProjectCard key={p.id} p={p} tasks={tasks} selected={selectedProjects.has(p.id)} onCheck={() => setSelectedProjects(s => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n })} onOpen={() => openProject(p.id)} onEdit={() => setEditing(p)} onDelete={() => del(p)} />)}
+              {paginated.map(p => {
+                const detailOpen = selectedProject?.id === p.id
+                const drawerId = `project-detail-${p.id}`
+                return (
+                  <Fragment key={p.id}>
+                    <ProjectCard p={p} tasks={tasks} detailOpen={detailOpen} drawerId={drawerId} selected={selectedProjects.has(p.id)} onCheck={() => setSelectedProjects(s => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n })} onOpen={trigger => openProject(p.id, trigger)} onEdit={() => setEditing(p)} onDelete={() => del(p)} />
+                    {detailOpen && renderProjectDrawer(p, drawerId, 'sm:col-span-2 lg:col-span-3')}
+                  </Fragment>
+                )
+              })}
             </div>
-            <Paginator total={filtered.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="projects" />
+            <Paginator total={visibleProjects.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="projects" />
           </>
         ) : view === 'list' ? (
           <>
-            <div className="rounded-xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <table className="w-full text-sm">
+            <div className="rounded-xl overflow-x-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <table className="project-collection-table w-full text-sm">
                 <thead>
                   <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
                     <th className="text-left px-4 py-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)', width: 36 }}></th>
@@ -733,12 +753,15 @@ export default function ProjectsManager({ onNavigate }) {
                     const pr = PRIORITY.find(x => x.id === p.priority) || PRIORITY[1]
                     const due = dueLabel(p.dueDate, p.status)
                     const budget = Number(p.budget) || (Number(p.rate) || 0) * (Number(p.estimatedHours) || 0)
+                    const detailOpen = selectedProject?.id === p.id
+                    const drawerId = `project-detail-${p.id}`
                     return (
-                      <tr key={p.id} onClick={() => openProject(p.id)} className="cursor-pointer" style={{ borderBottom: '1px solid var(--border)', background: selectedProjects.has(p.id) ? 'var(--accent-soft)' : '' }}
+                      <Fragment key={p.id}>
+                      <tr data-record-container="project" onClick={event => { if (event.target.closest('button, input, a, select, textarea')) return; openProject(p.id, event.currentTarget.querySelector('[data-project-trigger]')) }} className="cursor-pointer" style={{ borderBottom: '1px solid var(--border)', background: selectedProjects.has(p.id) ? 'var(--accent-soft)' : '' }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
                         onMouseLeave={e => { e.currentTarget.style.background = '' }}>
                         <td className="px-4 py-3"><input type="checkbox" checked={selectedProjects.has(p.id)} onChange={() => setSelectedProjects(s => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n })} onClick={e => e.stopPropagation()} aria-label={`Select ${p.name}`} /></td>
-                        <td className="px-4 py-3 font-semibold" style={{ color: 'var(--text)' }}>{p.name}</td>
+                        <td className="px-4 py-3 font-semibold" style={{ color: 'var(--text)' }}><button type="button" data-project-trigger={p.id} aria-label={`Open ${p.name} project details`} aria-expanded={detailOpen} aria-controls={detailOpen ? drawerId : undefined} className="font-semibold truncate text-left block w-full" style={{ color: 'var(--text)', background: 'transparent', border: 0, padding: 0 }} onClick={event => { event.stopPropagation(); openProject(p.id, event.currentTarget) }}>{p.name}</button></td>
                         <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>{getAccountName(p)}</td>
                         <td className="px-4 py-3"><span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: st.bg, color: st.color }}>{st.label}</span></td>
                         <td className="px-4 py-3"><span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: pr.color }}>{pr.label}</span></td>
@@ -758,12 +781,18 @@ export default function ProjectsManager({ onNavigate }) {
                           </div>
                         </td>
                       </tr>
+                      {detailOpen && (
+                        <tr className="project-detail-drawer-row">
+                          <td colSpan={9} className="p-3">{renderProjectDrawer(p, drawerId)}</td>
+                        </tr>
+                      )}
+                      </Fragment>
                     )
                   })}
                 </tbody>
               </table>
             </div>
-            <Paginator total={filtered.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="projects" />
+            <Paginator total={visibleProjects.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="projects" />
           </>
         ) : (
           <>
@@ -773,10 +802,12 @@ export default function ProjectsManager({ onNavigate }) {
                   statuses={STATUS}
                   projects={paginated.filter(p => p.status === s.id)}
                   tasks={tasks}
+                  selectedProject={selectedProject}
+                  renderDrawer={renderProjectDrawer}
                   onDrop={moveStatus} onEdit={setEditing} onDelete={del} onOpen={openProject} />
               ))}
             </BoardWorkbench>
-            <Paginator total={filtered.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="projects" />
+            <Paginator total={visibleProjects.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="projects" />
           </>
         )
       }

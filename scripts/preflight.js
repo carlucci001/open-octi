@@ -1,3 +1,5 @@
+// data/credentials.json is gone; the credential vault is stored in SQLite.
+// Legacy one-off: migrate to lib/vault.js before using the encrypted vault.
 // Preflight check — run before any demo. Verifies every external dependency is alive.
 // Usage: npm run preflight
 //

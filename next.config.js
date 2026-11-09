@@ -3,66 +3,16 @@ const { execSync } = require('node:child_process')
 const path = require('node:path')
 
 const isProd = process.env.NODE_ENV === 'production'
-const isOpenOcti = String(process.env.FCC_EDITION || '').trim().toLowerCase() === 'openocti'
+const requestedEdition = String(process.env.FCC_EDITION || '').trim().toLowerCase()
+const edition = ['openocti', 'octicc'].includes(requestedEdition) ? requestedEdition : 'commandcenter'
+const isOpenOcti = edition === 'openocti'
+const isOctiCc = edition === 'octicc'
 const openOctiStub = path.resolve(__dirname, 'lib/openocti/closed-module-stub.cjs')
-const closedModuleRequests = [
-  './lib/support/customer',
-  './lib/instrumentation-node',
-  './support.js',
-  './support/customer',
-  './SupportAccessSettings',
-  '@/lib/support/gateway',
-  '@/app/api/platforms/support/route',
-  '@/lib/deep-research',
-  '@/lib/deerflow-studio',
-  '@/lib/deerflow-studio-voice',
-  '@/lib/deerflow-tools',
-  '@/lib/deerflow-voice-turn',
-  '@/lib/portal-automation-provisioning',
-  '@/lib/portal-auth',
-  '@/lib/portal-provisioning',
-  '@/lib/productCheckout',
-  './productCheckout',
-  '@/lib/research-dossiers',
-  '@/lib/social-trend-research',
-  '@/lib/stripe-billing-catalog.mjs',
-  '@/lib/stripe-billing-catalog-source',
-  '@/lib/stripe-subscription-lifecycle',
-  // WO-8: imports that can remain in shared Command Center modules resolve to
-  // the unavailable capability stub in OpenOcti builds.
-  './platforms/PlatformsModule',
-  '../../platforms/PlatformAdminWorkspace',
-  './platforms/adminClient',
-  './platforms/registry',
-  './platforms/ssrf',
-  './VideoHub/sync',
-  '@/lib/platforms/adminClient',
-  '@/lib/platforms/adminContract',
-  '@/lib/platforms/manifest',
-  '@/lib/platforms/registry',
-  '@/lib/platforms/ssrf',
-  '@/lib/platforms/surfaceSelection',
-  '@/lib/SearchTools3-client',
-  '@/lib/SearchTools3-engagements',
-  '@/lib/octiccCatalog',
-  '@/lib/SearchTools3-engagements',
-  '@/lib/VideoHub/channel',
-  '@/lib/VideoHub/client',
-  '@/lib/VideoHub/sync',
-  '@/lib/VideoHub/webhook',
-  '@/lib/ContentStudio-web-agent',
-  '@/lib/newsroom-director',
-  // Portal helpers for the closed provisioning capability (WO-9): the shared
-  // agent execute route imports them, so OpenOcti builds resolve them to the stub.
-  '@/lib/client-onboarding',
-  '@/lib/portal-cheryl-usage',
-  // New-business outreach engine: not reviewed for public release, so shared
-  // automation files resolve it to the stub in OpenOcti builds.
-  './outreach-runner',
-  '@/lib/outreach-runner',
-  './outreach-store',
-  '@/lib/outreach-store',
-]
+// Closed-module requests live in one JSON file so next.config.js (webpack) and
+// vitest.config.js alias exactly the same list. Add new requests there, and add
+// matching no-op exports to lib/openocti/closed-module-stub.cjs.
+const { closedModuleRequests, octiCcAllowedClosedRequests: octiCcAllowedList } = require('./lib/openocti/closed-module-requests.json')
+const octiCcAllowedClosedRequests = new Set(octiCcAllowedList)
 
 // Build stamp shown in the sidebar footer as "Version 2.1.<build> · <commit>".
 // Baked in at build time so Carl can confirm at a glance which push is live
@@ -84,18 +34,20 @@ const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   env: {
-    NEXT_PUBLIC_APP_VERSION: isOpenOcti ? require('./package.json').version : '2.1',
+    NEXT_PUBLIC_APP_VERSION: (isOpenOcti || isOctiCc) ? require('./package.json').version : '2.1',
     NEXT_PUBLIC_FCC_BUILD_NUMBER: BUILD_NUMBER,
     NEXT_PUBLIC_FCC_BUILD_COMMIT: BUILD_COMMIT,
     NEXT_PUBLIC_FCC_BUILT_AT: BUILT_AT,
-    NEXT_PUBLIC_FCC_EDITION: isOpenOcti ? 'openocti' : 'commandcenter',
+    NEXT_PUBLIC_FCC_EDITION: edition,
   },
   webpack(config) {
-    config.resolve.alias['@closed/research-page'] = isOpenOcti
+    config.resolve.alias['@closed/research-page'] = (isOpenOcti || isOctiCc)
       ? path.resolve(__dirname, 'app/components/OpenOctiUnavailable.js')
       : path.resolve(__dirname, 'app/research/page.js')
-    if (isOpenOcti) {
-      for (const request of closedModuleRequests) config.resolve.alias[request] = openOctiStub
+    if (isOpenOcti || isOctiCc) {
+      for (const request of closedModuleRequests) {
+        if (isOpenOcti || !octiCcAllowedClosedRequests.has(request)) config.resolve.alias[request] = openOctiStub
+      }
     }
     return config
   },
@@ -104,7 +56,7 @@ const nextConfig = {
   },
   experimental: {
     instrumentationHook: true,
-    serverComponentsExternalPackages: ['pdfkit', 'better-sqlite3', '@xenova/transformers', 'onnxruntime-node'],
+    serverComponentsExternalPackages: ['pdfkit', 'better-sqlite3', '@xenova/transformers', 'onnxruntime-node', 'sqlite-vec'],
   },
   async headers() {
     return [
