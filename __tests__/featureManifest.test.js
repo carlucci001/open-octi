@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { buildFeatureManifest, capabilityStatus, capabilityForPath, requireCapability, requiredCapabilityReport } from '../lib/feature-manifest'
 import { commandCenterSectionsFor } from '../lib/commandCenterNavigation'
+import { NAVIGATION_MANIFEST } from '../lib/navigation-manifest.js'
 
 describe('OpenOcti administration navigation', () => {
   it('resolves old route names and voice requests to the Admin label', async () => {
@@ -26,8 +27,16 @@ describe('OpenOcti administration navigation', () => {
       label: 'System > Admin',
       aliases: expect.arrayContaining(['admin', 'control-services', 'control services', 'service catalog']),
     })
-    expect(commandCenterSectionsFor({ FCC_EDITION: 'commandcenter' }).some(section => section.id === 'control-services')).toBe(true)
   })
+
+  // Only meaningful in the private tree: the OpenOcti export generates a public
+  // navigation manifest without the closed control-services destination.
+  it.skipIf(!NAVIGATION_MANIFEST.destinations.some(item => item.id === 'control-services'))(
+    'Command Center keeps the legacy control-services destination',
+    () => {
+      expect(commandCenterSectionsFor({ FCC_EDITION: 'commandcenter' }).some(section => section.id === 'control-services')).toBe(true)
+    },
+  )
 })
 
 describe('external capability manifest', () => {

@@ -22,6 +22,12 @@ function mimeFromExt(name) {
     mov: 'video/quicktime',
     webm: 'video/webm',
     m4v: 'video/x-m4v',
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    ogg: 'audio/ogg',
+    flac: 'audio/flac',
+    m4a: 'audio/mp4',
+    aac: 'audio/aac',
   }
   return map[ext] || 'application/octet-stream'
 }

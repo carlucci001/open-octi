@@ -158,7 +158,45 @@ async function twilio(credential) {
   }
 }
 
+// OpenAI organization costs: GPT-Live voice minutes, Codex, every project. Only an
+// organization admin key (sk-admin-…) can read /v1/organization/costs — project keys
+// cannot — so a credential without one reports no_key rather than an error.
+async function openAi(credential) {
+  const admin = (credential.fields || []).map(field => String(field.value || '').trim()).find(value => value.startsWith('sk-admin-'))
+  if (!admin) return { status: 'no_key', note: 'Needs an organization admin key (sk-admin-…) on this credential to read organization costs; project keys cannot.' }
+  const now = new Date()
+  const dayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 1000
+  const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1) / 1000
+  const start = Math.min(monthStart, dayStart - 29 * 86400)
+  const result = await jsonFetch(`https://api.openai.com/v1/organization/costs?start_time=${start}&bucket_width=1d&limit=31`, { headers: { Authorization: `Bearer ${admin}` } })
+  if (!result.ok) return { status: 'error', error: safeError(result) }
+  const buckets = Array.isArray(result.body?.data) ? result.body.data : []
+  const bucketTotal = bucket => (Array.isArray(bucket?.results) ? bucket.results : []).reduce((sum, item) => sum + Number(item?.amount?.value || 0), 0)
+  const sumSince = since => buckets.filter(bucket => Number(bucket?.start_time) >= since).reduce((sum, bucket) => sum + bucketTotal(bucket), 0)
+  const round = value => Math.round(value * 10000) / 10000
+  return {
+    status: 'active',
+    plan: 'Pay as you go',
+    metricKind: 'provider_spend',
+    scope: 'OpenAI organization (all projects)',
+    organizationWide: true,
+    authoritative: true,
+    attribution: { level: 'none', note: 'OpenAI reports organization cost per UTC day, not the Command Center agent or workflow behind it.' },
+    usage: {
+      meterAvailable: true,
+      costToday: round(sumSince(dayStart)),
+      cost7d: round(sumSince(dayStart - 6 * 86400)),
+      cost30d: round(sumSince(dayStart - 29 * 86400)),
+      costMonth: round(sumSince(monthStart)),
+    },
+    limits: {},
+    note: 'Organization costs from the OpenAI admin API in 1-day UTC buckets (GPT-Live voice, Codex, every project). Today lags real time by up to an hour.',
+    dashboardUrl: 'https://platform.openai.com/settings/organization/usage',
+  }
+}
+
 const ADAPTERS = [
+  { matches: name => /open\s*ai|chatgpt/i.test(name), provider: 'OpenAI', run: openAi },
   { matches: name => /open\s*router/i.test(name), provider: 'OpenRouter', run: openRouter },
   { matches: name => /eleven\s*labs?/i.test(name), provider: 'ElevenLabs', run: elevenLabs },
   { matches: name => /hugging\s*face|huggingface|\bhf\b/i.test(name), provider: 'Hugging Face', run: huggingFace },
@@ -186,6 +224,17 @@ async function collect() {
       return { id: credential.id, name: credential.name, provider: adapter.provider, category: credential.category, status: 'error', error: error.message || 'Provider check failed' }
     }
   }))
+  // An organization-wide figure must be counted once even when several credentials
+  // of that provider carry an admin key; later duplicates become informational.
+  const seenOrganizations = new Set()
+  for (const record of results) {
+    if (!record.organizationWide || record.status !== 'active') continue
+    if (seenOrganizations.has(record.provider)) {
+      record.status = 'duplicate'
+      record.note = `Already counted under another ${record.provider} credential (organization-wide figure).`
+      delete record.usage
+    } else seenOrganizations.add(record.provider)
+  }
   return { results, fetchedAt: new Date().toISOString(), cacheSeconds: CACHE_MS / 1000 }
 }
 

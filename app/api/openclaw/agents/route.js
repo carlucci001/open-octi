@@ -3,9 +3,10 @@ import { listAgents, saveAgent, deleteAgent, cloneAgent, enablePreset, getBackup
 import { restoreOpenclawBackup } from '@/lib/openclaw-config'
 import { requireCapability } from '@/lib/permissions'
 import { configuredMachineSecret, machineSecretMatches } from '@/lib/machine-secret'
-import { isOpenOcti } from '@/lib/edition'
+import { isOctiCc, isOpenOcti } from '@/lib/edition'
 import { listOpenOctiKeyStatus } from '@/lib/openocti-keys'
 import { OPENOCTI_VOICE_STARTERS, openOctiVoiceProfile } from '@/lib/openocti-voice-routing'
+import { visibleOctiCcAgents } from '@/lib/octiccAgentRoster'
 
 function hasOpenClawKey(request) {
   const allowed = [
@@ -29,6 +30,9 @@ export async function GET(request) {
 
   try {
     const data = await listAgents()
+    if (isOctiCc() && Array.isArray(data.agents)) {
+      data.agents = visibleOctiCcAgents(data.agents)
+    }
     if (isOpenOcti() && Array.isArray(data.agents)) {
       const providers = listOpenOctiKeyStatus()
       data.agents = data.agents.map(agent => OPENOCTI_VOICE_STARTERS.some(starter => starter.id === (agent.id === 'octi' ? 'octi-guide' : agent.id))

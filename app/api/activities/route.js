@@ -60,8 +60,12 @@ export async function POST(request) {
   }
 
   if (body.action === 'delete') {
-    remove('activities', body.id)
-    return NextResponse.json({ ok: true })
+    if (typeof body.id !== 'string' || !body.id.trim()) {
+      return NextResponse.json({ error: 'activity id required' }, { status: 400 })
+    }
+    const removed = remove('activities', body.id)
+    if (!removed) return NextResponse.json({ error: 'activity not found' }, { status: 404 })
+    return NextResponse.json({ ok: true, id: body.id })
   }
 
   if (body.action === 'clear_for_account') {

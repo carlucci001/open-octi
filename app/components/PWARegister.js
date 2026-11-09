@@ -1,7 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 
-const SERVICE_WORKER_VERSION = '2026-06-23-voice-routing-hotfix'
+const SERVICE_WORKER_VERSION = '2026-10-15-kie-continuity-v1'
 
 async function clearStaleCaches() {
   try {

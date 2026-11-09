@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
+import { GoogleGenAI } from '@google/genai'
 import { getCred } from '@/lib/agent-creds'
-import { readData } from '@/lib/dataStore'
 import { resolvePublicWidgetAgent } from '@/lib/public-agent-widget'
 import { consumePublicEndpointQuota, PUBLIC_WIDGET_RATE_LIMITS } from '@/lib/public-endpoint-rate-limit'
 
@@ -14,19 +14,24 @@ const CORS_HEADERS = {
 }
 
 const PUBLIC_WIDGET_VOICE_BINDINGS = {
+  'farrington-doreen': {
+    voice: 'Aoede',
+    name: 'Doreen',
+    firstName: 'Doreen',
+  },
   'wnctimes-doreen': {
-    agentId: 'agent_4101kw8e8576ea88k8k0bbrd3gaw',
-    voiceName: 'Cassidy',
+    voice: 'Sulafat',
     name: 'Jessica',
     firstName: 'Jessica',
   },
   'ContentStudio-web': {
-    agentId: 'agent_4801kwavtfgcepgbfnqncqbtw7tk',
-    voiceName: 'Bruce',
+    voice: 'Charon',
     name: 'Bruce',
     firstName: 'Bruce',
   },
 }
+
+const GEMINI_LIVE_MODEL = 'gemini-3.8-live'
 
 function json(body, init = {}) {
   return NextResponse.json(body, {
@@ -56,31 +61,84 @@ export async function GET(request) {
     return json({ ok: false, error: 'Voice is not enabled for this public widget.' }, { status: 403 })
   }
 
-  const roster = readData('voice-agent-roster.json') || {}
-  const binding = roster[profile.id] || PUBLIC_WIDGET_VOICE_BINDINGS[profile.id]
-  if (!binding?.agentId) {
-    return json({ ok: false, error: 'This public agent is not bound to ElevenLabs yet.' }, { status: 404 })
-  }
+  const binding = PUBLIC_WIDGET_VOICE_BINDINGS[profile.id]
+  if (!binding?.voice) return json({ ok: false, error: 'This public agent does not have a live voice profile.' }, { status: 404 })
 
-  const cred = getCred('elevenlabs') || getCred('eleven')
-  if (!cred?.key) return json({ ok: false, error: 'ElevenLabs is not configured.' }, { status: 503 })
+  const cred = getCred('gemini') || getCred('google gemini') || getCred('google')
+  const freeCred = getCred('gemini free') || getCred('google gemini free')
+  const paidKey = String(cred?.key || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim()
+  const freeKey = String(freeCred?.key || '').trim()
+  const primaryKey = freeKey || paidKey
+  if (!primaryKey) return json({ ok: false, error: 'Gemini Live is not configured.' }, { status: 503 })
+
+  const speechConfig = { voiceConfig: { prebuiltVoiceConfig: { voiceName: binding.voice } } }
+  const systemInstruction = {
+    parts: [{
+      text: `${profile.systemPrompt || `You are ${profile.name}, a public-facing assistant.`}\n\nVoice-session rules: Speak naturally and concisely. Stay in the named persona. You may explain services and guide the visitor to the visible contact controls, but do not claim that you submitted, booked, emailed, saved, or changed anything.`,
+    }],
+  }
+  const setup = {
+    model: `models/${GEMINI_LIVE_MODEL}`,
+    generationConfig: { responseModalities: ['AUDIO'], speechConfig },
+    systemInstruction,
+    inputAudioTranscription: {},
+    outputAudioTranscription: {},
+    contextWindowCompression: { slidingWindow: {} },
+  }
+  const openingPrompt = [
+    'The visitor just started Live Voice.',
+    `Begin now with this greeting: "${profile.greeting}"`,
+    'Do not wait for the visitor to speak first.',
+    'Say the greeting once, then pause and listen.',
+  ].join(' ')
 
   try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(binding.agentId)}`, {
-      headers: { 'xi-api-key': cred.key },
-      cache: 'no-store',
-    })
-    if (!res.ok) {
-      return json({ ok: false, error: `Voice provider request failed (${res.status}).` }, { status: 502 })
+    const now = Date.now()
+    const tokenRequest = {
+      config: {
+        uses: 1,
+        expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
+        newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
+        liveConnectConstraints: {
+          model: GEMINI_LIVE_MODEL,
+          config: {
+            responseModalities: ['AUDIO'],
+            speechConfig,
+            systemInstruction,
+            inputAudioTranscription: {},
+            outputAudioTranscription: {},
+            contextWindowCompression: setup.contextWindowCompression,
+          },
+        },
+        httpOptions: { apiVersion: 'v1alpha' },
+      },
     }
-    const data = await res.json()
+    const issueToken = apiKey => new GoogleGenAI({ apiKey, httpOptions: { apiVersion: 'v1alpha' } }).authTokens.create(tokenRequest)
+    let billingRoute = freeKey ? 'free-primary' : 'configured-primary'
+    let token
+    try {
+      token = await issueToken(primaryKey)
+    } catch (error) {
+      const quotaLimited = Number(error?.status || error?.code) === 429
+        || /resource[_ -]?exhausted|quota|rate.?limit/i.test(String(error?.message || ''))
+      const canUsePaidFallback = quotaLimited && freeKey && paidKey && freeKey !== paidKey
+      if (!canUsePaidFallback) throw error
+      token = await issueToken(paidKey)
+      billingRoute = 'paid-quota-fallback'
+    }
+    if (!token?.name) return json({ ok: false, error: 'Gemini Live did not issue a session token.' }, { status: 502 })
     return json({
       ok: true,
-      signedUrl: data.signed_url,
+      provider: 'gemini',
+      token: token.name,
+      model: GEMINI_LIVE_MODEL,
+      voice: binding.voice,
+      billingRoute,
+      setup,
       agentName: profile.name,
-      agentId: binding.agentId,
+      openingPrompt,
     })
-  } catch (e) {
-    return json({ ok: false, error: e.message }, { status: 500 })
+  } catch {
+    return json({ ok: false, error: 'Voice service unavailable.' }, { status: 502 })
   }
 }

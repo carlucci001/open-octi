@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { getSectionAgent, resolveWizardAgentSection } from '../../lib/section-agents'
 import { brandAssetsFor } from '@/lib/brand-assets'
+import { createResearchStreamTracker } from '@/lib/research-chat-stream'
+import ResearchChatText from './ResearchChatText'
 const VoiceSession = dynamic(() => import('./VoiceSession'), { ssr: false, loading: () => null })
 
-const STORAGE_KEY = 'fcc-chat-history'
-const STORAGE_VERSION_KEY = 'fcc-chat-history-version'
-const STORAGE_VERSION = 'section-aware-wizard-v1'
+const STORAGE_PREFIX = 'fcc-chat-conversation-v1:'
 const MODEL_KEY = 'fcc-chat-model'
 const AUTO_OPEN_KEY = 'fcc-ai-wizard-auto-open'
 const BRAND_ASSETS = brandAssetsFor()
@@ -302,11 +302,15 @@ function stripDraftLead(content) {
   return out
 }
 
-export default function ChatPanel() {
+export default function ChatPanel({ user = null }) {
   const [open, setOpen] = useState(false)
   const [guideMode, setGuideMode] = useState(false)
   const [openedByHover, setOpenedByHover] = useState(false)
   const [messages, setMessages] = useState([])
+  const chatScope = typeof user?.chatScope === 'string' ? user.chatScope : ''
+  const [historyScope, setHistoryScope] = useState('')
+  const conversationRef = useRef({ id: null, scope: '', generation: 0 })
+  const activeRequestRef = useRef(null)
   // Track which assistant messages we've already saved as leads.
   // Keyed by message index → { savingState: 'idle'|'saving'|'saved'|'error', leadId, error }
   const [savedLeads, setSavedLeads] = useState({})
@@ -341,9 +345,20 @@ export default function ChatPanel() {
   const [voiceStarting, setVoiceStarting] = useState(false)
   const [voiceError, setVoiceError] = useState('')
   const [connectedAgent, setConnectedAgent] = useState(null)
+  const [voiceRoster, setVoiceRoster] = useState([])
   const [autoOpen, setAutoOpen] = useState(true)
   const [activity, setActivity] = useState('')
   const scrollRef = useRef(null)
+  const resetConversation = () => {
+    activeRequestRef.current?.abort()
+    activeRequestRef.current = null
+    conversationRef.current = { ...conversationRef.current, id: crypto.randomUUID(), generation: conversationRef.current.generation + 1 }
+    setMessages([])
+    setSavedLeads({})
+    setInput('')
+    setLoading(false)
+    setActivity('')
+  }
   const wizardSection = wizardSectionOverride || activeSection
   const sectionAgent = getSectionAgent(wizardSection)
   const section = { label: sectionAgent.label, prompts: sectionAgent.prompts }
@@ -363,11 +378,19 @@ export default function ChatPanel() {
   }
   const activeAgentName = (voiceActive || voiceStarting) && connectedAgent?.name ? connectedAgent.name : activeAgent.name
   const selectedModel = MODELS.find(m => m.id === model) || MODELS[0]
-  const liveProviderLabel = BRAND_ASSETS.openOcti
+  const selectedVoiceRuntime = connectedAgent || voiceRoster.find(agent => agent.id === activeAgent.id)
+  // The roster/connected-agent events carry each agent's real provider, model and voice,
+  // so the label names that agent's own voice instead of one hard-coded voice. A GPT-Live
+  // agent that fell back to Gemini reports provider 'gemini' and is labelled as such.
+  const onGptLive = selectedVoiceRuntime?.model === 'gpt-live-1' && (!selectedVoiceRuntime.provider || selectedVoiceRuntime.provider === 'openai')
+  const onGemini = !onGptLive && selectedVoiceRuntime?.provider === 'gemini'
+  const liveProviderLabel = onGptLive ? 'GPT-Live' : BRAND_ASSETS.openOcti
     ? ({ openai: 'OpenAI Realtime', gemini: 'Gemini Live', elevenlabs: 'ElevenLabs ConvAI' }[connectedAgent?.provider] || 'Go Live to connect')
+    : onGemini ? 'Gemini Live'
     : activeAgent.id === 'finance-manager' ? 'OpenAI Realtime' : 'ElevenLabs ConvAI'
-  const liveModelLabel = BRAND_ASSETS.openOcti
+  const liveModelLabel = onGptLive ? ['gpt-live-1', selectedVoiceRuntime.voiceName].filter(Boolean).join(' / ') : BRAND_ASSETS.openOcti
     ? [connectedAgent?.model, connectedAgent?.voiceName].filter(Boolean).join(' / ') || 'Voice from Models & Keys'
+    : onGemini ? [selectedVoiceRuntime.model, selectedVoiceRuntime.voiceName].filter(Boolean).join(' / ') || 'Gemini Live'
     : activeAgent.id === 'finance-manager'
     ? `${activeAgent.openaiModel || 'gpt-realtime'} / ${activeAgent.voiceName || 'ash'}`
     : `${activeAgentName} voice agent`
@@ -386,8 +409,7 @@ export default function ChatPanel() {
         setWizardSectionOverride(requestedSection !== activeSection ? requestedSection : null)
       }
       if (detail.reset === true) {
-        setMessages([])
-        setSavedLeads({})
+        resetConversation()
       }
       if (typeof detail.open === 'boolean') setOpen(detail.open)
       else setOpen(o => !o)
@@ -420,6 +442,13 @@ export default function ChatPanel() {
   }, [voiceActive, voiceStarting, voiceError])
 
   // Which agent is actually connected (for the live badge avatar)
+  useEffect(() => {
+    const onRoster = event => setVoiceRoster(Array.isArray(event.detail) ? event.detail : [])
+    window.addEventListener('fcc:voice-roster', onRoster)
+    if (Array.isArray(window.__fccVoiceRoster)) setVoiceRoster(window.__fccVoiceRoster)
+    return () => window.removeEventListener('fcc:voice-roster', onRoster)
+  }, [])
+
   useEffect(() => {
     const onAgent = (e) => setConnectedAgent(e.detail || null)
     window.addEventListener('fcc:voice-agent', onAgent)
@@ -463,11 +492,19 @@ export default function ChatPanel() {
       const starting = !!e.detail?.starting
       setVoiceStarting(starting)
       if (starting) setVoiceError('')
+      if (starting && e.detail?.agentId === 'coding') {
+        // Keep Craig's normal Stop/status controls visible during the local trial,
+        // including while Chrome is waiting for microphone permission.
+        setOpenedByHover(false)
+        setOpen(true)
+      }
     }
     const onError = (e) => {
       setVoiceStarting(false)
       setVoiceActive(false)
       setVoiceError(e.detail?.message || 'Voice could not start')
+      setOpenedByHover(false)
+      setOpen(true)
     }
     window.addEventListener('fcc:voice-starting', onStarting)
     window.addEventListener('fcc:voice-error', onError)
@@ -513,14 +550,6 @@ export default function ChatPanel() {
 
   useEffect(() => {
     try {
-      const savedVersion = localStorage.getItem(STORAGE_VERSION_KEY)
-      if (savedVersion !== STORAGE_VERSION) {
-        localStorage.removeItem(STORAGE_KEY)
-        localStorage.setItem(STORAGE_VERSION_KEY, STORAGE_VERSION)
-      } else {
-        const saved = localStorage.getItem(STORAGE_KEY)
-        if (saved) setMessages(sanitizeMessages(JSON.parse(saved)))
-      }
       const savedModel = localStorage.getItem(MODEL_KEY)
       if (savedModel && MODELS.some(m => m.id === savedModel)) setModel(savedModel)
       else setModel('openclaw')
@@ -528,6 +557,33 @@ export default function ChatPanel() {
       if (savedAutoOpen === '0' || savedAutoOpen === '1') setAutoOpen(savedAutoOpen === '1')
     } catch {}
   }, [])
+
+  useEffect(() => {
+    activeRequestRef.current?.abort()
+    activeRequestRef.current = null
+    let saved = null
+    // Legacy unscoped history is deliberately left untouched: it has no owner
+    // identity and must never be assigned to whoever next signs in.
+    if (chatScope) {
+      try { saved = JSON.parse(localStorage.getItem(STORAGE_PREFIX + chatScope) || 'null') } catch {}
+    }
+    const validId = typeof saved?.conversationId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saved.conversationId)
+    conversationRef.current = {
+      id: validId ? saved.conversationId : crypto.randomUUID(), scope: chatScope,
+      generation: conversationRef.current.generation + 1,
+    }
+    setMessages(chatScope && Array.isArray(saved?.messages) ? sanitizeMessages(saved.messages) : [])
+    setSavedLeads({})
+    setInput('')
+    setLoading(false)
+    setActivity('')
+    setHistoryScope(chatScope)
+    return () => {
+      activeRequestRef.current?.abort()
+      activeRequestRef.current = null
+      conversationRef.current.generation += 1
+    }
+  }, [chatScope])
 
   useEffect(() => { localStorage.setItem(MODEL_KEY, model) }, [model])
 
@@ -539,9 +595,13 @@ export default function ChatPanel() {
 
   useEffect(() => {
     const cleanMessages = sanitizeMessages(messages)
-    if (cleanMessages.length > 0) localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanMessages.slice(-50)))
-    else localStorage.removeItem(STORAGE_KEY)
-  }, [messages])
+    if (!chatScope || historyScope !== chatScope || conversationRef.current.scope !== chatScope) return
+    try {
+      localStorage.setItem(STORAGE_PREFIX + chatScope, JSON.stringify({
+        conversationId: conversationRef.current.id, messages: cleanMessages.slice(-50),
+      }))
+    } catch {}
+  }, [messages, chatScope, historyScope])
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -596,42 +656,55 @@ export default function ChatPanel() {
 
   const send = async (overrideText, options = {}) => {
     const text = String(overrideText ?? input).trim()
-    if (!text || loading) return
+    if (!text || loading || !chatScope || historyScope !== chatScope) return
+    const conversation = { ...conversationRef.current }
+    const controller = new AbortController()
+    activeRequestRef.current = controller
+    const isCurrentTurn = () => conversationRef.current.scope === conversation.scope && conversationRef.current.generation === conversation.generation && !controller.signal.aborted
+    const updateTurnMessages = update => {
+      if (isCurrentTurn()) setMessages(previous => isCurrentTurn() ? (typeof update === 'function' ? update(previous) : update) : previous)
+    }
+    const updateTurnActivity = value => { if (isCurrentTurn()) setActivity(value) }
+    const updateTurnLoading = value => { if (isCurrentTurn()) setLoading(value) }
     const operatorTool = options.operatorTool || (guideMode ? { agentId: 'octi', role: 'OpenOcti onboarding guide', runtimeProvider: 'openclaw-hetzner' } : null)
     const requestSection = options.section || resolveWizardAgentSection(activeSection, text)
     setWizardSectionOverride(requestSection !== activeSection ? requestSection : null)
     const requestOperatorContext = options.operatorContext || operatorContext
     const next = [...messages, { role: 'user', content: text }]
-    setMessages(next)
+    updateTurnMessages(next)
     setInput('')
-    setLoading(true)
-    setActivity(operatorTool?.role ? `Routing to ${operatorTool.role}...` : 'Checking OpenClaw and Command Center tools...')
+    updateTurnLoading(true)
+    updateTurnActivity(operatorTool?.role ? `Routing to ${operatorTool.role}...` : 'Checking OpenClaw and Command Center tools...')
+    const researchStream = createResearchStreamTracker()
     try {
       const uiResult = await runUiCommand(text)
+      if (!isCurrentTurn()) return
       if (uiResult) {
-        setMessages([...next, { role: 'assistant', content: uiResult }])
-        setLoading(false)
-        setActivity('')
+        updateTurnMessages([...next, { role: 'assistant', content: uiResult }])
+        updateTurnLoading(false)
+        updateTurnActivity('')
         return
       }
 
-      setActivity('Checking CRM invoice command...')
+      updateTurnActivity('Checking CRM invoice command...')
       const invoiceRes = await fetch('/api/agent/invoice-command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, messages: next, section: requestSection }),
+        signal: controller.signal,
       })
       const invoiceJson = await invoiceRes.json().catch(() => ({}))
+      if (!isCurrentTurn()) return
       if (invoiceJson?.handled) {
-        setMessages([...next, { role: 'assistant', content: normalizeChatContent(invoiceJson.text || invoiceJson.error || 'Invoice command finished.') }])
-        setLoading(false)
-        setActivity('')
+        updateTurnMessages([...next, { role: 'assistant', content: normalizeChatContent(invoiceJson.text || invoiceJson.error || 'Invoice command finished.') }])
+        updateTurnLoading(false)
+        updateTurnActivity('')
         return
       }
       if (!invoiceRes.ok) {
-        setMessages([...next, { role: 'assistant', content: normalizeChatContent(invoiceJson.error || 'Invoice command failed before OpenClaw could run.') }])
-        setLoading(false)
-        setActivity('')
+        updateTurnMessages([...next, { role: 'assistant', content: normalizeChatContent(invoiceJson.error || 'Invoice command failed before OpenClaw could run.') }])
+        updateTurnLoading(false)
+        updateTurnActivity('')
         return
       }
 
@@ -642,12 +715,14 @@ export default function ChatPanel() {
       let assistantText = ''
       let assistantError = ''
       // Add placeholder assistant message we'll fill incrementally
-      setMessages([...next, { role: 'assistant', content: '' }])
+      updateTurnMessages([...next, { role: 'assistant', content: '' }])
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next, model, leadContext: useContext ? activeContext : null, section: requestSection, operatorContext: requestOperatorContext, operatorTool }),
+        body: JSON.stringify({ messages: next, conversationId: conversation.id, model, leadContext: useContext ? activeContext : null, section: requestSection, operatorContext: requestOperatorContext, operatorTool }),
+        signal: controller.signal,
       })
+      if (!isCurrentTurn()) return
       const contentType = res.headers.get('content-type') || ''
       if (contentType.includes('text/event-stream') && res.body) {
         // Streaming path
@@ -656,6 +731,7 @@ export default function ChatPanel() {
         let buf = ''
         while (true) {
           const { done, value } = await reader.read()
+          if (!isCurrentTurn()) { await reader.cancel(); return }
           if (done) break
           buf += decoder.decode(value, { stream: true })
           const parts = buf.split('\n\n')
@@ -665,12 +741,15 @@ export default function ChatPanel() {
             if (!line) continue
             try {
               const data = JSON.parse(line.slice(6))
+              researchStream.accept(data)
               if (data.error) assistantError = data.error
-              if (data.error) setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: '⚠ ' + data.error }])
+              if (data.error) updateTurnMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: data.research && typeof data.text === 'string' ? data.text : '⚠ ' + data.error }])
               else if (data.text !== undefined) {
                 assistantText = normalizeChatContent(data.text)
-                setActivity(data.done ? 'Checking CRM action receipt...' : 'Reading OpenClaw response...')
-                setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: assistantText }])
+                updateTurnActivity(data.research
+                  ? (data.done ? 'Research completed.' : 'Research in progress...')
+                  : (data.done ? 'Checking CRM action receipt...' : 'Reading OpenClaw response...'))
+                updateTurnMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: assistantText }])
               }
             } catch {}
           }
@@ -678,24 +757,32 @@ export default function ChatPanel() {
       } else {
         // JSON fallback (non-streaming providers)
         const json = await res.json()
+        if (!isCurrentTurn()) return
         if (json.error) assistantError = json.error
-        if (json.error) setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: '⚠ ' + json.error }])
+        if (json.error) updateTurnMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: '⚠ ' + json.error }])
         else {
           assistantText = normalizeChatContent(json.text || '')
-          setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: assistantText }])
+          updateTurnMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: assistantText }])
         }
       }
-      if (!assistantError) {
-        setActivity('Checking CRM action receipt...')
+      const interrupted = researchStream.interruptionText()
+      if (interrupted) {
+        assistantError = 'Research chat disconnected before the final result.'
+        updateTurnMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: interrupted }])
+      }
+      if (!assistantError && !researchStream.hasResearch()) {
+        updateTurnActivity('Checking CRM action receipt...')
         const receipt = await fetchActionReceipt(actionSince)
+        if (!isCurrentTurn()) return
         const finalText = mergeAssistantResult(assistantText, receipt)
-        setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: finalText }])
+        updateTurnMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: finalText }])
       }
     } catch (e) {
-      setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: '⚠ Network error: ' + e.message }])
+      updateTurnMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: researchStream.interruptionText() || '⚠ Network error: ' + e.message }])
     }
-    setLoading(false)
-    setActivity('')
+    updateTurnLoading(false)
+    updateTurnActivity('')
+    if (isCurrentTurn()) activeRequestRef.current = null
   }
 
   useEffect(() => {
@@ -721,10 +808,7 @@ export default function ChatPanel() {
 
   const clearChat = () => {
     if (confirm('Clear chat history?')) {
-      setMessages([])
-      setSavedLeads({})
-      setInput('')
-      localStorage.removeItem(STORAGE_KEY)
+      resetConversation()
     }
   }
 
@@ -746,7 +830,7 @@ export default function ChatPanel() {
     setOpen(false)
   }
   const voiceSignalOn = voiceActive || voiceStarting || listening
-  const voiceStatusLabel = voiceActive ? 'Live' : voiceStarting ? 'Starting' : voiceError ? 'Voice blocked' : 'Ready'
+  const voiceStatusLabel = voiceActive ? 'Live' : voiceStarting ? 'Starting' : voiceError ? 'Voice blocked' : listening ? 'Listening' : 'Ready'
 
   return (
     <>
@@ -851,9 +935,9 @@ export default function ChatPanel() {
               </span>
               <strong>{autoOpen ? 'Hover' : 'Click'}</strong>
             </button>
-            <button type="button" onClick={toggleLiveMode} className={`ai-wizard-live ${voiceSignalOn ? 'is-live' : ''}${voiceError ? ' is-error' : ''}`}>
-              <span className="ai-wizard-status-dot" />
-              {voiceActive ? 'Live' : voiceStarting ? 'Starting…' : voiceError ? 'Retry' : 'Go Live'}
+            <button type="button" onClick={toggleLiveMode} title={listening && !voiceActive && !voiceStarting ? 'Stop listening' : voiceActive || voiceStarting ? 'Stop voice' : 'Listen for an agent name'} className={`ai-wizard-live ${voiceSignalOn ? 'is-live' : ''}${voiceError ? ' is-error' : ''}`}>
+              {voiceStarting ? <span className="animate-spin" aria-hidden="true" style={{ width: 12, height: 12, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%' }} /> : <span className="ai-wizard-status-dot" />}
+              {voiceActive ? 'Live' : voiceStarting ? 'Starting…' : voiceError ? 'Retry' : listening ? 'Listening' : 'Go Live'}
             </button>
             {voiceError && <span className="ai-wizard-voice-error">{voiceError}</span>}
             <div className="ai-wizard-brain-pill" title={`Text chat model route: ${selectedModel.label}.`}>
@@ -939,7 +1023,7 @@ export default function ChatPanel() {
                       {isStreaming && <ThinkingDots agentName={activeAgentName} />}
                     </div>
                   )}
-                  {displayedContent}
+                  <ResearchChatText>{displayedContent}</ResearchChatText>
                 </div>
                 {draft && (
                   <div className="mt-2 max-w-[85%] rounded-xl p-3"
@@ -1057,7 +1141,7 @@ export default function ChatPanel() {
               className="ai-wizard-textarea flex-1 px-3 py-2.5 rounded-lg text-sm resize-none leading-relaxed"
               style={{ maxHeight: 120, minHeight: 44, fontFamily: 'inherit' }}
             />
-            <button onClick={send} disabled={!input.trim() || loading}
+            <button onClick={() => send()} disabled={!input.trim() || loading}
               className="ai-wizard-send px-4 py-2 rounded-lg text-sm font-semibold"
               style={{ opacity: (!input.trim() || loading) ? 0.4 : 1 }}>
               Send

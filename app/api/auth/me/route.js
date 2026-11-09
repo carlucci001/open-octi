@@ -3,6 +3,7 @@ import { clearSessionCookie, getCurrentUser, touchUser } from '@/lib/auth'
 import { getNetworkMode } from '@/lib/networkMode'
 import { isOwner } from '@/lib/roles'
 import { avatarRef } from '@/lib/avatars'
+import { chatHistoryScope } from '@/lib/chat-conversation'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -16,5 +17,5 @@ export async function GET(request) {
     return res
   }
   if (request.headers.get('x-fcc-auth-gate') !== 'middleware') touchUser(u.id)
-  return NextResponse.json({ ok: true, user: { id: u.id, username: u.username, displayName: u.displayName, role: u.role, email: u.email, location: u.location, avatarUrl: avatarRef(u) } })
+  return NextResponse.json({ ok: true, user: { id: u.id, username: u.username, displayName: u.displayName, role: u.role, email: u.email, location: u.location, avatarUrl: avatarRef(u), chatScope: chatHistoryScope(u) } })
 }

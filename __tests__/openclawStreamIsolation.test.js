@@ -49,3 +49,40 @@ it('does not append a chat delta already delivered as an assistant snapshot', as
   await expect(response).resolves.toEqual({ text: 'I am Linda.', runId: 'linda-run' })
   expect(chunks).toEqual(['I am Linda.', 'I am Linda.'])
 })
+
+it('tags a first-chunk timeout with code FIRST_CHUNK_TIMEOUT and stage awaiting-first-chunk', async () => {
+  const response = openclawChat({ message: 'Hello', sessionKey: 'agent:legal:test', firstChunkMs: 5000 })
+  // Attach a rejection handler immediately so advancing fake timers below never
+  // produces an unhandled rejection between the timer firing and the assertion.
+  const settled = response.catch(e => e)
+  state.socket.on('sent', request => {
+    if (request.method === 'connect') return emit({ type: 'res', id: request.id, ok: true, payload: {} })
+    if (request.method === 'chat.send') emit({ type: 'res', id: request.id, ok: true, payload: { runId: 'linda-run' } })
+  })
+  state.socket.emit('open')
+  await vi.advanceTimersByTimeAsync(150)
+  await vi.advanceTimersByTimeAsync(5000)
+  const err = await settled
+  expect(err).toMatchObject({
+    code: 'FIRST_CHUNK_TIMEOUT',
+    stage: 'awaiting-first-chunk',
+  })
+})
+
+it('tags a ws connection error as WS_ERROR (not the reconnect-worthy handshake code)', async () => {
+  const response = openclawChat({ message: 'Hello', sessionKey: 'agent:legal:test' })
+  const settled = response.catch(e => e)
+  state.socket.emit('open')
+  await vi.advanceTimersByTimeAsync(150)
+  state.socket.emit('error', new Error('connect ECONNREFUSED 127.0.0.1:18789'))
+  const err = await settled
+  expect(err).toMatchObject({ code: 'WS_ERROR' })
+})
+
+it('tags a handshake-timeout ws error as HANDSHAKE_TIMEOUT', async () => {
+  const response = openclawChat({ message: 'Hello', sessionKey: 'agent:legal:test' })
+  const settled = response.catch(e => e)
+  state.socket.emit('error', new Error('Opening handshake has timed out'))
+  const err = await settled
+  expect(err).toMatchObject({ code: 'HANDSHAKE_TIMEOUT' })
+})

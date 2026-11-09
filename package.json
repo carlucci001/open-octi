@@ -1,6 +1,6 @@
 {
   "name": "openocti",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "private": false,
   "engines": {
     "node": ">=24"
@@ -53,6 +53,8 @@
     "recharts": "^3.8.1",
     "remotion": "^4.0.465",
     "resend": "^6.12.2",
+    "sharp": "0.32.6",
+    "sqlite-vec": "^0.1.9",
     "stripe": "^14.0.0",
     "three": "^0.184.0",
     "truthdiff": "file:vendor/truthdiff-0.1.0.tgz",

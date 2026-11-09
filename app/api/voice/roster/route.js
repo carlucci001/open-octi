@@ -7,12 +7,18 @@ import { isOpenOcti } from '@/lib/edition'
 import { listOpenOctiKeyStatus } from '@/lib/openocti-keys'
 import { OPENOCTI_VOICE_STARTERS, openOctiVoiceProfile } from '@/lib/openocti-voice-routing'
 import { getAvatarMeta } from '@/lib/avatar-gen'
+import { savedGeminiVoice } from '@/lib/saved-gemini-voice'
+import { craigLiveEnabled, withCraigLive } from '@/lib/gpt-live-craig'
+import { gptLiveEnabled, withGptLive } from '@/lib/gpt-live-agents'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const PRODUCTION_VOICE_LOCKED_IDS = new Set(['main', 'coding'])
+const PRODUCTION_VOICE_LOCKED_IDS = new Set(['coding'])
 const OPENAI_VOICE_FALLBACK_IDS = new Set(['finance-manager'])
+const PRIMARY_GEMINI_PROFILES = Object.freeze({
+  main: Object.freeze({ geminiModel: 'gemini-3.8-live', geminiVoice: 'Leda' }),
+})
 
 function resolveVoiceProfile(crmId, local = {}, rosterBinding = null) {
   const explicitVoice = local?.voice || {}
@@ -36,6 +42,19 @@ function resolveVoiceProfile(crmId, local = {}, rosterBinding = null) {
         name: rosterBinding.name,
       }
     : {}
+
+  const primaryGemini = PRIMARY_GEMINI_PROFILES[crmId]
+  if (primaryGemini) {
+    // Provider and live model stay pinned. The voice follows Voice Lab when one is saved.
+    const geminiVoice = savedGeminiVoice(explicitVoice) || primaryGemini.geminiVoice
+    return normalizeVoiceProfile({
+      ...base,
+      provider: 'gemini',
+      ...primaryGemini,
+      geminiVoice,
+      voiceName: geminiVoice,
+    })
+  }
 
   if (rosterBinding && explicitVoice.locked === true && explicitVoice.provider !== 'elevenlabs') {
     return normalizeVoiceProfile({ ...base, provider: 'elevenlabs', locked: true })
@@ -117,13 +136,14 @@ export async function GET(request) {
   // active Matilda roster entry or allow the roster binding to overwrite this.
   {
     const matildaLocal = agentsFile.agents?.matilda || {}
+    // The voice name saved by Voice Lab is honored. The saved model is not: it is
+    // a TTS preview model, and primary Matilda is the full-duplex Gemini Live operator.
+    const matildaVoice = savedGeminiVoice(matildaLocal.voice) || 'Kore'
     const geminiProfile = normalizeVoiceProfile({
       provider: 'gemini',
-      // Do not inherit the saved TTS model/voice here. Primary Matilda is the
-      // full-duplex Gemini Live operator, not the Voice Lab TTS preview.
       geminiModel: 'gemini-3.1-flash-live-preview',
-      geminiVoice: 'Kore',
-      voiceName: 'Kore',
+      geminiVoice: matildaVoice,
+      voiceName: matildaVoice,
     })
     out.push({
       id: 'matilda',
@@ -227,5 +247,12 @@ export async function GET(request) {
     })
   }
 
-  return NextResponse.json({ ok: true, agents: out, count: out.length })
+  // GPT-Live is an overlay on the final roster, never a saved setting: stored ElevenLabs,
+  // Gemini and Chirp profiles stay as the rollback source. The roster is passed so a
+  // stored phoneNumber keeps an agent on its phone line and gptLiveVoice can override.
+  return NextResponse.json({
+    ok: true,
+    agents: withGptLive(withCraigLive(out, craigLiveEnabled()), gptLiveEnabled({ openOcti: isOpenOcti() }), { roster }),
+    count: out.length,
+  })
 }

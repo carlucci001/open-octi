@@ -23,7 +23,7 @@ export function resolveProjectSubTab(raw) {
 
 const PERSIST_KEY = 'fcc-project-sub'
 
-export default function ProjectDetail({ project, accountName, onBack, onEdit, onRefresh }) {
+export default function ProjectDetail({ project, accountName, onBack, onEdit, onRefresh, embedded = false }) {
   const [tab, setTab] = useState('overview')
   const [tasks, setTasks] = useState([])
   const [activities, setActivities] = useState([])
@@ -119,16 +119,16 @@ export default function ProjectDetail({ project, accountName, onBack, onEdit, on
   })
 
   return (
-    <div className="p-6">
+    <div className={embedded ? '' : 'p-6'}>
       {/* Header */}
-      <div className="flex items-start gap-3 mb-4 flex-wrap">
+      <div className="project-detail-header flex items-start gap-3 mb-4 flex-wrap">
         <button
           onClick={onBack}
           style={{ padding: '10px 14px', minHeight: 44, fontSize: 14, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 8, cursor: 'pointer' }}
         >
-          ← Back
+          {embedded ? 'Close details' : '← Back'}
         </button>
-        <div className="flex-1 min-w-0">
+        <div className="project-detail-identity flex-1 min-w-0">
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{project.name}</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
             {accountName || project.accountName || project.clientName || '(no account)'} · <span style={{ color: statusColor, fontWeight: 600 }}>{project.status || 'active'}</span>

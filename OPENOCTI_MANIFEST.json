@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-19T14:58:52.566Z",
+  "generatedAt": "2026-11-09T14:01:27.791Z",
   "source": "OpenOcti export",
   "excludes": [
     ".git/**",
@@ -48,6 +48,8 @@
     "!__tests__/openOctiVoiceRoster.test.js",
     "!__tests__/openOctiVoiceRouting.test.js",
     "!__tests__/openOctiVoiceSession.test.js",
+    "!__tests__/vaultCrypto.test.js",
+    "!__tests__/wakeListeningIndicator.test.jsx",
     "!__tests__/openclawDashboard.test.js",
     "!__tests__/openclawStreamIsolation.test.js",
     "!__tests__/openoctiHelpChat.test.js",
@@ -119,6 +121,8 @@
     "lib/deep-research.js",
     "lib/research-dossier*",
     "lib/stripe-*",
+    "!lib/stripe-invoice-lifecycle.js",
+    "!lib/stripe-invoice-settlement.js",
     "!lib/stripe-configuration.js",
     "lib/productCheckout.js",
     "lib/social-trend-research.js",
@@ -193,16 +197,18 @@
     "!scripts/preflight.js",
     "!scripts/build-doc-templates.js",
     "!scripts/verify-data-backend.js",
+    "!scripts/verify-data-backend-process.js",
     "!scripts/kill-port.ps1",
+    "!scripts/encrypt-vault.mjs",
     "public/avatars/cheryl*"
   ],
-  "fileCount": 1362,
-  "byteCount": 54011201,
-  "treeSha256": "c957725518b88a508c61984a95ab1894765e685342c58500476649fe7e2a67ae",
+  "fileCount": 1425,
+  "byteCount": 54587338,
+  "treeSha256": "bc7008d1757207a6439d5660290d2b88472429730cd160cf6f1876e33a58ea41",
   "demoFileCount": 31,
-  "thirdPartyPackageCount": 43,
-  "scrubbedOccurrenceCount": 212,
-  "listedFileCount": 1361,
+  "thirdPartyPackageCount": 45,
+  "scrubbedOccurrenceCount": 214,
+  "listedFileCount": 1424,
   "productDenylist": "PASS (0 hits)",
   "gitleaks": "PASS (0 findings)",
   "starterAgentPack": "reviewed-public-constants",
@@ -210,6 +216,6 @@
     "knowledgeFiles": 5,
     "docs": 27
   },
-  "sourceCommit": "8fad30bbcac33b0a256828a1b45a021c5928d753",
-  "approvedSourceFileCount": 1332
+  "sourceCommit": "6a15dd2ed019c902fc1a38b771706fb867809df5",
+  "approvedSourceFileCount": 1395
 }

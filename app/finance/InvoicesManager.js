@@ -1,12 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { FileDown, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { FileDown, Pencil, Plus, Trash2, X, Send, RefreshCw } from 'lucide-react'
 
 const money = amount => Number(amount || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 const blankItem = () => ({ description: '', qty: 1, rate: 0 })
 const fieldStyle = { width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }
 const actionStyle = { padding: 8, borderRadius: 6, color: 'var(--text-muted)' }
+const issued = invoice => Boolean(invoice.stripeInvoiceId || invoice.stripeIssuance)
+const canSend = invoice => !invoice.reconciliationRequired && invoice.paymentStatus !== 'processing' && !['paid', 'void', 'cancelled', 'uncollectible', 'processing'].includes(invoice.status)
+const emailState = invoice => ({ sent: 'Email sent', pending: 'Email pending', unknown: 'Email outcome unknown', failed: 'Email failed', not_sent: 'Email not sent' }[invoice.deliveryStatus] || (invoice.sentAt ? 'Email sent' : 'Email not sent'))
 
 export default function InvoicesManager({ clientId = '', clientName = '', lockClient = false }) {
   const [invoices, setInvoices] = useState([])
@@ -15,6 +18,9 @@ export default function InvoicesManager({ clientId = '', clientName = '', lockCl
   const [query, setQuery] = useState('')
   const [draft, setDraft] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState({})
+  const active = useRef(new Set())
   const dialog = useRef(null)
 
   useEffect(() => {
@@ -30,8 +36,40 @@ export default function InvoicesManager({ clientId = '', clientName = '', lockCl
   useEffect(() => { if (draft && dialog.current && !dialog.current.open) dialog.current.showModal() }, [draft])
 
   const edit = invoice => {
+    if (invoice && issued(invoice)) return
     setError('')
     setDraft(invoice ? { ...invoice, items: (invoice.items || []).map(item => ({ ...item })) } : { clientId, clientName, project: '', date: new Date().toISOString().slice(0, 10), dueDate: '', notes: '', status: 'draft', items: [blankItem()] })
+  }
+  const invoiceAction = async (invoice, action) => {
+    if (active.current.has(invoice.id)) return
+    const resend = action === 'send' && Boolean(invoice.sentAt)
+    if (action === 'send' && !window.confirm(`${resend ? 'Resend' : 'Send'} invoice ${invoice.number} by email?`)) return
+    active.current.add(invoice.id)
+    setBusy(current => ({ ...current, [invoice.id]: true }))
+    setError('')
+    setNotice(action === 'check_payment' ? 'Checking payment…' : 'Sending invoice…')
+    const retryKey = `fcc-invoice-resend:${invoice.id}`
+    try {
+      let requestId
+      if (resend) {
+        requestId = sessionStorage.getItem(retryKey) || crypto.randomUUID()
+        sessionStorage.setItem(retryKey, requestId)
+      }
+      const response = await fetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: resend ? 'resend' : action, id: invoice.id, ...(requestId ? { requestId } : {}) }) })
+      const data = await response.json()
+      if (data.invoice) setInvoices(current => current.map(row => row.id === invoice.id ? data.invoice : row))
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Invoice action could not be completed.')
+      if (resend) sessionStorage.removeItem(retryKey)
+      if (action === 'check_payment') {
+        const status = data.paymentStatus || data.invoice?.paymentStatus || data.invoice?.status || 'unknown'
+        setNotice(status === 'processing' ? 'Payment processing — funds have not settled.' : `Payment status: ${status}.`)
+      } else if (data.alreadyPaid) setNotice('Invoice is already paid.')
+      else if (data.alreadySent) setNotice('Invoice was already sent. No additional email was requested.')
+      else setNotice(`Invoice email sent${data.sentTo || data.invoice?.sentTo ? ` to ${data.sentTo || data.invoice.sentTo}` : ''}. Delivery is not confirmed.`)
+    } catch (err) { setNotice(''); setError(err.message) } finally {
+      active.current.delete(invoice.id)
+      setBusy(current => ({ ...current, [invoice.id]: false }))
+    }
   }
   const close = () => { if (!saving) { dialog.current?.close(); setDraft(null) } }
   const itemChange = (index, key, value) => setDraft(current => ({ ...current, items: current.items.map((item, i) => i === index ? { ...item, [key]: value } : item) }))
@@ -63,11 +101,17 @@ export default function InvoicesManager({ clientId = '', clientName = '', lockCl
       <button type="button" title="New invoice" aria-label="New invoice" onClick={() => edit(null)} style={{ ...actionStyle, color: 'var(--accent)', flexShrink: 0 }}><Plus size={20} /></button>
     </div>
     {error && !draft && <p role="alert">{error}</p>}
+    {notice && <p role="status">{notice}</p>}
     {loading ? <p role="status">Loading invoices…</p> : !shown.length ? <p style={{ color: 'var(--text-muted)' }}>{query ? 'No matching invoices.' : 'No invoices yet. Create an invoice to get started.'}</p> : <div className="overflow-x-auto"><table className="w-full text-sm text-left">
       <thead><tr>{['Invoice', 'Client', 'Amount', 'Due', 'Status', 'Actions'].map(label => <th key={label} className="p-2" scope="col">{label}</th>)}</tr></thead>
       <tbody>{shown.map(invoice => <tr key={invoice.id} style={{ borderTop: '1px solid var(--border)' }}>
-        <td className="p-2">{invoice.number}</td><td className="p-2">{invoice.clientName}</td><td className="p-2">{money(invoice.amount)}</td><td className="p-2">{invoice.dueDate?.slice(0, 10) || '—'}</td><td className="p-2 capitalize">{invoice.status}</td>
-        <td className="p-2"><div className="flex gap-1"><button type="button" onClick={() => edit(invoice)} aria-label={`Edit invoice ${invoice.number}`} title="Edit invoice" style={actionStyle}><Pencil size={16} /></button><a href={`/api/invoices?id=${encodeURIComponent(invoice.id)}&pdf=1`} target="_blank" rel="noopener noreferrer" aria-label={`View PDF for ${invoice.number}`} title="View PDF" style={actionStyle}><FileDown size={16} /></a></div></td>
+        <td className="p-2">{invoice.number}</td><td className="p-2">{invoice.clientName}</td><td className="p-2">{money(invoice.amount)}</td><td className="p-2">{invoice.dueDate?.slice(0, 10) || '—'}</td><td className="p-2"><span className="capitalize">{invoice.status}</span><div className="text-xs" style={{ color: 'var(--text-muted)' }}>{emailState(invoice)}</div>{invoice.status === 'processing' && <div className="text-xs">Funds have not settled</div>}{invoice.reconciliationRequired && <div className="text-xs" role="status">Payment needs review</div>}</td>
+        <td className="p-2"><div className="flex gap-1">
+          <a href={`/api/invoices?id=${encodeURIComponent(invoice.id)}&pdf=1`} target="_blank" rel="noopener noreferrer" aria-label={`View PDF for ${invoice.number}`} title="View PDF" style={actionStyle}><FileDown size={16} /></a>
+          {canSend(invoice) && <button type="button" disabled={busy[invoice.id]} onClick={() => invoiceAction(invoice, 'send')} aria-label={`${invoice.sentAt ? 'Resend' : 'Send'} invoice ${invoice.number}`} title={invoice.sentAt ? 'Resend invoice' : 'Send invoice'} style={actionStyle}><Send size={16} /></button>}
+          {(invoice.stripeInvoiceId || invoice.stripeSessionId) && <button type="button" disabled={busy[invoice.id]} onClick={() => invoiceAction(invoice, 'check_payment')} aria-label={`Check payment for ${invoice.number}`} title="Check payment" style={actionStyle}><RefreshCw size={16} /></button>}
+          {!issued(invoice) && <button type="button" onClick={() => edit(invoice)} aria-label={`Edit invoice ${invoice.number}`} title="Edit invoice" style={actionStyle}><Pencil size={16} /></button>}
+        </div></td>
       </tr>)}</tbody>
     </table></div>}
     {draft && <dialog ref={dialog} aria-label={draft.id ? 'Edit invoice' : 'New invoice'} onCancel={event => { if (saving) event.preventDefault(); else setDraft(null) }} onClose={() => setDraft(null)} className="rounded-xl p-5 backdrop:bg-black/60" style={{ width: 'min(720px, calc(100vw - 32px))', maxHeight: '90vh', color: 'var(--text)', background: 'var(--surface)', border: '1px solid var(--border)' }}>

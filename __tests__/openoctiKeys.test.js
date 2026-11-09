@@ -62,6 +62,14 @@ describe('OpenOcti encrypted provider keys', () => {
     expect(capability).toMatchObject({ status: 'configured', source: 'vault', missing: [] })
   })
 
+  it('skips a matching credential without an API key and finds the usable one', () => {
+    const readCredentials = () => ({ credentials: [
+      { name: 'OpenAI Codex', fields: [{ label: 'Codex', value: 'subscription-reference' }] },
+      { name: 'OpenAI API (unrestricted)', fields: [{ label: 'API Key', value: 'working-api-key' }] },
+    ] })
+    expect(resolveProviderKey('openai', {}, { readCredentials })).toMatchObject({ key: 'working-api-key', source: 'vault' })
+  })
+
   it('reports a provider missing when neither env nor vault contains a key', () => {
     const readCredentials = vi.fn(() => ({ credentials: [] }))
 

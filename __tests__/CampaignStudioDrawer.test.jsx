@@ -1,5 +1,9 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import fs from 'node:fs'
+
+// SMS campaigns are Command Center-only; the public package resolves SmsWorkspace to the closed-module stub.
+const PUBLIC_PACKAGE = JSON.parse(fs.readFileSync('package.json', 'utf8')).name === 'openocti'
 import CampaignStudio from '../app/campaign-studio/CampaignStudio'
 
 vi.mock('../app/components/PageHeader', () => ({
@@ -21,6 +25,7 @@ vi.mock('../app/components/BulkActionsMenu', () => ({ default: () => null }))
 vi.mock('../app/components/MediaPickerModal', () => ({ default: () => null }))
 vi.mock('../app/campaign-studio/SocialOperatorPanel', () => ({ default: () => null }))
 vi.mock('../app/social/SocialPublishing', () => ({ default: () => null }))
+vi.mock('../app/sms/SmsWorkspace', () => ({ default: ({ embedded }) => <section aria-label="Text messages workspace" data-embedded={String(embedded)}>SMS content</section> }))
 
 const campaigns = ['First campaign', 'Second campaign', 'Third campaign'].map((name, index) => ({
   id: `campaign-${index + 1}`,
@@ -34,6 +39,7 @@ const campaigns = ['First campaign', 'Second campaign', 'Third campaign'].map((n
 
 beforeEach(() => {
   localStorage.clear()
+  window.history.replaceState({}, '', '/')
   vi.stubGlobal('fetch', vi.fn(async url => ({
     ok: true,
     json: async () => url === '/api/campaign-studio' ? { campaigns } : { accounts: [] },
@@ -41,7 +47,39 @@ beforeEach(() => {
 })
 afterEach(() => {
   cleanup()
+  window.history.replaceState({}, '', '/')
   vi.unstubAllGlobals()
+})
+
+describe.skipIf(PUBLIC_PACKAGE)('SMS stays inside the Campaigns workspace', () => {
+  it('opens the embedded SMS component from the header without page navigation', async () => {
+    const onNavigate = vi.fn()
+    render(<CampaignStudio onNavigate={onNavigate} />)
+    await screen.findByRole('button', { name: 'First campaign', exact: true })
+    fireEvent.click(screen.getByRole('button', { name: 'Text message campaigns', exact: true }))
+    expect(screen.getByRole('region', { name: 'Text messages workspace' })).toHaveAttribute('data-embedded', 'true')
+    expect(screen.getByRole('heading', { level: 1, name: 'Campaigns' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Text messages', exact: true })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('link', { name: 'Text message campaigns' })).toBeNull()
+    expect(window.location.pathname).toBe('/')
+    expect(onNavigate).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('tab', { name: 'Campaigns', exact: true }))
+    expect(screen.queryByRole('region', { name: 'Text messages workspace' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'First campaign', exact: true })).toBeInTheDocument()
+  })
+
+  it('honors an SMS deep link over the saved social workspace', async () => {
+    localStorage.setItem('fcc:campaigns-workspace-state', JSON.stringify({ workspace: 'social_operator' }))
+    window.history.replaceState({}, '', '/?tab=campaign-studio&campaignWorkspace=sms')
+    render(<CampaignStudio />)
+    expect(await screen.findByRole('region', { name: 'Text messages workspace' })).toHaveAttribute('data-embedded', 'true')
+  })
+
+  it('restores the SMS tab within the existing workspace', async () => {
+    localStorage.setItem('fcc:campaigns-workspace-state', JSON.stringify({ workspace: 'sms' }))
+    render(<CampaignStudio />)
+    expect(await screen.findByRole('region', { name: 'Text messages workspace' })).toHaveAttribute('data-embedded', 'true')
+  })
 })
 
 function expectDrawerAfter(name, nextName) {

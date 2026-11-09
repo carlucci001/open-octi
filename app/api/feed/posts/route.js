@@ -3,7 +3,7 @@
 // Posts mix into the Feed page alongside system activities, sorted by time.
 import { NextResponse } from 'next/server'
 import { getCurrentUser, listUsers } from '@/lib/auth'
-import { readData, writeData } from '@/lib/dataStore'
+import { currentBackend, mutateData, readData, writeData } from '@/lib/dataStore'
 import { isAdminLike } from '@/lib/roles'
 import fs from 'fs'
 import path from 'path'
@@ -20,15 +20,19 @@ function save(d) { writeData('feed-posts.json', d) }
 function genId() { return 'fp_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) }
 
 function unlinkAttachment(att) {
-  if (!att?.url) return
+  if (typeof att?.url !== 'string') return true
   const m = att.url.match(/^\/api\/feed\/files\/([^?#]+)/)
-  if (!m) return
+  if (!m) return true
+  let name
   try {
-    const name = decodeURIComponent(m[1])
-    if (name.includes('/') || name.includes('\\') || name.startsWith('.')) return
+    name = decodeURIComponent(m[1])
+  } catch { return true }
+  if (name.includes('/') || name.includes('\\') || name.startsWith('.')) return true
+  try {
     const full = path.join(UPLOAD_DIR, name)
     if (full.startsWith(UPLOAD_DIR + path.sep) && fs.existsSync(full)) fs.unlinkSync(full)
-  } catch {}
+    return true
+  } catch { return false }
 }
 
 // GET /api/feed/posts?limit=50  → newest first, hydrated with author names
@@ -47,18 +51,68 @@ export async function GET(request) {
   return NextResponse.json({ ok: true, posts: items })
 }
 
-// DELETE /api/feed/posts  → admin clears the entire feed (and removes all attached files).
+// Legacy clients clear posts only. Full-feed clearing requires explicit scope=all
+// because their older confirmation promises to preserve activity entries.
 export async function DELETE(request) {
   const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   if (!isAdminLike(me)) return NextResponse.json({ ok: false, error: 'admin only' }, { status: 403 })
-  const data = load()
-  for (const p of (data.posts || [])) {
-    for (const att of (p.attachments || [])) unlinkAttachment(att)
+  const scope = new URL(request.url).searchParams.get('scope')
+  if (scope !== null && scope !== 'all') {
+    return NextResponse.json({ ok: false, error: 'invalid clear scope' }, { status: 400 })
   }
-  const removed = (data.posts || []).length
-  save({ posts: [], lastUpdated: new Date().toISOString() })
-  return NextResponse.json({ ok: true, removed })
+  if (scope === 'all' && currentBackend() !== 'sqlite') {
+    return NextResponse.json({ ok: false, error: 'Clearing the entire feed requires SQLite storage. No entries were removed.' }, { status: 503 })
+  }
+
+  let cleared
+  try {
+    cleared = mutateData('feed-posts.json', current => {
+      const posts = current?.posts || []
+      const result = {
+        removed: posts.length,
+        removedPosts: posts.length,
+        removedActivities: 0,
+        deletedPostIds: posts.map(post => post.id).filter(Boolean),
+        deletedActivityIds: [],
+        posts,
+      }
+      if (scope === 'all') {
+        // Both feed stores use the same active SQLite database. This nested
+        // mutation is a savepoint inside the outer transaction: either both
+        // collections persist successfully or neither collection changes.
+        const activities = mutateData('activities.json', currentActivities => {
+          const entries = currentActivities?.activities || []
+          return {
+            data: { ...currentActivities, activities: [], lastUpdated: new Date().toISOString() },
+            result: { count: entries.length, ids: entries.map(activity => activity.id).filter(Boolean) },
+          }
+        })
+        result.removedActivities = activities.count
+        result.deletedActivityIds = activities.ids
+      }
+      return {
+        data: { ...current, posts: [], lastUpdated: new Date().toISOString() },
+        result,
+      }
+    })
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Could not clear the feed. No entries were removed. Please try again.' }, { status: 500 })
+  }
+
+  // Never delete files before the records commit. Only feed-owned uploads are
+  // eligible; linked CRM documents and external files are left untouched.
+  let failedAttachments = 0
+  for (const post of cleared.posts) {
+    for (const attachment of (Array.isArray(post.attachments) ? post.attachments : [])) {
+      if (!unlinkAttachment(attachment)) failedAttachments += 1
+    }
+  }
+  const { posts, ...result } = cleared
+  if (failedAttachments) {
+    result.warning = `Feed entries were cleared, but ${failedAttachments} feed attachment${failedAttachments === 1 ? '' : 's'} could not be removed.`
+  }
+  return NextResponse.json({ ok: true, ...result })
 }
 
 // POST /api/feed/posts  body: { body: text, attachments?: [{ kind, url, name, mime, sizeBytes }] }

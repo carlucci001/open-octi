@@ -49,6 +49,8 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   '!__tests__/openOctiVoiceRoster.test.js',
   '!__tests__/openOctiVoiceRouting.test.js',
   '!__tests__/openOctiVoiceSession.test.js',
+  '!__tests__/vaultCrypto.test.js',
+  '!__tests__/wakeListeningIndicator.test.jsx',
   '!__tests__/openclawDashboard.test.js',
   '!__tests__/openclawStreamIsolation.test.js',
   '!__tests__/openoctiHelpChat.test.js',
@@ -121,6 +123,8 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   'lib/deep-research.js',
   'lib/research-dossier*',
   'lib/stripe-*',
+  '!lib/stripe-invoice-lifecycle.js',
+  '!lib/stripe-invoice-settlement.js',
   // Installation-owned Stripe configuration is part of the published edition;
   // private subscription, portal, and billing helpers remain excluded.
   '!lib/stripe-configuration.js',
@@ -199,7 +203,9 @@ export const OPENOCTI_EXCLUDES = Object.freeze([
   '!scripts/preflight.js',
   '!scripts/build-doc-templates.js',
   '!scripts/verify-data-backend.js',
+  '!scripts/verify-data-backend-process.js',
   '!scripts/kill-port.ps1',
+  '!scripts/encrypt-vault.mjs',
   'public/avatars/cheryl*',
 ])
 

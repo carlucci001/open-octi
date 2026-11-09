@@ -1,52 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getCred } from '@/lib/agent-creds'
 import { readData } from '@/lib/dataStore'
-import { getClients } from '@/lib/clients'
+import { buildCrmSnapshot } from '@/lib/voice-crm-snapshot'
 import { requireCapability } from '@/lib/permissions'
 import { PRESET_BY_ID } from '@/lib/agent-presets'
-
-function buildCrmSnapshot() {
-  const sponsorsRaw = readData('sponsor-leads.json')
-  const sponsors = Array.isArray(sponsorsRaw) ? sponsorsRaw : sponsorsRaw?.leads || []
-  const devLeads = readData('leads.json')?.leads || []
-  const clients = getClients()
-  const payments = readData('payments.json')?.payments || []
-  const domains = readData('domains.json')?.domains || []
-
-  const sponsorByStatus = {}
-  sponsors.forEach(l => { sponsorByStatus[l.st] = (sponsorByStatus[l.st] || 0) + 1 })
-  const sponsorByCampaign = { sponsors: 0, newspaper: 0, tda: 0, farrington_dev: 0 }
-  sponsors.forEach(l => {
-    if (l.campaign === 'farrington_dev') sponsorByCampaign.farrington_dev++
-    else if (l.lt === 'newspaper') sponsorByCampaign.newspaper++
-    else if (l.lt === 'tda') sponsorByCampaign.tda++
-    else sponsorByCampaign.sponsors++
-  })
-
-  const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-  const monthPayments = payments.filter(p => p.date >= monthStart && p.status === 'succeeded')
-  const monthRevenue = monthPayments.reduce((s, p) => s + (p.amount || 0), 0)
-  const expiringSoon = domains.filter(d => {
-    if (!d.expirationDate) return false
-    const exp = new Date(d.expirationDate)
-    const in30 = new Date(); in30.setDate(in30.getDate() + 30)
-    return exp <= in30
-  })
-
-  return {
-    clients: clients.length,
-    clientNames: clients.map(c => c.name).slice(0, 30),
-    devLeads: devLeads.length,
-    sponsorsTotal: sponsors.length,
-    sponsorByCampaign,
-    sponsorByStatus,
-    monthRevenue,
-    monthPaymentCount: monthPayments.length,
-    domainsTotal: domains.length,
-    domainsExpiringSoon: expiringSoon.length,
-  }
-}
 
 function resolveAgent(requestedId) {
   // Default: Matilda (legacy single-agent voice-agent.json)

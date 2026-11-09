@@ -15,6 +15,7 @@ import {
   Zap,
 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import InMotionConnection from './InMotionConnection'
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 const AUTH_TYPES = [
@@ -266,7 +267,7 @@ export default function ApiLab() {
       <PageHeader
         icon={<FlaskConical size={20} />}
         title="API Lab"
-        subtitle={`${operations.length || 0} operations / transient keys / public hosts only`}
+        subtitle={`Saved cloud connections / ${operations.length || 0} workbench operations`}
         actions={(
         <div style={commandActionsStyle}>
           <button type="button" onClick={runDiscovery} disabled={busy === 'discover'} className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-semibold" style={primaryButton}>
@@ -279,6 +280,8 @@ export default function ApiLab() {
         )}
       />
 
+      <InMotionConnection />
+
       {error && (
         <div role="alert" className="rounded-lg p-3 mb-4 flex items-center gap-2" style={{ background: 'var(--red-soft)', color: 'var(--red)', border: '1px solid var(--border)' }}>
           <AlertTriangle size={16} /> {error}
@@ -288,9 +291,11 @@ export default function ApiLab() {
       <div className="api-lab-rebuilt-layout" style={labGridStyle}>
         <section className="rounded-lg p-4" style={panelStyle}>
           <div className="flex items-center justify-between gap-3 mb-4">
-            <h2 className="font-semibold flex items-center gap-2"><KeyRound size={18} /> Connection</h2>
+            <h2 className="font-semibold flex items-center gap-2"><KeyRound size={18} /> API workbench</h2>
             <button type="button" onClick={() => setApiKey('')} className="rounded-lg px-3 py-2 text-sm" style={ghostButton}>Clear key</button>
           </div>
+
+          <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>Workbench keys are transient. Requests use public hosts only.</p>
 
           <div className="space-y-3">
             <div className="rounded-lg p-3" style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}>

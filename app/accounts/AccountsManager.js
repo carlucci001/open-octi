@@ -1,7 +1,7 @@
 'use client'
 import { EnablePortalButton } from './ClientAccountSetup'
 import ThemedSelect from '../components/ThemedSelect'
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { Fragment, useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import ComponentSettings, { useComponentSettings } from '../components/ComponentSettings'
 import CustomFieldsPanel from '../components/CustomFieldsPanel'
 import PageHeader from '../components/PageHeader'
@@ -9,6 +9,7 @@ import { Paginator, usePagination } from '../components/Paginator'
 import ViewModeToggle from '../components/ViewModeToggle'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
+import InlineRecordDrawer from '../components/InlineRecordDrawer'
 import { gvCallUrl } from '@/lib/google-voice'
 import CallButton from '../components/CallButton'
 import InvoicesManager from '../finance/InvoicesManager'
@@ -522,7 +523,7 @@ function resolveAccountSubTab(raw) {
   return aliases[s] || (ACCOUNT_SUB_TABS.includes(s) ? s : null)
 }
 
-function AccountDetail({ account, onBack, onEdit, onRefresh }) {
+function AccountDetail({ account, onBack, onEdit, onRefresh, embedded = false }) {
   const [tab, setTab] = useState('overview')
   // Component configuration layer: which 360 tiles display.
   const tilePrefs = useComponentSettings('accounts.360')
@@ -649,7 +650,7 @@ function AccountDetail({ account, onBack, onEdit, onRefresh }) {
 
   return (
     <div className="animate-fade-in">
-      <button onClick={onBack} className="text-sm mb-4 inline-flex items-center gap-1" style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>← Accounts</button>
+      <button onClick={onBack} className="text-sm mb-4 inline-flex items-center gap-1" style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>{embedded ? 'Close details' : '← Accounts'}</button>
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5">
@@ -1659,13 +1660,22 @@ export default function AccountsManager({ onNavigate }) {
   const [sortDir, setSortDir] = useState('desc')
   const [view, setView] = useState('list')
   const [selected, setSelected] = useState(null)
+  const lastDetailTriggerRef = useRef(null)
+  const closeSelected = useCallback(() => {
+    setSelected(null)
+    requestAnimationFrame(() => lastDetailTriggerRef.current?.focus?.({ preventScroll: true }))
+  }, [])
+  const openSelected = useCallback((account, trigger = null) => {
+    lastDetailTriggerRef.current = trigger || document.querySelector(`[data-account-trigger="${account.id}"]`)
+    setSelected(account)
+  }, [])
   useEffect(() => {
     try {
       const id = sessionStorage.getItem('fcc.accounts.openId')
       const account = accounts.find(item => item.id === id && item.type === 'client')
-      if (account) { sessionStorage.removeItem('fcc.accounts.openId'); setSelected(account) }
+      if (account) { sessionStorage.removeItem('fcc.accounts.openId'); openSelected(account) }
     } catch {}
-  }, [accounts])
+  }, [accounts, openSelected])
   const [editing, setEditing] = useState(null)
   const [adding, setAdding] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set())
@@ -1696,11 +1706,11 @@ export default function AccountsManager({ onNavigate }) {
         })), 250)
       }
       const match = accounts.find(a => a.id === r.id)
-      if (match?.type === 'client') { setSelected(match); window.__fccPendingAccountSelect = null }
+      if (match?.type === 'client') { openSelected(match); window.__fccPendingAccountSelect = null }
     }
     window.addEventListener('fcc:select-record', handler)
     return () => window.removeEventListener('fcc:select-record', handler)
-  }, [accounts])
+  }, [accounts, openSelected])
 
   // When accounts load/change, drain any pending selection that arrived before data was ready
   useEffect(() => {
@@ -1708,8 +1718,8 @@ export default function AccountsManager({ onNavigate }) {
     const pending = window.__fccPendingAccountSelect
     if (!pending || Date.now() - pending.ts > 10000) return
     const match = accounts.find(a => a.id === pending.id)
-    if (match?.type === 'client') { setSelected(match); window.__fccPendingAccountSelect = null }
-  }, [accounts])
+    if (match?.type === 'client') { openSelected(match); window.__fccPendingAccountSelect = null }
+  }, [accounts, openSelected])
 
   const save = async (form) => {
     const action = form.id ? 'update' : 'add'
@@ -1756,7 +1766,13 @@ export default function AccountsManager({ onNavigate }) {
     vips: accounts.filter(a => a.type === 'client' && a.priority === 'vip').length,
   }), [accounts])
 
-  const { page, setPage, pageSize, setPageSize, paginated } = usePagination(filtered, 25)
+  const visibleAccounts = useMemo(() => selected && !filtered.some(account => account.id === selected.id) ? [selected, ...filtered] : filtered, [filtered, selected])
+  const { page, setPage, pageSize, setPageSize, paginated } = usePagination(visibleAccounts, 25)
+  useEffect(() => {
+    if (!selected) return
+    const index = visibleAccounts.findIndex(account => account.id === selected.id)
+    if (index >= 0) setPage(Math.floor(index / pageSize) + 1)
+  }, [selected, visibleAccounts, pageSize, setPage])
   const paginatedIds = useMemo(() => paginated.map(a => a.id), [paginated])
   useEffect(() => { setSelectedIds(new Set()) }, [search, filterStage, filterPriority, sortBy, sortDir, view, page])
   const toggleSelected = (id, event) => {
@@ -1771,15 +1787,6 @@ export default function AccountsManager({ onNavigate }) {
 
   const sel = { background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 10px', borderRadius: 6, fontSize: 12, outline: 'none' }
 
-  if (selected) {
-    return (
-      <div className="p-6">
-        <AccountDetail account={selected} onBack={() => setSelected(null)} onEdit={setEditing} onRefresh={refresh} />
-        {editing && <AccountForm account={editing} onSave={save} onClose={() => setEditing(null)} />}
-      </div>
-    )
-  }
-
   return (
     <div className="command-workspace p-6">
       <PageHeader
@@ -1787,10 +1794,10 @@ export default function AccountsManager({ onNavigate }) {
         title="Accounts"
         subtitle={`${stats.clients} client account${stats.clients === 1 ? '' : 's'} · ${stats.hiddenOrganizations} non-client organization record${stats.hiddenOrganizations === 1 ? '' : 's'} kept out of this view · ${stats.vips} VIP`}
         actions={<button className="px-3 rounded-lg text-sm font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-text)', minHeight: 40 }} onClick={() => setAdding(true)}>New Client Account</button>}
-        viewToggle={<ViewModeToggle value={view} onChange={setView} modes={['list', 'card']} />}
       />
 
       <div className="command-toolbar flex gap-2 items-center flex-wrap mb-4">
+        <ViewModeToggle value={view} onChange={setView} modes={['list', 'card']} />
         <input style={{ ...sel, flex: 1, minWidth: 200, padding: '8px 12px', fontSize: 13 }} placeholder="Search client accounts, industry, website, tags..." value={search} onChange={e => setSearch(e.target.value)} />
         <ThemedSelect style={sel} value={filterStage} onChange={e => setFilterStage(e.target.value)}><option value="all">All Stages</option>{STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</ThemedSelect>
         <ThemedSelect style={sel} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}><option value="all">All Priority</option>{PRIORITY.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</ThemedSelect>
@@ -1811,7 +1818,7 @@ export default function AccountsManager({ onNavigate }) {
       </div>
 
       {loading ? <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>Loading...</div>
-        : filtered.length === 0 ? (
+        : visibleAccounts.length === 0 ? (
           stats.clients === 0 && isOpenOcti() ? <OpenOctiEmptyState objectType="accounts" title="Build your account book" description="Accounts organize the companies and customers behind your contacts, deals, projects, and activity." /> : <div className="text-center py-16">
             <div className="text-4xl mb-3">🏢</div>
             <p style={{ color: 'var(--text-muted)' }}>{stats.clients === 0 ? 'No client accounts yet.' : 'No client accounts match these filters.'}</p>
@@ -1834,8 +1841,12 @@ export default function AccountsManager({ onNavigate }) {
             {paginated.map(a => {
               const type = typeMeta(a.type), stage = stageMeta(a.stage), pri = priMeta(a.priority)
               const isSelected = selectedIds.has(a.id)
+              const detailOpen = selected?.id === a.id
+              const drawerId = `account-detail-${a.id}`
               return (
-                <div key={a.id} onClick={() => setSelected(a)} className="rounded-xl p-5 cursor-pointer group transition-all relative" style={{ background: isSelected ? 'var(--accent-soft)' : 'var(--surface)', border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}` }}
+                <Fragment key={a.id}>
+                <div data-record-container="account" className="rounded-xl p-5 cursor-pointer group transition-all relative" style={{ background: isSelected ? 'var(--accent-soft)' : 'var(--surface)', border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}` }}
+                  onClick={event => { if (event.target.closest('button, input, a, select, textarea')) return; openSelected(a, event.currentTarget.querySelector('[data-account-trigger]')) }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = isSelected ? 'var(--accent)' : 'var(--border)' }}>
                   {a.priority === 'vip' && <div className="absolute top-0 right-0 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-bl-lg rounded-tr-xl" style={{ background: 'var(--red)', color: 'white' }}>VIP</div>}
@@ -1843,7 +1854,7 @@ export default function AccountsManager({ onNavigate }) {
                   <div className="flex items-start gap-3 mb-3">
                     <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm shrink-0" style={{ background: type.bg, color: type.color }}>{initials(a.name)}</div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-base font-semibold truncate" style={{ color: 'var(--text)' }}>{a.name}</div>
+                      <button type="button" data-account-trigger={a.id} aria-label={`Open ${a.name} account details`} aria-expanded={detailOpen} aria-controls={detailOpen ? drawerId : undefined} className="text-base font-semibold truncate text-left block w-full" style={{ color: 'var(--text)', background: 'transparent', border: 0, padding: 0 }} onClick={event => { event.stopPropagation(); openSelected(a, event.currentTarget) }}>{a.name}</button>
                       <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{a.industry || 'No industry'}</div>
                     </div>
                   </div>
@@ -1858,17 +1869,23 @@ export default function AccountsManager({ onNavigate }) {
                     <ItemActionsMenu
                       label={`Actions for ${a.name}`}
                       actions={[
-                        { label: 'Open account', onClick: () => setSelected(a) },
+                        { label: 'Open account', onClick: () => openSelected(a) },
                         { label: 'Edit account', onClick: () => setEditing(a) },
                         { label: 'Delete account', tone: 'danger', onClick: () => del(a.id) },
                       ]}
                     />
                   </div>
                 </div>
+                {detailOpen && (
+                  <InlineRecordDrawer id={drawerId} label={`${a.name} account details`} onClose={closeSelected} className="sm:col-span-2 lg:col-span-3">
+                    <AccountDetail account={selected} embedded onBack={closeSelected} onEdit={setEditing} onRefresh={refresh} />
+                  </InlineRecordDrawer>
+                )}
+                </Fragment>
               )
             })}
           </div>
-          <Paginator total={filtered.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="accounts" />
+          <Paginator total={visibleAccounts.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="accounts" />
           </>
         ) : (
           <>
@@ -1884,8 +1901,8 @@ export default function AccountsManager({ onNavigate }) {
               </>
             )}
           </div>}
-          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <table className="w-full text-sm">
+          <div className="rounded-xl overflow-x-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <table className="account-collection-table w-full text-sm">
               <thead>
                 <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
                   <th className="text-left px-4 py-2 w-[44px]" style={{ color: 'var(--text-muted)' }}><input type="checkbox" checked={selectedIds.size === paginatedIds.length && paginatedIds.length > 0} onChange={toggleAll} style={{ width: 20, height: 20 }} /></th>
@@ -1900,8 +1917,11 @@ export default function AccountsManager({ onNavigate }) {
                 {paginated.map(a => {
                   const type = typeMeta(a.type), stage = stageMeta(a.stage)
                   const isSelected = selectedIds.has(a.id)
+                  const detailOpen = selected?.id === a.id
+                  const drawerId = `account-detail-${a.id}`
                   return (
-                    <tr key={a.id} onClick={() => setSelected(a)} className="group cursor-pointer" style={{ borderBottom: '1px solid var(--border)', background: isSelected ? 'var(--accent-soft)' : '' }}
+                    <Fragment key={a.id}>
+                    <tr data-record-container="account" onClick={event => { if (event.target.closest('button, input, a, select, textarea')) return; openSelected(a, event.currentTarget.querySelector('[data-account-trigger]')) }} className="group cursor-pointer" style={{ borderBottom: '1px solid var(--border)', background: isSelected ? 'var(--accent-soft)' : '' }}
                       onMouseEnter={e => { e.currentTarget.style.background = isSelected ? 'var(--accent-soft)' : 'var(--surface2)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = isSelected ? 'var(--accent-soft)' : '' }}>
                       <td className="px-4 py-3"><input type="checkbox" aria-label={`Select ${a.name}`} checked={isSelected} onClick={e => e.stopPropagation()} onChange={e => toggleSelected(a.id, e)} style={{ width: 20, height: 20 }} /></td>
@@ -1909,7 +1929,7 @@ export default function AccountsManager({ onNavigate }) {
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0" style={{ background: type.bg, color: type.color }}>{initials(a.name)}</div>
                           <div className="min-w-0">
-                            <div className="font-semibold truncate flex items-center gap-1.5" style={{ color: 'var(--text)' }}>{a.name}{a.priority === 'vip' && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'var(--red)', color: 'white' }}>VIP</span>}</div>
+                            <button type="button" data-account-trigger={a.id} aria-label={`Open ${a.name} account details`} aria-expanded={detailOpen} aria-controls={detailOpen ? drawerId : undefined} className="font-semibold truncate flex items-center gap-1.5 text-left" style={{ color: 'var(--text)', background: 'transparent', border: 0, padding: 0 }} onClick={event => { event.stopPropagation(); openSelected(a, event.currentTarget) }}>{a.name}{a.priority === 'vip' && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'var(--red)', color: 'white' }}>VIP</span>}</button>
                           </div>
                         </div>
                       </td>
@@ -1920,24 +1940,34 @@ export default function AccountsManager({ onNavigate }) {
                         <ItemActionsMenu
                           label={`Actions for ${a.name}`}
                           actions={[
-                            { label: 'Open account', onClick: () => setSelected(a) },
+                            { label: 'Open account', onClick: () => openSelected(a) },
                             { label: 'Edit account', onClick: () => setEditing(a) },
                             { label: 'Delete account', tone: 'danger', onClick: () => del(a.id) },
                           ]}
                         />
                       </td>
                     </tr>
+                    {detailOpen && (
+                      <tr className="account-detail-drawer-row">
+                        <td colSpan={6} className="p-3">
+                          <InlineRecordDrawer id={drawerId} label={`${a.name} account details`} onClose={closeSelected}>
+                            <AccountDetail account={selected} embedded onBack={closeSelected} onEdit={setEditing} onRefresh={refresh} />
+                          </InlineRecordDrawer>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   )
                 })}
               </tbody>
             </table>
           </div>
-          <Paginator total={filtered.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="accounts" />
+          <Paginator total={visibleAccounts.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="accounts" />
           </>
         )}
 
       {adding && <AccountForm onSave={save} onClose={() => setAdding(false)} />}
-      {editing && !selected && <AccountForm account={editing} onSave={save} onClose={() => setEditing(null)} />}
+      {editing && <AccountForm account={editing} onSave={save} onClose={() => setEditing(null)} />}
     </div>
   )
 }

@@ -6,11 +6,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        FCC_EDITION: ${FCC_EDITION:-openocti}
     env_file:
       - path: .env
         required: false
     environment:
       CRM_DATA_DIR: /data
+      DOCUMENT_FILES_DIR: /data/document-files
       DATA_BACKEND: ${DATA_BACKEND:-sqlite}
       FCC_EDITION: ${FCC_EDITION:-openocti}
       OPENCLAW_HOST: openclaw
@@ -44,6 +47,7 @@ services:
       context: .
       dockerfile: deploy/openclaw/Dockerfile
     environment:
+      FCC_EDITION: ${FCC_EDITION:-openocti}
       OPENCLAW_STATE_DIR: /data/openclaw
       OPENCLAW_GATEWAY_TOKEN: "${OPENCLAW_GATEWAY_TOKEN:-}"
       OPENCLAW_API_KEY: "${OPENCLAW_API_KEY:-}"

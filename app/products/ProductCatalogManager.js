@@ -850,13 +850,6 @@ export default function ProductCatalogManager() {
         icon={<Box size={22} />}
         title="Products & Billing"
         subtitle="Products, subscription plans, client billing, credits, and controlled Stripe synchronization"
-        viewToggle={
-          section === 'catalog'
-            ? <ViewModeToggle value={view === 'cards' ? 'card' : 'list'} onChange={mode => setView(mode === 'card' ? 'cards' : 'list')} modes={['list', 'card']} />
-            : ['plans', 'clients'].includes(section)
-              ? <ViewModeToggle value={subscriptionView === 'grid' ? 'card' : 'list'} onChange={mode => setSubscriptionView(mode === 'card' ? 'grid' : 'list')} modes={['list', 'card']} />
-              : null
-        }
       />
 
       <div className="command-toolbar mb-5">
@@ -935,8 +928,8 @@ export default function ProductCatalogManager() {
               <MetricCard label="Version" value="v1" detail="Catalog foundation done" />
             </div>
 
-            <section className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <div className="grid grid-cols-1 lg:grid-cols-[minmax(220px,1fr)_180px_220px_auto] gap-3 items-end">
+            <section className="command-toolbar">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_220px_auto] gap-3 items-end">
                 <label>
                   <span className="block text-xs uppercase mb-1" style={{ color: 'var(--text-muted)', letterSpacing: '0.06em' }}>Search</span>
                   <div className="relative">
@@ -961,7 +954,8 @@ export default function ProductCatalogManager() {
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </ThemedSelect>
                 </label>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 lg:justify-self-end">
+                  <ViewModeToggle value={view === 'cards' ? 'card' : 'list'} onChange={mode => setView(mode === 'card' ? 'cards' : 'list')} modes={['list', 'card']} />
                   <IconButton onClick={load} title="Refresh"><RefreshCw size={17} /></IconButton>
                 </div>
               </div>

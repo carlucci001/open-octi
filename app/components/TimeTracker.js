@@ -127,8 +127,17 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
     }
   }, [])
 
+  // The poll below runs in a mount-time closure; read the live local state through refs
+  // so a server-idle answer can correct a stale "running" restored from localStorage.
+  const runningRef = useRef(false)
+  const pausedRef = useRef(false)
+  useEffect(() => { runningRef.current = running; pausedRef.current = paused }, [running, paused])
+
   // Poll server-side timer state — voice agents (Maggie) write here when they start/stop
-  // the timer, so the UI must reflect those changes within ~2 seconds.
+  // the timer, so the UI must reflect those changes within ~2 seconds. The server is the
+  // single source of truth: if it says idle while this widget shows a session, the widget
+  // is stale (e.g. localStorage from an earlier day) and resets instead of offering a
+  // Stop that the server will refuse.
   useEffect(() => {
     let cancelled = false
     let lastSeenStatus = null
@@ -142,7 +151,7 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
         // Only adopt server state if it's different from current — and only when the change
         // came from a voice agent (not from this component's own writes)
         const serverActive = s.status === 'running' || s.status === 'paused'
-        const localActive = running || paused
+        const localActive = runningRef.current || pausedRef.current
         const accountChanged = s.accountId && s.accountId !== accountId
         const statusChanged = s.status !== lastSeenStatus
         const idChanged = s.accountId !== lastSeenAccountId
@@ -163,11 +172,14 @@ export default function TimeTracker({ variant = 'header', open: controlledOpen, 
             setRunning(false); setPaused(true)
           }
           if (idChanged || statusChanged) flash(`Timer ${s.status} for ${s.accountName}`)
-        } else if (!serverActive && localActive && lastSeenStatus !== null && lastSeenStatus !== 'idle') {
-          // Voice stopped/discarded — reset local
+        } else if (!serverActive && localActive) {
+          // Voice stopped/discarded, or this widget restored a session the server no longer
+          // has — reset local and clear the stale localStorage copy.
           setRunning(false); setPaused(false)
           setAccumulatedMs(0); setTickStartedAt(null); setSessionStartedAt(null); setNote('')
           setProjectId(''); setProjectName('')
+          saveState(null)
+          if (lastSeenStatus === null) flash('Timer was not running on the server — cleared a stale session')
         }
         lastSeenStatus = s.status
         lastSeenAccountId = s.accountId

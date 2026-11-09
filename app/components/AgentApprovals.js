@@ -1,15 +1,9 @@
 'use client'
-// Compact floating panel for agent-tool approvals. Polls
-// /api/admin/agent-approvals every 10s (paused while the tab is hidden),
-// lets Carl approve/deny individual requests and open/close a temporary
-// auto-approve window. When idle (nothing pending, no open window) it
-// collapses to a small unobtrusive pill that still exposes the 15/30/60m
-// auto-approve controls via a click-to-open popover, so a window can be
-// opened before a demo even when nothing is pending yet. Fails silently
-// (never throws, never console-spams, renders nothing at all — not even
-// the pill) on any fetch/auth problem so non-admin sessions see nothing.
-
-import { useCallback, useEffect, useRef, useState } from 'react'
+// One header launcher for agent approvals. Pending requests update its badge;
+// the panel opens only on request and stays clear of sidebar navigation.
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Lock, Unlock, X } from 'lucide-react'
 
 const POLL_MS = 10000
 const TICK_MS = 15000
@@ -86,15 +80,29 @@ function isWindowOpen(win) {
   return Number.isFinite(t) ? t > Date.now() : true
 }
 
-export default function AgentApprovals() {
+export default function AgentApprovals({ mobileHostId } = {}) {
   const [data, setData] = useState(null)
   const [busyId, setBusyId] = useState('')
   const [windowBusy, setWindowBusy] = useState(false)
-  const [pillOpen, setPillOpen] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [panelPosition, setPanelPosition] = useState(null)
+  const [mobileHost, setMobileHost] = useState(null)
   const [actionError, setActionError] = useState('')
   const [, setTick] = useState(0)
   const inFlightRef = useRef(false)
-  const pillRef = useRef(null)
+  const triggerRef = useRef(null)
+  const panelRef = useRef(null)
+  const panelId = useId()
+
+  // Move the same launcher to the mobile top bar without duplicating polling.
+  useEffect(() => {
+    if (!mobileHostId) return undefined
+    const media = window.matchMedia('(max-width: 1023px)')
+    const update = () => setMobileHost(media.matches ? document.getElementById(mobileHostId) : null)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [mobileHostId])
 
   const refresh = useCallback(async () => {
     if (inFlightRef.current) return
@@ -209,88 +217,264 @@ export default function AgentApprovals() {
   const recent = data && Array.isArray(data.recent) ? data.recent : []
   const windows = data && Array.isArray(data.windows) ? data.windows : []
   const activeWindow = windows.find(isWindowOpen) || null
-  const idle = pending.length === 0 && !activeWindow
+  const recentDecided = recent.filter(item => item.status && item.status !== 'pending').slice(0, 3)
 
-  // Collapse the popover automatically once there's something to show
-  // (a pending request or an open window) so the pill doesn't reopen stale.
-  useEffect(() => {
-    if (!idle) setPillOpen(false)
-  }, [idle])
+  const updatePanelPosition = useCallback(() => {
+    const rect = triggerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const width = Math.min(380, window.innerWidth - 24)
+    const fitsLeft = rect.left >= width + 20
+    const top = Math.max(12, Math.min(fitsLeft ? rect.top : rect.bottom + 8, window.innerHeight - 100))
+    setPanelPosition({
+      left: fitsLeft ? rect.left - width - 8 : Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12)),
+      top,
+      width,
+      maxHeight: Math.max(80, window.innerHeight - top - 12),
+    })
+  }, [])
 
-  // Close the idle popover on outside click or Escape.
   useEffect(() => {
-    if (!pillOpen) return undefined
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') setPillOpen(false)
+    if (!panelOpen || !data) return undefined
+    updatePanelPosition()
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(updatePanelPosition) : null
+    if (triggerRef.current) observer?.observe(triggerRef.current)
+    window.addEventListener('resize', updatePanelPosition)
+    window.addEventListener('scroll', updatePanelPosition, true)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', updatePanelPosition)
+      window.removeEventListener('scroll', updatePanelPosition, true)
     }
-    const onPointerDown = (e) => {
-      if (pillRef.current && !pillRef.current.contains(e.target)) setPillOpen(false)
+  }, [panelOpen, mobileHost, !!data, updatePanelPosition])
+
+  useEffect(() => {
+    if (!panelOpen || !data) return undefined
+    panelRef.current?.querySelector('button')?.focus()
+    const onKeyDown = event => {
+      if (event.key !== 'Escape') return
+      setPanelOpen(false)
+      triggerRef.current?.focus()
+    }
+    const onPointerDown = event => {
+      if (!triggerRef.current?.contains(event.target) && !panelRef.current?.contains(event.target)) setPanelOpen(false)
+    }
+    const onFocusIn = event => {
+      if (!triggerRef.current?.contains(event.target) && !panelRef.current?.contains(event.target)) setPanelOpen(false)
     }
     document.addEventListener('keydown', onKeyDown)
     document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('focusin', onFocusIn)
     return () => {
       document.removeEventListener('keydown', onKeyDown)
       document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('focusin', onFocusIn)
     }
-  }, [pillOpen])
+  }, [panelOpen, mobileHost, !!data])
 
   if (!data) return null
 
-  if (idle) {
-    return (
-      <aside
-        ref={pillRef}
-        aria-label="Agent action approvals"
-        style={{
-          position: 'fixed',
-          left: 18,
-          bottom: 18,
-          zIndex: 73,
-        }}
-      >
-        <button
-          type="button"
-          aria-expanded={pillOpen}
-          aria-label="Agent approvals. Open to set a temporary auto-approve window."
-          onClick={() => setPillOpen(v => !v)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            minHeight: 26,
-            padding: '5px 11px',
-            borderRadius: 999,
-            border: '1px solid var(--border)',
-            background: 'color-mix(in srgb, var(--surface, #fff) 82%, transparent)',
-            color: 'var(--text-muted)',
-            fontWeight: 600,
-            fontSize: 11,
-            lineHeight: 1,
-            cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.14)',
-            opacity: 0.82,
-          }}
-        >
-          <span aria-hidden="true" style={{ fontSize: 12 }}>🔒</span>
-          Agent approvals
-        </button>
+  const status = pending.length
+    ? `Agent approvals: ${pending.length} pending${activeWindow ? '; auto-approve window open' : ''}`
+    : activeWindow ? 'Agent approvals: auto-approve window open' : 'Agent approvals. Open to set a temporary auto-approve window.'
+  const GateIcon = activeWindow ? Unlock : Lock
+  const launcher = (
+    <button
+      ref={triggerRef}
+      type="button"
+      className="header-approvals-trigger"
+      aria-label={status}
+      aria-haspopup="dialog"
+      aria-expanded={panelOpen}
+      aria-controls={panelOpen ? panelId : undefined}
+      data-active={activeWindow || pending.length ? 'true' : undefined}
+      data-tooltip={status}
+      data-tooltip-side="bottom"
+      onClick={() => {
+        if (!panelOpen) updatePanelPosition()
+        setPanelOpen(value => !value)
+      }}
+    >
+      <GateIcon size={18} strokeWidth={2.2} aria-hidden="true" />
+      {pending.length > 0 && <span className="header-approvals-count" aria-hidden="true">{pending.length}</span>}
+    </button>
+  )
 
-        {pillOpen && (
+  return (
+    <>
+      {mobileHost ? createPortal(launcher, mobileHost) : launcher}
+      {panelOpen && createPortal(
+        <section
+          ref={panelRef}
+          id={panelId}
+          role="dialog"
+          aria-label="Agent action approvals"
+          className="header-approvals-panel"
+          style={{ ...panelPosition, visibility: panelPosition ? 'visible' : 'hidden' }}
+        >
+          <div className="header-approvals-panel-heading">
+            <strong>Approval gate</strong>
+            <button
+              type="button"
+              className="header-approvals-close"
+              aria-label="Close agent approvals"
+              data-tooltip="Close approvals"
+              data-tooltip-side="bottom"
+              onClick={() => { setPanelOpen(false); triggerRef.current?.focus() }}
+            ><X size={16} aria-hidden="true" /></button>
+          </div>
+          {activeWindow && (
+            <div
+              role="status"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 12,
+                border: '1px solid #f59e0b',
+                background: 'color-mix(in srgb, #f59e0b 18%, var(--surface, #fff))',
+                color: 'var(--text)',
+                fontSize: 13,
+                fontWeight: 700,
+                boxShadow: '0 12px 30px rgba(0,0,0,0.22)',
+              }}
+            >
+              <Unlock size={18} aria-hidden="true" style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                Agent actions auto-approved for another {countdown(activeWindow.expiresAt) || 'a while'}
+              </span>
+              <button
+                type="button"
+                aria-label="Close auto-approval window now"
+                onClick={() => closeWindow(activeWindow.id)}
+                disabled={windowBusy}
+                style={{
+                  minHeight: 32,
+                  padding: '4px 12px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface, #fff)',
+                  color: 'var(--text)',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: windowBusy ? 'default' : 'pointer',
+                  opacity: windowBusy ? 0.6 : 1,
+                }}
+              >Close</button>
+            </div>
+          )}
+
+          {pending.length > 0 && (
+            <div
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 14,
+                background: 'color-mix(in srgb, var(--surface, #fff) 94%, transparent)',
+                boxShadow: '0 16px 44px rgba(0,0,0,0.24)',
+                backdropFilter: 'blur(18px)',
+                padding: 12,
+                display: 'grid',
+                gap: 10,
+                maxHeight: '54vh',
+                overflowY: 'auto',
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>
+                Agent approvals needed ({pending.length})
+              </div>
+              {pending.map(item => {
+                const rows = summarizeArgs(item.argsSummary)
+                const busy = busyId === item.id
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      border: '1px solid var(--border)',
+                      borderRadius: 10,
+                      padding: '9px 10px',
+                      background: 'var(--surface2, #f1f5f9)',
+                      display: 'grid',
+                      gap: 6,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span
+                        aria-hidden="true"
+                        style={{ width: 8, height: 8, borderRadius: 999, background: riskColor(item.risk), flexShrink: 0 }}
+                      />
+                      <strong style={{ fontSize: 13, color: 'var(--text)' }}>{toolLabel(item.tool)}</strong>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        &middot; asked by {item.requestedByAgent || 'an agent'}
+                      </span>
+                      <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                        expires in {countdown(item.expiresAt) || 'unknown'}
+                      </span>
+                    </div>
+                    {item.reason && (
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.reason}</div>
+                    )}
+                    {rows.length > 0 && (
+                      <div style={{ display: 'grid', gap: 2, fontSize: 11, color: 'var(--text-muted)' }}>
+                        {rows.map((row, i) => (
+                          <div key={row.key || i} style={{ display: 'flex', gap: 6, minWidth: 0 }}>
+                            {row.key && <span style={{ fontWeight: 700, color: 'var(--text)', flexShrink: 0 }}>{row.key}:</span>}
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        aria-label={`Approve ${toolLabel(item.tool)} requested by ${item.requestedByAgent || 'an agent'}`}
+                        onClick={() => approve(item.id)}
+                        disabled={busy}
+                        style={{
+                          flex: 1,
+                          minHeight: 34,
+                          padding: '6px 10px',
+                          borderRadius: 8,
+                          border: '1px solid var(--accent, #3b82f6)',
+                          background: 'var(--accent, #3b82f6)',
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: 12,
+                          cursor: busy ? 'default' : 'pointer',
+                          opacity: busy ? 0.6 : 1,
+                        }}
+                      >{busy ? 'Working…' : 'Approve'}</button>
+                      <button
+                        type="button"
+                        aria-label={`Deny ${toolLabel(item.tool)} requested by ${item.requestedByAgent || 'an agent'}`}
+                        onClick={() => deny(item.id)}
+                        disabled={busy}
+                        style={{
+                          flex: 1,
+                          minHeight: 34,
+                          padding: '6px 10px',
+                          borderRadius: 8,
+                          border: '1px solid var(--border)',
+                          background: 'var(--surface, #fff)',
+                          color: 'var(--text)',
+                          fontWeight: 700,
+                          fontSize: 12,
+                          cursor: busy ? 'default' : 'pointer',
+                          opacity: busy ? 0.6 : 1,
+                        }}
+                      >Deny</button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           <div
-            role="dialog"
-            aria-label="Approve agent actions for a time window"
             style={{
-              marginTop: 8,
               display: 'flex',
               alignItems: 'center',
               gap: 6,
               flexWrap: 'wrap',
-              padding: '8px 10px',
-              borderRadius: 12,
-              border: '1px solid var(--border)',
-              background: 'color-mix(in srgb, var(--surface, #fff) 94%, transparent)',
-              boxShadow: '0 16px 44px rgba(0,0,0,0.24)',
-              backdropFilter: 'blur(18px)',
               fontSize: 11,
               color: 'var(--text-muted)',
             }}
@@ -318,225 +502,23 @@ export default function AgentApprovals() {
                 }}
               >{minutes}m</button>
             ))}
-            {actionError && (
-              <div style={{ width: '100%', fontSize: 11, color: '#ef4444' }}>{actionError}</div>
-            )}
           </div>
-        )}
-      </aside>
-    )
-  }
 
-  const recentDecided = recent.filter(item => item.status && item.status !== 'pending').slice(0, 3)
+          {actionError && (
+            <div style={{ fontSize: 11, color: '#ef4444', padding: '0 2px' }}>{actionError}</div>
+          )}
 
-  return (
-    <aside
-      aria-label="Agent action approvals"
-      style={{
-        position: 'fixed',
-        left: 18,
-        bottom: 18,
-        zIndex: 73,
-        width: 'min(380px, calc(100vw - 24px))',
-        display: 'grid',
-        gap: 8,
-      }}
-    >
-      {activeWindow && (
-        <div
-          role="status"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 12px',
-            borderRadius: 12,
-            border: '1px solid #f59e0b',
-            background: 'color-mix(in srgb, #f59e0b 18%, var(--surface, #fff))',
-            color: 'var(--text)',
-            fontSize: 13,
-            fontWeight: 700,
-            boxShadow: '0 12px 30px rgba(0,0,0,0.22)',
-          }}
-        >
-          <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>⚠️</span>
-          <span style={{ flex: 1, minWidth: 0 }}>
-            Agent actions auto-approved for another {countdown(activeWindow.expiresAt) || 'a while'}
-          </span>
-          <button
-            type="button"
-            aria-label="Close auto-approval window now"
-            onClick={() => closeWindow(activeWindow.id)}
-            disabled={windowBusy}
-            style={{
-              minHeight: 32,
-              padding: '4px 12px',
-              borderRadius: 8,
-              border: '1px solid var(--border)',
-              background: 'var(--surface, #fff)',
-              color: 'var(--text)',
-              fontWeight: 700,
-              fontSize: 12,
-              cursor: windowBusy ? 'default' : 'pointer',
-              opacity: windowBusy ? 0.6 : 1,
-            }}
-          >Close</button>
-        </div>
-      )}
-
-      {pending.length > 0 && (
-        <div
-          style={{
-            border: '1px solid var(--border)',
-            borderRadius: 14,
-            background: 'color-mix(in srgb, var(--surface, #fff) 94%, transparent)',
-            boxShadow: '0 16px 44px rgba(0,0,0,0.24)',
-            backdropFilter: 'blur(18px)',
-            padding: 12,
-            display: 'grid',
-            gap: 10,
-            maxHeight: '54vh',
-            overflowY: 'auto',
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>
-            Agent approvals needed ({pending.length})
-          </div>
-          {pending.map(item => {
-            const rows = summarizeArgs(item.argsSummary)
-            const busy = busyId === item.id
-            return (
-              <div
-                key={item.id}
-                style={{
-                  border: '1px solid var(--border)',
-                  borderRadius: 10,
-                  padding: '9px 10px',
-                  background: 'var(--surface2, #f1f5f9)',
-                  display: 'grid',
-                  gap: 6,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span
-                    aria-hidden="true"
-                    style={{ width: 8, height: 8, borderRadius: 999, background: riskColor(item.risk), flexShrink: 0 }}
-                  />
-                  <strong style={{ fontSize: 13, color: 'var(--text)' }}>{toolLabel(item.tool)}</strong>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    &middot; asked by {item.requestedByAgent || 'an agent'}
-                  </span>
-                  <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                    expires in {countdown(item.expiresAt) || 'unknown'}
-                  </span>
+          {recentDecided.length > 0 && (
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'grid', gap: 2, padding: '0 2px' }}>
+              {recentDecided.map(item => (
+                <div key={item.id} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {item.status} {toolLabel(item.tool)} {relTime(item.decidedAt)}
                 </div>
-                {item.reason && (
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.reason}</div>
-                )}
-                {rows.length > 0 && (
-                  <div style={{ display: 'grid', gap: 2, fontSize: 11, color: 'var(--text-muted)' }}>
-                    {rows.map((row, i) => (
-                      <div key={row.key || i} style={{ display: 'flex', gap: 6, minWidth: 0 }}>
-                        {row.key && <span style={{ fontWeight: 700, color: 'var(--text)', flexShrink: 0 }}>{row.key}:</span>}
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    type="button"
-                    aria-label={`Approve ${toolLabel(item.tool)} requested by ${item.requestedByAgent || 'an agent'}`}
-                    onClick={() => approve(item.id)}
-                    disabled={busy}
-                    style={{
-                      flex: 1,
-                      minHeight: 34,
-                      padding: '6px 10px',
-                      borderRadius: 8,
-                      border: '1px solid var(--accent, #3b82f6)',
-                      background: 'var(--accent, #3b82f6)',
-                      color: '#fff',
-                      fontWeight: 700,
-                      fontSize: 12,
-                      cursor: busy ? 'default' : 'pointer',
-                      opacity: busy ? 0.6 : 1,
-                    }}
-                  >{busy ? 'Working…' : 'Approve'}</button>
-                  <button
-                    type="button"
-                    aria-label={`Deny ${toolLabel(item.tool)} requested by ${item.requestedByAgent || 'an agent'}`}
-                    onClick={() => deny(item.id)}
-                    disabled={busy}
-                    style={{
-                      flex: 1,
-                      minHeight: 34,
-                      padding: '6px 10px',
-                      borderRadius: 8,
-                      border: '1px solid var(--border)',
-                      background: 'var(--surface, #fff)',
-                      color: 'var(--text)',
-                      fontWeight: 700,
-                      fontSize: 12,
-                      cursor: busy ? 'default' : 'pointer',
-                      opacity: busy ? 0.6 : 1,
-                    }}
-                  >Deny</button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          flexWrap: 'wrap',
-          fontSize: 11,
-          color: 'var(--text-muted)',
-        }}
-      >
-        <span style={{ fontWeight: 700, color: 'var(--text)' }}>Auto-approve:</span>
-        {WINDOW_CHOICES.map(minutes => (
-          <button
-            key={minutes}
-            type="button"
-            aria-label={`Approve agent actions for ${minutes} minutes`}
-            title={`Approve agent actions for ${minutes} minutes`}
-            onClick={() => openWindow(minutes)}
-            disabled={windowBusy}
-            style={{
-              minHeight: 28,
-              padding: '4px 10px',
-              borderRadius: 999,
-              border: '1px solid var(--border)',
-              background: 'var(--surface2, #f1f5f9)',
-              color: 'var(--text)',
-              fontWeight: 700,
-              fontSize: 11,
-              cursor: windowBusy ? 'default' : 'pointer',
-              opacity: windowBusy ? 0.6 : 1,
-            }}
-          >{minutes}m</button>
-        ))}
-      </div>
-
-      {actionError && (
-        <div style={{ fontSize: 11, color: '#ef4444', padding: '0 2px' }}>{actionError}</div>
-      )}
-
-      {recentDecided.length > 0 && (
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'grid', gap: 2, padding: '0 2px' }}>
-          {recentDecided.map(item => (
-            <div key={item.id} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {item.status} {toolLabel(item.tool)} {relTime(item.decidedAt)}
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </section>, document.body,
       )}
-    </aside>
+    </>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { isOpenOcti } from '@/lib/edition'
+import ViewModeToggle from '../components/ViewModeToggle'
 import {
   AlertTriangle,
   CheckCircle2,
@@ -229,7 +230,7 @@ function ClientSubscriptions({
           Active Command Center leases and their locally verified Stripe billing state. Customer contact details and Stripe identifiers are not displayed.
         </p>
       </div>
-      <div className="command-toolbar grid grid-cols-1 lg:grid-cols-[minmax(240px,1fr)_190px_190px] gap-3 items-end">
+      <div className="command-toolbar grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_190px_auto] gap-3 items-end">
         <label className="grid gap-1 text-sm font-semibold">Search
           <span className="relative block"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} aria-hidden="true" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search client or plan" aria-label="Search client subscriptions" style={{ ...fieldStyle, paddingLeft: 38 }} /></span>
         </label>
@@ -239,6 +240,7 @@ function ClientSubscriptions({
         <label className="grid gap-1 text-sm font-semibold">Billing status
           <select value={billingFilter} onChange={event => setBillingFilter(event.target.value)} style={fieldStyle} aria-label="Filter client subscriptions by billing status"><option value="all">All billing states</option>{billingStatuses.map(status => <option key={status} value={status}>{status.replaceAll('_', ' ')}</option>)}</select>
         </label>
+        {onViewChange && <ViewModeToggle value={view === 'grid' ? 'card' : 'list'} onChange={mode => onViewChange(mode === 'card' ? 'grid' : 'list')} modes={['list', 'card']} className="justify-self-start lg:justify-self-end" />}
       </div>
       <div className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>{filtered.length} of {clients.length} client subscriptions</div>
 

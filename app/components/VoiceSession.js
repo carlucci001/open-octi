@@ -6,12 +6,22 @@ import VoiceFullscreen from './VoiceFullscreen'
 import { resolveCommandCenterTab, labelForCommandCenterTab, COMMAND_CENTER_SECTIONS } from '@/lib/commandCenterNavigation'
 import { COMMAND_CENTER_LIVE_VOICE_RULES, OFFICE_AGENT_CONDUCT } from '@/lib/agentOfficeConduct'
 import { OPENAI_REALTIME_TOOLS } from '@/lib/realtime-voice-tools'
+import { SASHA_MEDIA_INSTRUCTIONS } from '@/lib/sasha-media-instructions'
 import { buildAgentHandoffPayload } from '@/lib/agent-handoff'
-import { buildWakeStartOptions } from '@/lib/voiceWakeStart'
+import { buildWakeStartOptions, matchIntentionalAgentWake } from '@/lib/voiceWakeStart'
+import { useWakeListeningIndicator } from '@/lib/use-wake-listening-indicator'
 import { createRealtimeSessionScope, realtimeGreeting } from '@/lib/realtime-session-scope'
+import { createGptLiveConnection } from '@/lib/gpt-live-connection'
+import { createGptLiveClientBridge } from '@/lib/gpt-live-client-bridge'
+import { resolveVoiceStartRoster } from '@/lib/voice-start-roster'
+import { gptLiveAgentName, shouldFallbackToGemini, wantsForcedGemini, withGeminiFallbackVoice } from '@/lib/voice-gpt-live-fallback'
 import { createStreamAudioMeter, playRealtimeAudio } from '@/lib/realtime-audio'
+import { createGeminiLiveAudio, requestGeminiLiveToken, beginGeminiLiveTokenRequest, decodeGeminiOutputAudio, createGeminiOutputMeter, sendGeminiInitialTurn } from '@/lib/gemini-live-audio'
+import { GEMINI_MICROPHONE_CONSTRAINTS, GEMINI_MICROPHONE_ENDED_MESSAGE, snapshotGeminiMicrophone, hasLiveGeminiMicrophone, stopGeminiMicrophone, recoverGeminiMicrophone, selectWorkingGeminiMicrophone, watchGeminiMicrophone, encodeGeminiPcm, createGeminiInputMeter, createGeminiCaptureDiagnostics, wakeRecognitionErrorMessage } from '@/lib/gemini-capture'
 import { appendVoiceTranscriptChunk, isVoiceEndIntent } from '@/lib/voice-end-intent'
 import { parseCrmActionArgs, rankCrmCapabilities } from '@/lib/crm-operator-tools'
+import { createVoiceInvoiceTools } from '@/lib/voice-invoice-tools'
+import { readDomainToolResponse, describeDomainAvailability, requestDomainRegistration } from '@/lib/domain-tool-response'
 import { clientCapabilityStatus } from '@/lib/client-capabilities'
 import { isOpenOcti } from '@/lib/edition'
 import { OpenOctiConfigurationLinks } from './OpenOctiConfigurationNotice'
@@ -33,6 +43,7 @@ const CLIENT_TOOL_NAMES = [
   'check_jules_status', 'delegate_to_jules', 'create_plugin_change_request', 'create_openclaw_plugin_spec',
   'daily_briefing', 'ops_status', 'repository_status', 'backup_status', 'whats_next', 'whats_overdue',
   'pipeline_status', 'account_summary', 'outstanding_invoices', 'invoice_command', 'client_balance',
+  'list_invoices', 'invoice_payment_link', 'check_invoice_payment', 'send_invoice_via_stripe',
   'overdue_items', 'overhead_summary', 'recent_payments',
   'create_account', 'create_task', 'complete_task', 'log_activity',
   'dictate_email', 'move_pipeline_stage',
@@ -43,12 +54,14 @@ const CLIENT_TOOL_NAMES = [
   'create_contact', 'find_contact', 'create_calendar_event', 'book_demo',
   'start_video_call', 'filter_leads', 'navigate_to', 'fcc_navigate_to',
   'command_center_action', 'crm_capabilities', 'crm_action', 'transfer_to_agent',
+  'crm_execute', 'report_to_carl', 'control_timer', 'post_site_note',
   'search_twilio_numbers', 'prepare_twilio_number_setup',
   'dial_phone', 'list_upcoming_events',
   'create_content_draft', 'generate_image', 'list_media',
   'take_note_for_client', 'remember_fact', 'recall_memory', 'list_agent_memory',
   'forget_memory', 'save_call_memory', 'send_media_to_client',
   'start_orchestration', 'answer_flow_question', 'check_flow_status',
+  'start_deep_research', 'research_status', 'cancel_research',
 ]
 
 async function discoverCrmCapabilities({ component = '', task = '' } = {}) {
@@ -86,11 +99,11 @@ async function discoverCrmCapabilities({ component = '', task = '' } = {}) {
   })
 }
 
-async function runCrmAction({ toolName, tool, argsJson } = {}) {
+export async function runCrmAction({ toolName, tool, argsJson, args } = {}) {
   const selectedTool = String(toolName || tool || '').trim()
   if (!selectedTool) throw new Error('toolName is required')
-  if (selectedTool === 'crm_action' || selectedTool === 'fcc_call') throw new Error('Nested CRM action calls are not allowed')
-  const parsedArgs = parseCrmActionArgs(argsJson)
+  if (selectedTool === 'crm_action' || selectedTool === 'crm_execute' || selectedTool === 'fcc_call') throw new Error('Nested CRM action calls are not allowed')
+  const parsedArgs = parseCrmActionArgs(argsJson ?? args)
   if (VOICE_AUTOMATION_ACTIONS.has(selectedTool)) {
     const target = parsedArgs.name || parsedArgs.target || ''
     const value = parsedArgs.answer ?? parsedArgs.description ?? parsedArgs.value ?? ''
@@ -134,8 +147,11 @@ const FALLBACK_VOICE_AGENTS = [
     id: 'main',
     firstName: 'Maggie',
     name: 'Maggie',
-    voiceName: 'Maggie',
-    voiceProvider: 'elevenlabs',
+    voiceName: 'Leda',
+    voiceProvider: 'gemini',
+    geminiVoice: 'Leda',
+    geminiModel: 'gemini-3.8-live',
+    voiceProfile: { provider: 'gemini', geminiVoice: 'Leda', geminiModel: 'gemini-3.8-live', voiceName: 'Leda' },
     role: 'Office Manager',
     category: 'operations',
   },
@@ -367,6 +383,12 @@ function logVoiceTransferEvent(event = {}) {
     error: compactTransferValue(event.error, 220),
     reason: compactTransferValue(event.reason, 160),
     elapsedMs: Number.isFinite(event.elapsedMs) ? Math.max(0, Math.round(event.elapsedMs)) : null,
+    ...(event.stage === 'gpt-live-session-ended' ? {
+      finalizationConfirmed: event.finalizationConfirmed === true,
+      usageSeconds: event.usageSeconds,
+      backendUsage: event.backendUsage,
+      timingSamples: event.timingSamples,
+    } : {}),
     route: compactTransferValue(`${window.location.pathname}${window.location.search}`, 180),
     at: new Date().toISOString(),
   }
@@ -884,6 +906,8 @@ async function runVoiceCampaignAction(action, target, value) {
 }
 
 function logRealtimeVoiceUsage(run, reason = 'voice session ended') {
+  // GPT-Live finalizes usage on session.closed, not when the Stop button fires.
+  if (run?.model === 'gpt-live-1') return
   if (!run || run.usageLogged || !['openai', 'gemini', 'elevenlabs'].includes(run.provider)) return
   run.usageLogged = true
   logVoiceTransferEvent({
@@ -1164,6 +1188,8 @@ function VoiceButton({ activeContext, activeSection }) {
   const transferInFlightRef = useRef(false)
   const pendingVoiceTransferRef = useRef(null)
   const signedUrlCacheRef = useRef(new Map())
+  const rosterRequestRef = useRef(null)
+  const gptLiveStartErrorRef = useRef('')
   const startRef = useRef(null)
   const activeVoiceLabRunRef = useRef(null)
   const userVoiceTranscriptHandlerRef = useRef(() => false)
@@ -1186,12 +1212,17 @@ function VoiceButton({ activeContext, activeSection }) {
 
   useEffect(() => {
     let cancelled = false
+    const rosterRequest = fetch('/api/voice/roster').then(async response => {
+      const data = await response.json()
+      return response.ok && Array.isArray(data.agents) ? data.agents : null
+    }).catch(() => null)
+    rosterRequestRef.current = rosterRequest
     Promise.all([
-      fetch('/api/voice/roster').then(r => r.json()),
+      rosterRequest,
       isOpenOcti() ? Promise.resolve(null) : clientCapabilityStatus('elevenlabs'),
-    ]).then(([j, voiceCapability]) => {
+    ]).then(([agents, voiceCapability]) => {
       if (cancelled) return
-      const merged = mergeVoiceRoster(Array.isArray(j.agents) ? j.agents : [])
+      const merged = mergeVoiceRoster(agents || [])
       setRoster(merged)
       setVoiceSetupNeeded(isOpenOcti() ? !merged.some(agent => agent.providerReady) : voiceCapability.status !== 'configured')
       if (voiceCapability?.status === 'configured') {
@@ -1408,6 +1439,7 @@ function VoiceButton({ activeContext, activeSection }) {
     } catch {}
   }, [conversation, conversation.status, activeSection, activeContext])
   const startInFlightRef = useRef(false)
+  const voiceStartAttemptRef = useRef(null)
   const voiceStartGuardRef = useRef({ key: '', at: 0 })
   const [openAiStatus, setOpenAiStatus] = useState('idle')
   const [openAiSpeaking, setOpenAiSpeaking] = useState(false)
@@ -1416,6 +1448,18 @@ function VoiceButton({ activeContext, activeSection }) {
 
   const endOpenAiSession = useCallback(() => {
     const s = openAiRef.current
+    if (s.gptLive) {
+      clearInterval(s.speakingTimer)
+      s.inputMeter?.close()
+      s.outputMeter?.close()
+      openAiRef.current = { pc: null, dc: null, audioEl: null, micStream: null }
+      setOpenAiSpeaking(false)
+      setAudioPlaybackBlocked(false)
+      setOpenAiStatus('idle')
+      // Release the microphone immediately; the owned channel drains final usage.
+      s.gptLive.close()
+      return
+    }
     s.scope?.retire()
     s.inputMeter?.close()
     s.outputMeter?.close()
@@ -1470,15 +1514,20 @@ function VoiceButton({ activeContext, activeSection }) {
       })
     }
     s.active = false
+    try { s.microphoneGuard?.close?.() } catch {}
     try { s.apiAbort?.abort?.() } catch {}
     try { s.recognition?.stop?.() } catch {}
     try { s.ws?.close?.() } catch {}
+    if (s.processor) s.processor.onaudioprocess = null
     try { s.processor?.disconnect?.() } catch {}
+    try { s.inputMeter?.close?.() } catch {}
+    try { s.outputMeter?.close?.() } catch {}
+    clearTimeout(s.captureDiagnosticTimer)
     try { s.source?.disconnect?.() } catch {}
     try { s.silenceGain?.disconnect?.() } catch {}
-    try { s.micStream?.getTracks?.().forEach(t => t.stop()) } catch {}
+    stopGeminiMicrophone(s.micStream, typeof window !== 'undefined' ? window.__fccMicStreams : null)
     try { s.scheduledSources?.forEach(src => { try { src.stop() } catch {} }) } catch {}
-    try { s.audioContext?.close?.() } catch {}
+    try { s.audioRuntime ? s.audioRuntime.close() : s.audioContext?.close?.() } catch {}
     try { s.audioEl?.pause?.() } catch {}
     try { if (s.recWatchdog) clearInterval(s.recWatchdog) } catch {}
     if (typeof window !== 'undefined') window.__fccChirpSessionActive = false
@@ -1529,6 +1578,7 @@ function VoiceButton({ activeContext, activeSection }) {
       } catch {}
     }
     startInFlightRef.current = false
+    voiceStartAttemptRef.current = null
     if (typeof window !== 'undefined') {
       window.__fccVoiceStarting = false
       if (aggressive) {
@@ -1607,11 +1657,28 @@ function VoiceButton({ activeContext, activeSection }) {
   const isConnecting = isElevenConnecting || openAiStatus === 'connecting' || labLiveStatus === 'thinking'
   const getOpenAiOutputBytes = useCallback(() => openAiRef.current.outputMeter?.read() || null, [])
   const getOpenAiInputBytes = useCallback(() => openAiRef.current.inputMeter?.read() || null, [])
-  const getOutputBytes = isOpenAiActive ? getOpenAiOutputBytes : conversation.getOutputByteFrequencyData
-  const getInputBytes = isOpenAiActive ? getOpenAiInputBytes : conversation.getInputByteFrequencyData
+  const getGeminiInputBytes = useCallback(() => labLiveRef.current?.provider === 'gemini' ? labLiveRef.current.inputMeter?.read() || null : null, [])
+  const getGeminiOutputBytes = useCallback(() => labLiveRef.current?.provider === 'gemini' ? labLiveRef.current.outputMeter?.read() || null : null, [])
+  const getOutputBytes = isOpenAiActive ? getOpenAiOutputBytes : isLabLiveActive && labLiveRef.current?.provider === 'gemini' ? getGeminiOutputBytes : conversation.getOutputByteFrequencyData
+  const getInputBytes = isOpenAiActive ? getOpenAiInputBytes : isLabLiveActive && labLiveRef.current?.provider === 'gemini' ? getGeminiInputBytes : conversation.getInputByteFrequencyData
   const outputLevel = useAudioLevel(isActive && isSpeaking, getOutputBytes)
   const inputLevel = useAudioLevel(isActive && !isSpeaking, getInputBytes)
   const level = isSpeaking ? outputLevel : inputLevel
+
+  useEffect(() => {
+    const mobileWake = isMobileOrTabletDevice()
+    if (!wakeOn || !wakeSupported || (mobileWake && !listenArmed) || isActive || isConnecting || !roster.some(agent => agent.gptLive || agent.gptLivePilot)) return
+    const controller = new AbortController()
+    const prepare = () => {
+      void fetch('/api/voice/gpt-live/session', { credentials: 'include', cache: 'no-store', signal: controller.signal }).catch(() => {})
+    }
+    // Load only instructions while waiting for the wake phrase (no agentId: the
+    // server prepares every GPT-Live agent). Voice and its billing still begin
+    // only when an agent is actually summoned.
+    prepare()
+    const timer = window.setInterval(prepare, 45000)
+    return () => { window.clearInterval(timer); controller.abort() }
+  }, [wakeOn, wakeSupported, listenArmed, isActive, isConnecting, roster])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1682,7 +1749,7 @@ function VoiceButton({ activeContext, activeSection }) {
   // Broadcast the roster so the live equalizer's hover-switcher can list agents (avatar + name).
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const list = (roster || []).map(a => ({ id: a.id, name: a.firstName || a.name || a.id, avatar: (typeof a.avatar === 'string' ? a.avatar : a.avatar?.url) || null }))
+    const list = (roster || []).map(a => ({ id: a.id, name: a.firstName || a.name || a.id, avatar: (typeof a.avatar === 'string' ? a.avatar : a.avatar?.url) || null, provider: a.voiceProfile?.provider || a.voiceProvider, model: a.voiceProfile?.openaiModel || a.openaiModel, voiceName: a.voiceProfile?.voiceName || a.voiceName }))
     window.__fccVoiceRoster = list
     window.dispatchEvent(new CustomEvent('fcc:voice-roster', { detail: list }))
   }, [roster])
@@ -1821,8 +1888,47 @@ function VoiceButton({ activeContext, activeSection }) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
     let stopped = false
     let recRunning = false
+    let networkFailures = 0
+    let retryTimer = null
+    let startedAt = 0
+    const reconnectMessage = 'Wake listening lost its connection. Reconnecting…'
+    const failWake = (error, options) => {
+      if (stopped || window.__fccChirpSessionActive || window.__fccVoiceActive || window.__fccVoiceStarting) return
+      const message = wakeRecognitionErrorMessage(error, options)
+      if (!message) return
+      if (error?.error === 'network') {
+        if (recRunning && Date.now() - startedAt >= 30000) networkFailures = 0
+        const retryDelay = [1000, 3000, 8000][networkFailures]
+        if (retryDelay !== undefined) {
+          networkFailures += 1
+          recRunning = false
+          setWakeListening(false)
+          setError(reconnectMessage)
+          // Detach before stopping: its delayed end/error events must not
+          // cancel recovery, and the watchdog must respect the backoff.
+          const previousRecognizer = wakeRecRef.current
+          wakeRecRef.current = null
+          retryTimer = setTimeout(() => { retryTimer = null; launch() }, retryDelay)
+          try { previousRecognizer?.stop?.() } catch {}
+          logVoiceTransferEvent({ stage: 'wake-listening-retry', reason: 'network', status: 'reconnecting', elapsedMs: retryDelay })
+          return
+        }
+      }
+      stopped = true
+      clearTimeout(retryTimer)
+      retryTimer = null
+      recRunning = false
+      setWakeListening(false)
+      setWakeOn(false)
+      setListenArmed(false)
+      setError(message)
+      try { wakeRecRef.current?.stop?.() } catch {}
+      wakeRecRef.current = null
+      logVoiceTransferEvent({ stage: 'wake-listening-error', reason: error?.error || error?.name || String(error), status: 'unavailable' })
+      window.dispatchEvent(new CustomEvent('fcc:voice-error', { detail: { message } }))
+    }
     const launch = () => {
-      if (stopped) return
+      if (stopped || retryTimer !== null) return
       // A live or starting voice session (ElevenLabs, OpenAI, or Chirp) owns
       // the mic — never bring up a wake recognizer underneath it.
       if (typeof window !== 'undefined' && (window.__fccChirpSessionActive || window.__fccVoiceActive || window.__fccVoiceStarting)) {
@@ -1832,13 +1938,27 @@ function VoiceButton({ activeContext, activeSection }) {
         logWakeGateBlock('launch')
         return
       }
-      try { wakeRecRef.current?.stop?.() } catch {}
-      const rec = new SR()
-      rec.onstart = () => { recRunning = true; if (!stopped) setWakeListening(true) }
+      const previousRecognizer = wakeRecRef.current
+      wakeRecRef.current = null
+      try { previousRecognizer?.stop?.() } catch {}
+      let rec
+      try { rec = new SR() } catch (error) { failWake(error, { startFailed: true }); return }
+      rec.onstart = () => {
+        if (stopped || wakeRecRef.current !== rec) return
+        recRunning = true
+        startedAt = Date.now()
+        if (networkFailures > 0) {
+          setError(current => current === reconnectMessage ? '' : current)
+          logVoiceTransferEvent({ stage: 'wake-listening-reconnected', reason: 'network', status: 'listening' })
+        }
+        setWakeListening(true)
+      }
       rec.continuous = true
       rec.interimResults = true
       rec.lang = 'en-US'
       rec.onresult = (event) => {
+        if (stopped || wakeRecRef.current !== rec) return
+        networkFailures = 0
         // Any live/starting voice session (Chirp, ElevenLabs, OpenAI) owns the
         // mic. If a zombie wake recognizer survives its stop() call, ignore
         // everything it hears so it can't clobber a live session (this is what
@@ -1888,17 +2008,12 @@ function VoiceButton({ activeContext, activeSection }) {
             startRef.current?.(selectedAgentId && selectedAgentId !== 'matilda' ? selectedAgentId : null)
             return
           }
-          const directDeerFlow = DIRECT_DEERFLOW_WAKE_ALIASES.find(entry => entry.names.some(name => {
-            const safeName = escapeRe(name).replace(/\s+/g, '\\s+')
-            return new RegExp(`\\b(?:hey|hay)?\\s*${safeName}\\b`).test(heard)
-          }))
+          const directDeerFlow = matchIntentionalAgentWake(heard, DIRECT_DEERFLOW_WAKE_ALIASES)
           if (directDeerFlow) {
             if (startInFlightRef.current || window.__fccVoiceStarting) return
             try { rec.stop() } catch {}
             const matched = wakeAgents.find(a => a.id === directDeerFlow.id) || FALLBACK_VOICE_AGENTS.find(a => a.id === directDeerFlow.id)
-            const directNames = directDeerFlow.names.map(name => escapeRe(name).replace(/\s+/g, '\\s+')).join('|')
-            const directPrefix = new RegExp(`^.*?\\b(?:hey|hay)?\\s*(?:${directNames})\\b\\s*`)
-            const initialText = heard.replace(directPrefix, '').trim()
+            const initialText = directDeerFlow.initialText
             logVoiceTransferEvent({
               stage: 'wake-direct-deerflow',
               to: matched?.firstName || matched?.name || directDeerFlow.id,
@@ -1935,26 +2050,23 @@ function VoiceButton({ activeContext, activeSection }) {
           }
         }
       }
-      rec.onend = () => { recRunning = false; setWakeListening(false); if (!stopped && wakeOn && !isActive && !isConnecting && !window.__fccVoiceStarting && !window.__fccChirpSessionActive && !window.__fccVoiceActive) setTimeout(() => launch(), 75) }
-      rec.onerror = (e) => {
+      rec.onend = () => {
+        if (stopped || wakeRecRef.current !== rec) return
+        recRunning = false
         setWakeListening(false)
-        if (e.error === 'not-allowed') { stopped = true; setWakeOn(false); setListenArmed(false); setError('Microphone permission denied for wake-word'); return }
-        if (isOpenOcti() && ['network', 'service-not-allowed', 'audio-capture'].includes(e.error)) {
-          stopped = true
-          setWakeOn(false)
-          setListenArmed(false)
-          setError(`Wake words are unavailable in this browser (${e.error}). You can still start a voice conversation.`)
-          return
-        }
-        // 'no-speech' / 'aborted' / 'audio-capture' — let onend restart us
+        if (wakeOn && !isActive && !isConnecting && !window.__fccVoiceStarting && !window.__fccChirpSessionActive && !window.__fccVoiceActive) setTimeout(() => launch(), 75)
       }
-      try { rec.start(); wakeRecRef.current = rec } catch {}
+      rec.onerror = (e) => {
+        if (stopped || wakeRecRef.current !== rec || window.__fccChirpSessionActive || window.__fccVoiceActive || window.__fccVoiceStarting) return
+        setWakeListening(false)
+        failWake(e)
+      }
+      wakeRecRef.current = rec
+      try { rec.start() } catch (error) { failWake(error, { startFailed: true }) }
     }
     launch()
-    // Watchdog: rec.start() failures are swallowed above, and a zombie
-    // recognizer can hold Chrome's single SpeechRecognition slot — without
-    // this, one lost start leaves the wake listener deaf until a full page
-    // reload. Re-arm whenever we should be listening but aren't.
+    // Recover a recognizer that ends without a terminal error. Startup and
+    // terminal failures are reported above and deliberately stop this loop.
     const wakeWatchdog = setInterval(() => {
       if (stopped || recRunning) return
       if (typeof window !== 'undefined' && (window.__fccChirpSessionActive || window.__fccVoiceActive || window.__fccVoiceStarting)) {
@@ -1983,7 +2095,7 @@ function VoiceButton({ activeContext, activeSection }) {
       }
       launch()
     }, 2500)
-    return () => { stopped = true; clearInterval(wakeWatchdog); try { wakeRecRef.current?.stop() } catch {}; wakeRecRef.current = null }
+    return () => { stopped = true; clearTimeout(retryTimer); clearInterval(wakeWatchdog); try { wakeRecRef.current?.stop() } catch {}; wakeRecRef.current = null }
   }, [wakeOn, wakeSupported, isActive, isConnecting, listenArmed, roster])
 
   // Idle animation tick — drives the breathing bars when no audio is playing
@@ -1994,9 +2106,86 @@ function VoiceButton({ activeContext, activeSection }) {
     return () => clearInterval(id)
   }, [isActive])
 
-  const startOpenAiSession = useCallback(async ({ agentId, micStream, clientTools, firstMessage, silent, labRun }) => {
+  const startOpenAiSession = useCallback(async ({ agentId, agentName: agentNameOpt, micStream, clientTools, firstMessage, silent, labRun, context, promptOverride = '', deferStartErrors = false }) => {
     endOpenAiSession()
     setOpenAiStatus('connecting')
+    if (labRun?.model === 'gpt-live-1') {
+      const agentName = String(agentNameOpt || labRun.agentName || agentId || '').trim() || 'the agent'
+      // While a Gemini fallback is still available, a failure before the session
+      // connects is logged and handed to start() instead of shown as an error.
+      let deferErrors = deferStartErrors === true
+      gptLiveStartErrorRef.current = ''
+      setLastEvent(`connecting ${agentName} with GPT-Live`)
+      const session = { ...labRun, provider: 'openai', agentId, micStream }
+      const isCurrent = () => openAiRef.current === session
+      const scope = { isCurrent }
+      session.inputMeter = createStreamAudioMeter(micStream)
+      void session.inputMeter?.resume()
+      const connection = createGptLiveConnection({
+        agentId, agentName, micStream, clientTools, silent: false, context, isCurrent,
+        // Same session prompt the ElevenLabs path applies as an override (persona + live-voice rules + page facts).
+        extraBody: typeof promptOverride === 'string' && promptOverride.trim() ? { promptOverride } : {},
+        onTiming: timing => logVoiceTransferEvent({ ...labRun, stage: `gpt-live-${timing.phase}`,
+          elapsedMs: timing.elapsedMs, result: JSON.stringify(timing.timings) }),
+        onConnected: () => {
+          if (!isCurrent()) return
+          deferErrors = false
+          setOpenAiStatus('connected')
+          setLastEvent(`${agentName} connected with GPT-Live`)
+          emitVoiceLabTest({ ...labRun, stage: 'connected', status: 'connected' })
+        },
+        onAudio: (stream, audioEl) => {
+          if (!isCurrent()) return
+          session.outputMeter?.close()
+          session.outputMeter = createStreamAudioMeter(stream)
+          void session.outputMeter?.resume()
+          clearInterval(session.speakingTimer)
+          session.speakingTimer = setInterval(() => {
+            if (!isCurrent()) return
+            const speaking = Boolean(session.outputMeter?.read()?.some(value => value > 24))
+            setOpenAiSpeaking(speaking)
+            if (speaking) connection.noteAudibleOutput()
+          }, 120)
+          void playRealtimeAudio(audioEl, scope, message => { setAudioPlaybackBlocked(true); setError(message) })
+        },
+        onTranscript: ({ role, text, delta }) => {
+          if (!isCurrent()) return
+          if (role === 'user') setLastUserText(text)
+          else setLastAgentText(text)
+          emitVoiceLabTest({ ...labRun, stage: 'transcript', role, text: delta, status: 'running' })
+        },
+        onError: message => {
+          if (!isCurrent()) return
+          if (deferErrors) {
+            gptLiveStartErrorRef.current = String(message || '')
+            logVoiceTransferEvent({ ...labRun, stage: 'gpt-live-start-error', reason: message })
+            return
+          }
+          setError(message)
+          window.dispatchEvent(new CustomEvent('fcc:voice-error', { detail: { message, agentId } }))
+        },
+        onClosed: result => {
+          clearInterval(session.speakingTimer)
+          session.inputMeter?.close()
+          session.outputMeter?.close()
+          logVoiceTransferEvent({ ...labRun, stage: 'gpt-live-session-ended',
+            requestId: result.sessionId, finalizationConfirmed: result.confirmed,
+            usageSeconds: result.seconds, elapsedMs: result.elapsedSeconds * 1000,
+            backendUsage: result.backendUsage, timingSamples: result.timingSamples, reason: result.reason })
+          if (!isCurrent()) return
+          setOpenAiStatus('idle')
+          setOpenAiSpeaking(false)
+          setLastEvent(result.confirmed ? `${agentName}’s voice session ended` : `${agentName} stopped; final API usage is unconfirmed`)
+          setActiveVoiceRuntime(null)
+          activeVoiceLabRunRef.current = null
+          openAiRef.current = { pc: null, dc: null, audioEl: null, micStream: null }
+          emitVoiceLabTest({ ...labRun, stage: 'ended', status: 'ended', reason: result.reason })
+        },
+      })
+      Object.assign(session, { ...connection, gptLive: connection })
+      openAiRef.current = session
+      return connection.start()
+    }
     setLastEvent('starting OpenAI Realtime')
     const pc = new RTCPeerConnection()
     const audioEl = document.createElement('audio')
@@ -2157,26 +2346,46 @@ function VoiceButton({ activeContext, activeSection }) {
     }
   }, [endOpenAiSession, handleUserVoiceTranscript, runDirectTransferFromTranscript])
 
-  const startLabLiveSession = useCallback(async ({ agent, provider, model, voiceName, micStream, silent, runId, context }) => {
+  const startLabLiveSession = useCallback(async ({ agent, provider, model, voiceName, micStream, silent, initialText, runId, context, audioRuntime, requestController, tokenRequest }) => {
     if (provider !== 'gemini') {
       try { micStream?.getTracks()?.forEach(t => t.stop()) } catch {}
       throw new Error(`${provider} is not wired for full-duplex live mode yet.`)
     }
-    endLabLiveSession({ reason: 'resetting Gemini Live session' })
+    const runtime = audioRuntime || createGeminiLiveAudio()
+    const apiAbort = requestController || new AbortController()
+    const audioContext = runtime.context
+    if (labLiveRef.current?.audioRuntime !== runtime) {
+      labLiveRef.current = { active: true, provider: 'gemini', audioRuntime: runtime, audioContext, apiAbort, micStream }
+    }
+    await runtime.ready
+    if (runtime.isClosed()) throw new Error('Voice start was cancelled')
+    if (!hasLiveGeminiMicrophone(micStream)) throw new Error(GEMINI_MICROPHONE_ENDED_MESSAGE)
+    const ownsMicrophone = () => labLiveRef.current?.active && labLiveRef.current?.audioRuntime === runtime && labLiveRef.current?.micStream === micStream && !runtime.isClosed()
+    const microphoneGuard = watchGeminiMicrophone(micStream, {
+      isCurrent: ownsMicrophone,
+      onEnded: () => {
+        if (!ownsMicrophone()) return
+        const message = GEMINI_MICROPHONE_ENDED_MESSAGE
+        setError(message)
+        logVoiceTransferEvent({ stage: 'gemini-microphone-ended', agentId: agent?.id, provider, reason: message, result: JSON.stringify({ tracks: snapshotGeminiMicrophone(micStream) }) })
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('fcc:voice-error', { detail: { message, agentId: agent?.id } }))
+        endLabLiveSession({ reason: message })
+      },
+    })
+    labLiveRef.current.microphoneGuard = microphoneGuard
+    if (!microphoneGuard.check()) throw new Error(GEMINI_MICROPHONE_ENDED_MESSAGE)
     setLabLiveStatus('thinking')
     setLastEvent(`requesting Gemini Live token for ${agent?.firstName || agent?.name || 'agent'}`)
-    const tokenRes = await fetch('/api/voice/gemini-live-token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: agent?.id || selectedAgentId || 'finance-manager', model, voiceName, silent, enableTools: true, context: context || null }),
-    })
-    const tokenData = await tokenRes.json().catch(() => null)
+    const { response: tokenRes, data: tokenData } = await (tokenRequest || requestGeminiLiveToken(fetch, {
+      agentId: agent?.id || selectedAgentId || 'finance-manager', model, voiceName, silent, enableTools: true, context: context || null,
+    }, apiAbort))
+    if (runtime.isClosed()) throw new Error('Voice start was cancelled')
+    if (!microphoneGuard.check()) throw new Error(GEMINI_MICROPHONE_ENDED_MESSAGE)
     if (!tokenRes.ok || !tokenData?.ok) {
       try { micStream?.getTracks()?.forEach(t => t.stop()) } catch {}
       throw new Error(tokenData?.error || `Gemini Live token failed (${tokenRes.status})`)
     }
 
-    const audioContext = new AudioContext()
     const state = {
       active: true,
       runId,
@@ -2189,7 +2398,10 @@ function VoiceButton({ activeContext, activeSection }) {
       clientId: activeVoiceLabRunRef.current?.clientId || '',
       productId: activeVoiceLabRunRef.current?.productId || 'voice',
       micStream,
+      microphoneGuard,
       audioContext,
+      audioRuntime: runtime,
+      apiAbort,
       scheduledSources: [],
       playTime: audioContext.currentTime,
       inputTranscript: '',
@@ -2210,47 +2422,31 @@ function VoiceButton({ activeContext, activeSection }) {
     setLabLiveStatus('thinking')
     setLastEvent(`connecting ${agent?.firstName || agent?.name || 'agent'} to Gemini Live`)
 
-    const toBase64 = (bytes) => {
-      let binary = ''
-      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-      return btoa(binary)
-    }
-    const downsampleTo16k = (input, inputRate) => {
-      const outputRate = 16000
-      const ratio = inputRate / outputRate
-      const length = Math.max(1, Math.floor(input.length / ratio))
-      const output = new Int16Array(length)
-      for (let i = 0; i < length; i++) {
-        const idx = Math.min(input.length - 1, Math.floor(i * ratio))
-        const sample = Math.max(-1, Math.min(1, input[idx] || 0))
-        output[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff
-      }
-      return new Uint8Array(output.buffer)
-    }
     const stopQueuedOutput = () => {
       try { state.scheduledSources.forEach(src => { try { src.stop() } catch {} }) } catch {}
       state.scheduledSources = []
       state.playTime = audioContext.currentTime
     }
-    const playPcm24k = (base64) => {
+    const playPcmAudio = (base64, mimeType) => {
       if (!state.active || labLiveRef.current !== state) return
-      const raw = atob(base64)
-      const sampleCount = Math.floor(raw.length / 2)
-      const floats = new Float32Array(sampleCount)
-      for (let i = 0; i < sampleCount; i++) {
-        const lo = raw.charCodeAt(i * 2)
-        const hi = raw.charCodeAt(i * 2 + 1)
-        let value = (hi << 8) | lo
-        if (value >= 0x8000) value -= 0x10000
-        floats[i] = Math.max(-1, Math.min(1, value / 0x8000))
-      }
-      const buffer = audioContext.createBuffer(1, sampleCount, 24000)
-      buffer.copyToChannel(floats, 0)
+      const { samples, sampleRate } = decodeGeminiOutputAudio(base64, mimeType)
+      if (!samples.length) return
+      const buffer = audioContext.createBuffer(1, samples.length, sampleRate)
+      buffer.copyToChannel(samples, 0)
       const source = audioContext.createBufferSource()
       source.buffer = buffer
-      source.connect(audioContext.destination)
+      // Through the analyser when one could be built, so the header equalizer
+      // follows the agent's voice; straight to the speakers otherwise.
+      if (state.outputMeter === undefined) {
+        try { state.outputMeter = createGeminiOutputMeter(audioContext) } catch { state.outputMeter = null }
+      }
+      source.connect(state.outputMeter?.input || audioContext.destination)
       const startAt = Math.max(audioContext.currentTime + 0.02, state.playTime || audioContext.currentTime)
       source.start(startAt)
+      if (!state.firstOutputScheduled) {
+        state.firstOutputScheduled = true
+        logVoiceTransferEvent({ stage: 'gemini-output-scheduled', to: state.agentName, agentId: state.agentId, provider, model: state.model, elapsedMs: Date.now() - state.startedAt, result: JSON.stringify({ voice: state.voiceName, sampleRate, contextRate: audioContext.sampleRate, queuedMs: Math.round((startAt - audioContext.currentTime) * 1000) }) })
+      }
       state.playTime = startAt + buffer.duration
       state.scheduledSources.push(source)
       source.onended = () => {
@@ -2277,9 +2473,18 @@ function VoiceButton({ activeContext, activeSection }) {
       try { ws.close(4000, 'setup timeout') } catch {}
     }, 12000)
     ws.onopen = () => {
+      if (!state.active || labLiveRef.current !== state) return
       ws.send(JSON.stringify(tokenData.setup))
       setLastEvent('Gemini Live setup sent')
       logVoiceTransferEvent({ stage: 'gemini-ws-open', to: state.agentName, agentId: state.agentId, provider })
+    }
+    audioContext.onstatechange = () => {
+      if (!state.active || labLiveRef.current !== state || !state.setupComplete) return
+      if (!['suspended', 'interrupted', 'closed'].includes(audioContext.state)) return
+      const message = 'Browser audio stopped. Start voice again to reconnect your microphone and speaker.'
+      setError(message)
+      logVoiceTransferEvent({ stage: 'gemini-audio-stopped', to: state.agentName, agentId: state.agentId, provider, reason: audioContext.state })
+      endLabLiveSession({ reason: message })
     }
     // Gemini Live tool-calling: dispatch declared function calls and answer with
     // toolResponse. Navigation and session-end act in the browser; everything
@@ -2357,6 +2562,7 @@ function VoiceButton({ activeContext, activeSection }) {
     }
 
     ws.onmessage = async (event) => {
+      if (!state.active || labLiveRef.current !== state) return
       let message
       try {
         const raw = typeof event.data === 'string'
@@ -2365,6 +2571,7 @@ function VoiceButton({ activeContext, activeSection }) {
             ? await event.data.text()
             : String(event.data || '')
         message = JSON.parse(raw)
+        if (!state.active || labLiveRef.current !== state) return
       } catch (error) {
         logVoiceTransferEvent({
           stage: 'gemini-message-parse-error',
@@ -2381,27 +2588,57 @@ function VoiceButton({ activeContext, activeSection }) {
       }
       if (message.toolCallCancellation) return
       if (message.setupComplete) {
-        state.setupComplete = true
-        clearTimeout(setupTimeout)
-        const source = audioContext.createMediaStreamSource(micStream)
-        const processor = audioContext.createScriptProcessor(4096, 1, 1)
-        const silenceGain = audioContext.createGain()
-        silenceGain.gain.value = 0
-        processor.onaudioprocess = (e) => {
-          if (!state.active || ws.readyState !== WebSocket.OPEN) return
-          const input = e.inputBuffer.getChannelData(0)
-          const pcm = downsampleTo16k(input, audioContext.sampleRate)
-          ws.send(JSON.stringify({ realtimeInput: { audio: { data: toBase64(pcm), mimeType: 'audio/pcm;rate=16000' } } }))
+        if (state.setupComplete) return
+        try {
+          if (audioContext.state !== 'running') throw new Error('Browser audio paused while voice was connecting. Start voice again.')
+          if (!microphoneGuard.check()) throw new Error(GEMINI_MICROPHONE_ENDED_MESSAGE)
+          const source = audioContext.createMediaStreamSource(micStream)
+          state.source = source
+          state.inputMeter = createGeminiInputMeter(audioContext, source)
+          const captureDiagnostics = createGeminiCaptureDiagnostics()
+          const processor = audioContext.createScriptProcessor(4096, 1, 1)
+          state.processor = processor
+          const silenceGain = audioContext.createGain()
+          state.silenceGain = silenceGain
+          silenceGain.gain.value = 0
+          processor.onaudioprocess = (e) => {
+            e.outputBuffer.getChannelData(0).fill(0)
+            if (!state.active || labLiveRef.current !== state || ws.readyState !== WebSocket.OPEN || !microphoneGuard.check()) return
+            const input = e.inputBuffer.getChannelData(0)
+            const firstSignal = captureDiagnostics.observe(input)
+            const pcm = encodeGeminiPcm(input, audioContext.sampleRate)
+            ws.send(JSON.stringify({ realtimeInput: { audio: { data: pcm, mimeType: 'audio/pcm;rate=16000' } } }))
+            if (!state.firstInputSent) {
+              state.firstInputSent = true
+              logVoiceTransferEvent({ stage: 'gemini-first-input-audio', to: state.agentName, agentId: state.agentId, provider })
+            }
+            if (firstSignal) logVoiceTransferEvent({ stage: 'gemini-first-input-signal', to: state.agentName, agentId: state.agentId, provider })
+          }
+          source.connect(processor)
+          processor.connect(silenceGain)
+          silenceGain.connect(audioContext.destination)
+          if (!microphoneGuard.check()) throw new Error(GEMINI_MICROPHONE_ENDED_MESSAGE)
+          sendGeminiInitialTurn(state, { initialText, silent, agentName: state.agentName })
+          if (!microphoneGuard.check()) throw new Error(GEMINI_MICROPHONE_ENDED_MESSAGE)
+          state.setupComplete = true
+          clearTimeout(setupTimeout)
+          state.captureDiagnosticTimer = setTimeout(() => {
+            if (!state.active || labLiveRef.current !== state) return
+            logVoiceTransferEvent({ stage: 'gemini-input-capture-check', to: state.agentName, agentId: state.agentId, provider, result: JSON.stringify(captureDiagnostics.snapshot(micStream, audioContext)) })
+          }, 5000)
+          setLabLiveStatus('listening')
+          setLastEvent(`${agent?.firstName || agent?.name || 'Agent'} is live on Gemini Live`)
+          emitVoiceLabTest({ ...activeVoiceLabRunRef.current, stage: 'connected', status: 'connected' })
+          logVoiceTransferEvent({ stage: 'gemini-live-connected', to: state.agentName, agentId: state.agentId, provider })
+          resolveSetup()
+        } catch (error) {
+          clearTimeout(setupTimeout)
+          const message = error?.message || 'Gemini Live audio setup failed'
+          setError(message)
+          logVoiceTransferEvent({ stage: 'gemini-audio-setup-error', to: state.agentName, agentId: state.agentId, provider, reason: message })
+          rejectSetup(new Error(message))
+          endLabLiveSession({ reason: message })
         }
-        source.connect(processor)
-        processor.connect(silenceGain)
-        silenceGain.connect(audioContext.destination)
-        Object.assign(state, { source, processor, silenceGain })
-        setLabLiveStatus('listening')
-        setLastEvent(`${agent?.firstName || agent?.name || 'Agent'} is live on Gemini Live`)
-        emitVoiceLabTest({ ...activeVoiceLabRunRef.current, stage: 'connected', status: 'connected' })
-        logVoiceTransferEvent({ stage: 'gemini-live-connected', to: state.agentName, agentId: state.agentId, provider })
-        resolveSetup()
         return
       }
       const content = message.serverContent
@@ -2416,8 +2653,23 @@ function VoiceButton({ activeContext, activeSection }) {
       }
       const parts = content?.modelTurn?.parts || []
       for (const part of parts) {
-        const data = part.inlineData?.data || part.inline_data?.data
-        if (data) playPcm24k(data)
+        const inline = part.inlineData || part.inline_data
+        const data = inline?.data
+        if (data) {
+          if (!state.firstOutputReceived) {
+            state.firstOutputReceived = true
+            logVoiceTransferEvent({ stage: 'gemini-first-output-audio', to: state.agentName, agentId: state.agentId, provider, model: state.model, elapsedMs: Date.now() - state.startedAt, result: JSON.stringify({ voice: state.voiceName, mimeType: inline.mimeType || inline.mime_type || '' }) })
+          }
+          try {
+            playPcmAudio(data, inline.mimeType || inline.mime_type)
+          } catch (error) {
+            const message = error?.message || 'Gemini audio could not be played.'
+            setError(message)
+            logVoiceTransferEvent({ stage: 'gemini-output-error', agentId: state.agentId, provider, model: state.model, reason: message })
+            endLabLiveSession({ reason: message })
+            return
+          }
+        }
       }
       if (content?.turnComplete) {
         const completedInput = state.inputTranscript.trim()
@@ -2432,18 +2684,28 @@ function VoiceButton({ activeContext, activeSection }) {
       if (message.goAway?.timeLeft) setLastEvent(`Gemini Live session ending soon`)
     }
     ws.onerror = () => {
+      if (!state.active || labLiveRef.current !== state) return
       const message = 'Gemini Live WebSocket error'
       clearTimeout(setupTimeout)
       setError(message)
       emitVoiceLabTest({ ...activeVoiceLabRunRef.current, stage: 'error', status: 'error', error: message })
       logVoiceTransferEvent({ stage: 'gemini-ws-error', to: state.agentName, agentId: state.agentId, provider, reason: message })
       if (!state.setupComplete) rejectSetup(new Error(message))
+      endLabLiveSession({ reason: message })
     }
     ws.onclose = (event) => {
       clearTimeout(setupTimeout)
+      if (!state.active || labLiveRef.current !== state) {
+        if (!state.setupComplete) rejectSetup(new Error('Voice start was cancelled'))
+        return
+      }
       const closeReason = `${event?.code || 'unknown'}${event?.reason ? `: ${event.reason}` : ''}`
       logVoiceTransferEvent({ stage: 'gemini-ws-closed', to: state.agentName, agentId: state.agentId, provider, reason: closeReason })
-      if (!state.setupComplete) rejectSetup(new Error(`Gemini Live closed before connecting (${closeReason})`))
+      if (!state.setupComplete) {
+        const message = `Gemini Live closed before connecting (${closeReason})`
+        setError(message)
+        rejectSetup(new Error(message))
+      }
       if (state.active) {
         setLabLiveStatus('idle')
         setLastEvent(`Gemini Live closed${event?.reason ? `: ${event.reason}` : ''}`)
@@ -2451,6 +2713,7 @@ function VoiceButton({ activeContext, activeSection }) {
         logRealtimeVoiceUsage(activeVoiceLabRunRef.current || state, event?.reason || 'Gemini Live closed')
         activeVoiceLabRunRef.current = null
         setActiveVoiceRuntime(null)
+        endLabLiveSession({ reason: `Gemini Live closed (${closeReason})` })
       }
     }
     await setupReady
@@ -2674,11 +2937,14 @@ function VoiceButton({ activeContext, activeSection }) {
   }, [endLabLiveSession, handleUserVoiceTranscript, runDirectTransferFromTranscript, selectedAgentId])
 
   const start = useCallback(async (agentIdOpt, startOpts = {}) => {
+    let launchRoster = roster
     const silent = startOpts.silent === true
-    const suppressHandoffNavigation = startOpts.suppressHandoffNavigation === true || startOpts.stayOnPage === true
-    const requestedRosterAgent = roster.find(a => a.id === agentIdOpt)
+    let suppressHandoffNavigation = startOpts.suppressHandoffNavigation === true || startOpts.stayOnPage === true || launchRoster.some(agent => agent.id === (agentIdOpt || selectedAgentId) && (agent.gptLive || agent.gptLivePilot))
+    let requestedRosterAgent = launchRoster.find(a => a.id === (agentIdOpt || selectedAgentId))
     const targetAgentId = agentIdOpt || selectedAgentId || requestedRosterAgent?.id || 'matilda'
-    const startKey = `${targetAgentId}:${requestedRosterAgent?.voiceProvider || selectedVoiceProvider || ''}`
+    // A forced provider (the Gemini fallback retry) is a different start, so the
+    // duplicate-start guard must not swallow it.
+    const startKey = `${targetAgentId}:${startOpts.forceProvider || requestedRosterAgent?.voiceProvider || selectedVoiceProvider || ''}`
     const liveOpenAi = openAiRef.current
     if (liveOpenAi?.agentId === targetAgentId && liveOpenAi.scope?.isCurrent() && liveOpenAi.dc?.readyState === 'open') {
       setLastEvent(`${requestedRosterAgent?.firstName || requestedRosterAgent?.name || targetAgentId} is already live`)
@@ -2724,6 +2990,8 @@ function VoiceButton({ activeContext, activeSection }) {
       return false
     }
     voiceStartGuardRef.current = { key: startKey, at: now }
+    const startAttempt = {}
+    voiceStartAttemptRef.current = startAttempt
     if (typeof window !== 'undefined') window.__fccVoiceStarting = true
     const voiceStartAt = Date.now()
     logVoiceTransferEvent({
@@ -2747,27 +3015,31 @@ function VoiceButton({ activeContext, activeSection }) {
     try { conversation.endSession() } catch {}
     try { endOpenAiSession() } catch {}
     try { endLabLiveSession({ reason: 'switching browser voice provider' }) } catch {}
+    let geminiAudio
+    let geminiRequestController
+    let geminiPendingState
+    let geminiTokenRequest
+    let micStream
     try {
+      launchRoster = await resolveVoiceStartRoster({ agentId: targetAgentId, displayedRoster: roster, rosterRequest: rosterRequestRef.current })
+      if (voiceStartAttemptRef.current !== startAttempt) return false
+      requestedRosterAgent = launchRoster.find(agent => agent.id === targetAgentId)
+      suppressHandoffNavigation ||= Boolean(requestedRosterAgent?.gptLive || requestedRosterAgent?.gptLivePilot)
       if (!navigator.mediaDevices?.getUserMedia) {
         const isSecure = typeof window !== 'undefined' && (window.isSecureContext || location.hostname === 'localhost')
         throw new Error(isSecure
           ? 'Microphone API unavailable in this browser. Try Chrome or Safari.'
           : 'Voice needs HTTPS on mobile — open the CRM via the cloudflared tunnel URL instead of the LAN IP.')
       }
-      let micStream
-      try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      } catch (micError) {
-        throw new Error(voiceMicErrorMessage(micError))
-      }
-      if (typeof window !== 'undefined') {
-        if (!window.__fccMicStreams) window.__fccMicStreams = new Set()
-        window.__fccMicStreams.add(micStream)
-      }
-      const targetAgentId = agentIdOpt || selectedAgentId
-      const selectedRosterAgent = roster.find(a => a.id === targetAgentId)
+      const loadedRosterAgent = launchRoster.find(a => a.id === targetAgentId)
+      // GPT-Live fallback retry: the same agent on Gemini Live with its Gemini
+      // voice (never the OpenAI voice or model) and the Gemini microphone path.
+      const forceGemini = wantsForcedGemini(loadedRosterAgent, startOpts)
+      const selectedRosterAgent = forceGemini ? withGeminiFallbackVoice(loadedRosterAgent) : loadedRosterAgent
       const fallbackVoiceAgent = FALLBACK_VOICE_AGENTS.find(a => a.id === targetAgentId)
-      const isDeerFlowVoice = selectedRosterAgent?.runtimeProvider === 'deerflow-hetzner' || fallbackVoiceAgent?.runtimeProvider === 'deerflow-hetzner'
+      // A DeerFlow crew member the server put on GPT-Live (or its Gemini fallback) is not routed to Chirp.
+      const gptLiveRouted = Boolean(selectedRosterAgent?.gptLive || selectedRosterAgent?.gptLivePilot)
+      const isDeerFlowVoice = !gptLiveRouted && (selectedRosterAgent?.runtimeProvider === 'deerflow-hetzner' || fallbackVoiceAgent?.runtimeProvider === 'deerflow-hetzner')
       const selectedVoiceProfile = isDeerFlowVoice
         ? {
             ...(selectedRosterAgent?.voiceProfile || {}),
@@ -2777,15 +3049,111 @@ function VoiceButton({ activeContext, activeSection }) {
             voiceName: selectedRosterAgent?.chirp3Voice || fallbackVoiceAgent?.chirp3Voice || 'en-US-Chirp3-HD-Aoede',
           }
         : (selectedRosterAgent?.voiceProfile || {})
-      const rawVoiceProvider = selectedVoiceProfile.provider || selectedRosterAgent?.voiceProvider || 'elevenlabs'
+      const rawVoiceProvider = forceGemini ? 'gemini' : (selectedVoiceProfile.provider || selectedRosterAgent?.voiceProvider || 'elevenlabs')
       const selectedVoiceProvider = selectedRosterAgent?.agentId && selectedVoiceProfile.locked === true && rawVoiceProvider !== 'elevenlabs'
         ? 'elevenlabs'
         : rawVoiceProvider
       const useOpenAiVoice = selectedVoiceProvider === 'openai'
+      if (useOpenAiVoice && selectedVoiceProfile.openaiModel === 'gpt-live-1') setOpenAiStatus('connecting')
       if (isOpenOcti() && selectedVoiceProvider === 'none') throw new Error('Add an OpenAI or Google Gemini key in Models & Keys to enable voice.')
       const useElevenLabsVoice = selectedVoiceProvider === 'elevenlabs'
       const useLabLiveVoice = selectedVoiceProvider === 'gemini'
       const useChirpTurnVoice = selectedVoiceProvider === 'chirp3'
+      if (useLabLiveVoice) {
+        geminiRequestController = new AbortController()
+        geminiPendingState = { active: true, provider: 'gemini', apiAbort: geminiRequestController }
+        labLiveRef.current = geminiPendingState
+      }
+      const micRequestStartedAt = performance.now()
+      if (useLabLiveVoice) logVoiceTransferEvent({ stage: 'gemini-mic-requested', agentId: targetAgentId, provider: 'gemini' })
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia(useLabLiveVoice ? GEMINI_MICROPHONE_CONSTRAINTS : { audio: true })
+      } catch (micError) {
+        if (useLabLiveVoice) logVoiceTransferEvent({ stage: 'gemini-mic-failed', agentId: targetAgentId, provider: 'gemini', elapsedMs: performance.now() - micRequestStartedAt })
+        throw new Error(voiceMicErrorMessage(micError))
+      }
+      if (voiceStartAttemptRef.current !== startAttempt || (geminiPendingState && (labLiveRef.current !== geminiPendingState || !geminiPendingState.active))) {
+        micStream.getTracks().forEach(track => track.stop())
+        return false
+      }
+      if (geminiPendingState) {
+        geminiPendingState.micStream = micStream
+        logVoiceTransferEvent({ stage: 'gemini-mic-acquired', agentId: targetAgentId, provider: 'gemini', elapsedMs: performance.now() - micRequestStartedAt, result: JSON.stringify({ tracks: snapshotGeminiMicrophone(micStream) }) })
+        // Permission can remain open longer than a token's one-minute setup
+        // window. Only overlap the request with the bounded device checks below.
+        logVoiceTransferEvent({ stage: 'gemini-token-requested', agentId: targetAgentId, provider: 'gemini' })
+        geminiTokenRequest = beginGeminiLiveTokenRequest(fetch, {
+          agentId: targetAgentId,
+          model: selectedVoiceProfile.model || selectedVoiceProfile.geminiModel || selectedRosterAgent?.model || selectedRosterAgent?.geminiModel || '',
+          voiceName: selectedVoiceProfile.voiceName || selectedVoiceProfile.geminiVoice || selectedRosterAgent?.voiceName || selectedRosterAgent?.geminiVoice || '',
+          silent,
+          enableTools: true,
+          context: {
+            sectionId: activeSection || '',
+            sectionLabel: activeSection ? (labelForCommandCenterTab(activeSection) || activeSection) : '',
+            record: compactContext(activeContext),
+          },
+        }, geminiRequestController, result => {
+          logVoiceTransferEvent({ stage: 'gemini-token-finished', agentId: targetAgentId, provider: 'gemini', ...result })
+        })
+        // A device can hand back a live track that never delivers audio (a dead USB
+        // microphone). Verify real frames before the audio graph exists; switch to a
+        // microphone that delivers audio, or fail fast naming the silent one.
+        const ownsMicrophoneSelection = () => voiceStartAttemptRef.current === startAttempt && labLiveRef.current === geminiPendingState && geminiPendingState.active
+        const selectionStartedAt = performance.now()
+        const selection = await selectWorkingGeminiMicrophone({
+          stream: micStream,
+          getUserMedia: constraints => navigator.mediaDevices.getUserMedia(constraints),
+          enumerateDevices: () => navigator.mediaDevices.enumerateDevices(),
+          isCurrent: ownsMicrophoneSelection,
+          signal: geminiRequestController.signal,
+          release: stream => stopGeminiMicrophone(stream, typeof window !== 'undefined' ? window.__fccMicStreams : null),
+          onNoAudio: ({ label }) => {
+            setLastEvent(`${label || 'Microphone'} is not sending audio. Trying another microphone.`)
+            logVoiceTransferEvent({ stage: 'gemini-mic-no-audio', agentId: targetAgentId, provider: 'gemini', elapsedMs: performance.now() - selectionStartedAt, result: JSON.stringify({ label, tracks: snapshotGeminiMicrophone(micStream) }) })
+          },
+        })
+        micStream = selection.stream
+        geminiPendingState.micStream = micStream
+        if (!ownsMicrophoneSelection()) {
+          stopGeminiMicrophone(micStream, typeof window !== 'undefined' ? window.__fccMicStreams : null)
+          return false
+        }
+        logVoiceTransferEvent({ stage: 'gemini-mic-verified', agentId: targetAgentId, provider: 'gemini', status: selection.status, elapsedMs: performance.now() - selectionStartedAt, result: JSON.stringify({ label: selection.label, deadLabel: selection.deadLabel, tracks: snapshotGeminiMicrophone(micStream) }) })
+        if (selection.status === 'fallback') setLastEvent(`${selection.deadLabel || 'Microphone'} is not sending audio. Using ${selection.label || 'another microphone'} instead.`)
+        // Match PortalLiveVoice: let microphone acquisition establish the audio
+        // device route before creating/resuming the shared capture/playback graph.
+        const contextStartedAt = performance.now()
+        logVoiceTransferEvent({ stage: 'gemini-audio-context-requested', agentId: targetAgentId, provider: 'gemini' })
+        try { geminiAudio = createGeminiLiveAudio() } finally {
+          logVoiceTransferEvent({ stage: 'gemini-audio-context-finished', agentId: targetAgentId, provider: 'gemini', status: geminiAudio ? 'created' : 'failed', elapsedMs: performance.now() - contextStartedAt })
+        }
+        Object.assign(geminiPendingState, { audioRuntime: geminiAudio, audioContext: geminiAudio.context })
+        await geminiAudio.ready
+        const ownsMicrophoneStart = () => voiceStartAttemptRef.current === startAttempt && labLiveRef.current === geminiPendingState && geminiPendingState.active && !geminiAudio.isClosed()
+        if (!ownsMicrophoneStart()) throw new Error('Voice start was cancelled')
+        logVoiceTransferEvent({ stage: 'gemini-mic-after-context', agentId: targetAgentId, provider: 'gemini', result: JSON.stringify({ tracks: snapshotGeminiMicrophone(micStream) }) })
+        const originalStream = micStream
+        const recoveryStartedAt = performance.now()
+        if (!hasLiveGeminiMicrophone(micStream)) logVoiceTransferEvent({ stage: 'gemini-mic-recovery-requested', agentId: targetAgentId, provider: 'gemini', result: JSON.stringify({ attempt: 1, tracks: snapshotGeminiMicrophone(micStream) }) })
+        micStream = await recoverGeminiMicrophone({
+          stream: micStream,
+          getUserMedia: constraints => navigator.mediaDevices.getUserMedia(constraints),
+          isCurrent: ownsMicrophoneStart,
+          signal: geminiRequestController.signal,
+          release: stream => stopGeminiMicrophone(stream, typeof window !== 'undefined' ? window.__fccMicStreams : null),
+        })
+        if (!ownsMicrophoneStart()) {
+          stopGeminiMicrophone(micStream, typeof window !== 'undefined' ? window.__fccMicStreams : null)
+          return false
+        }
+        geminiPendingState.micStream = micStream
+        if (micStream !== originalStream) logVoiceTransferEvent({ stage: 'gemini-mic-recovered', agentId: targetAgentId, provider: 'gemini', elapsedMs: performance.now() - recoveryStartedAt, result: JSON.stringify({ attempt: 1, tracks: snapshotGeminiMicrophone(micStream) }) })
+      }
+      if (typeof window !== 'undefined') {
+        if (!window.__fccMicStreams) window.__fccMicStreams = new Set()
+        window.__fccMicStreams.add(micStream)
+      }
       const labRun = {
         runId: `voice-${Date.now().toString(36)}`,
         agentId: agentIdOpt || selectedAgentId,
@@ -2819,31 +3187,11 @@ function VoiceButton({ activeContext, activeSection }) {
         provider: selectedVoiceProvider,
         elapsedMs: Date.now() - voiceStartAt,
       })
-      if (useLabLiveVoice) {
-        const labAgent = selectedRosterAgent || roster.find(a => a.id === (agentIdOpt || selectedAgentId)) || { id: agentIdOpt || selectedAgentId, firstName: agentIdOpt || selectedAgentId, name: agentIdOpt || selectedAgentId }
-        await startLabLiveSession({
-          agent: labAgent,
-          provider: selectedVoiceProvider,
-          model: selectedVoiceProfile.model || selectedVoiceProfile.geminiModel || selectedRosterAgent?.model || selectedRosterAgent?.geminiModel || '',
-          voiceName: selectedVoiceProfile.voiceName || selectedVoiceProfile.geminiVoice || selectedRosterAgent?.voiceName || selectedRosterAgent?.geminiVoice || '',
-          micStream,
-          silent,
-          runId: labRun.runId,
-          context: {
-            sectionId: activeSection || '',
-            sectionLabel: activeSection ? (labelForCommandCenterTab(activeSection) || activeSection) : '',
-            record: compactContext(activeContext),
-          },
-        })
-        logVoiceTransferEvent({
-          stage: 'lab-live-started',
-          to: labAgent?.firstName || labAgent?.name || agentIdOpt || selectedAgentId,
-          agentId: agentIdOpt || selectedAgentId,
-          provider: selectedVoiceProvider,
-          elapsedMs: Date.now() - voiceStartAt,
-        })
-        return true
-      }
+      // Gemini Live starts further down, once the client tools are built and wired,
+      // so it gets the same tool set as every other provider.
+      const labAgent = useLabLiveVoice
+        ? (selectedRosterAgent || roster.find(a => a.id === (agentIdOpt || selectedAgentId)) || { id: agentIdOpt || selectedAgentId, firstName: agentIdOpt || selectedAgentId, name: agentIdOpt || selectedAgentId })
+        : null
       if (useChirpTurnVoice) {
         const chirpAgent = selectedRosterAgent || fallbackVoiceAgent || roster.find(a => a.id === (agentIdOpt || selectedAgentId)) || { id: agentIdOpt || selectedAgentId, firstName: agentIdOpt || selectedAgentId, name: agentIdOpt || selectedAgentId }
         await startChirpTurnSession({
@@ -2863,7 +3211,7 @@ function VoiceButton({ activeContext, activeSection }) {
         })
         return true
       }
-      if (!useOpenAiVoice && !useElevenLabsVoice) {
+      if (!useOpenAiVoice && !useElevenLabsVoice && !useLabLiveVoice) {
         try { micStream.getTracks().forEach(t => t.stop()) } catch {}
         const message = `${selectedVoiceProvider} is saved for this agent, but the live router does not support that provider yet.`
         setError(message)
@@ -2877,7 +3225,7 @@ function VoiceButton({ activeContext, activeSection }) {
         })
         return false
       }
-      setLastEvent(useOpenAiVoice ? 'got mic; preparing OpenAI Realtime' : 'got mic; fetching signed URL')
+      setLastEvent(useLabLiveVoice ? 'got mic; preparing Gemini Live' : useOpenAiVoice ? 'got mic; preparing OpenAI Realtime' : 'got mic; fetching signed URL')
       let res
       if (useOpenAiVoice) {
         res = {
@@ -2887,6 +3235,8 @@ function VoiceButton({ activeContext, activeSection }) {
           firstName: selectedRosterAgent.firstName,
           snapshot: {},
         }
+      } else if (useLabLiveVoice) {
+        res = { agentId: null, voiceName: labRun.voiceName, agentName: labAgent.name, firstName: labAgent.firstName, snapshot: {} }
       } else {
         const signedUrlStartedAt = Date.now()
         const cacheKey = agentIdOpt || 'matilda'
@@ -2921,7 +3271,7 @@ function VoiceButton({ activeContext, activeSection }) {
         })
       }
       // Track which agent we're talking to
-      const resolved = selectedRosterAgent || roster.find(a => a.agentId === res.agentId) || { firstName: res.firstName || res.agentName || 'Matilda', name: res.agentName || 'Matilda', id: agentIdOpt || 'matilda' }
+      const resolved = labAgent || selectedRosterAgent || roster.find(a => a.agentId === res.agentId) || { firstName: res.firstName || res.agentName || 'Matilda', name: res.agentName || 'Matilda', id: agentIdOpt || 'matilda' }
       setActiveAgent(resolved)
       const resolvedLabRun = {
         ...labRun,
@@ -2967,6 +3317,7 @@ function VoiceButton({ activeContext, activeSection }) {
       const contextSummary = compactContext(activeContext)
       if (contextSummary) factLines.push('', `Current visible record/context: ${contextSummary}. When Carl says "this", use that context.`)
       factLines.push('', OFFICE_AGENT_CONDUCT)
+      if (resolvedLabRun.agentId === 'social-media') factLines.push('', SASHA_MEDIA_INSTRUCTIONS)
       factLines.push('', `If you do not know a specific detail, say "I don't have that in front of me" instead of making up a number.`)
       factLines.push('', `When Carl says he is done, goodbye, bye, have a good day, end the call, hang up, disconnect, stop listening, or anything similar, say one short natural goodbye and call end_session or end_call. Never say only Carl can end the call.`)
       factLines.push('', `COMMAND CENTER SECTIONS: ${COMPACT_COMMAND_CENTER_MAP}.`)
@@ -3085,9 +3436,19 @@ function VoiceButton({ activeContext, activeSection }) {
         return r.json()
       }
 
+      const invoiceTools = createVoiceInvoiceTools()
+      const webhookTools = createGptLiveClientBridge(runCrmAction)
       const clientTools = {
         crm_capabilities: discoverCrmCapabilities,
         crm_action: runCrmAction,
+        crm_execute: webhookTools.crm_execute,
+        report_to_carl: webhookTools.report_to_carl,
+        control_timer: webhookTools.control_timer,
+        post_site_note: webhookTools.post_site_note,
+        list_invoices: invoiceTools.list_invoices,
+        invoice_payment_link: invoiceTools.invoice_payment_link,
+        check_invoice_payment: invoiceTools.check_invoice_payment,
+        send_invoice_via_stripe: invoiceTools.send_invoice_via_stripe,
         start_orchestration: async ({ flowName, clientContext } = {}) => {
           try {
             const list = await fetch('/api/orchestrations', { cache: 'no-store', credentials: 'include' }).then(r => r.json())
@@ -3836,23 +4197,8 @@ function VoiceButton({ activeContext, activeSection }) {
 
         check_domain_availability: async ({ domain }) => {
           try {
-            const r = await fetch(`/api/tools/domain-availability?domain=${encodeURIComponent(domain)}`).then(r => r.json())
-            if (r.error) return `Error: ${r.error}`
-            if (!r.available) {
-              const parts = [`${r.domain} is registered`]
-              if (r.registrar) parts.push(`through ${r.registrar}`)
-              if (r.expires_at) parts.push(`expires ${r.expires_at.slice(0, 10)}`)
-              return parts.join(', ') + '.'
-            }
-            // Availability and price are separate facts. Say the price only
-            // when Cloudflare actually returned one — never estimate.
-            if (r.registrable === false) {
-              return `${r.domain} is unregistered, but I cannot buy it here — ${r.reason_text || 'Cloudflare declined the extension'}. Do not quote a price.`
-            }
-            if (r.price == null) {
-              return `${r.domain} is available. I have NO price for it${r.pricing_error ? ` (${r.pricing_error})` : ''}. Tell Carl you do not have a price — do not guess one.`
-            }
-            return `${r.domain} is available at $${Number(r.price).toFixed(2)} ${r.currency || 'USD'} per year${r.premium ? ' (premium domain)' : ''}. Quote exactly that number.`
+            const response = await fetch(`/api/tools/domain-availability?domain=${encodeURIComponent(domain)}`, { credentials: 'include' })
+            return describeDomainAvailability(await readDomainToolResponse(response))
           } catch (e) { return `Lookup failed: ${e.message}` }
         },
 
@@ -3860,33 +4206,7 @@ function VoiceButton({ activeContext, activeSection }) {
         // say the price out loud, get a yes, then call again with that token.
         // The server binds the quoted price into the token, so this tool
         // cannot spend money on a number the model made up.
-        register_domain: async ({ domain, period, years, privacy, confirm, confirmToken }) => {
-          try {
-            const payload = {
-              domain,
-              years: Number(years || period) || 1,
-              privacy: privacy !== false,
-            }
-            if (confirmToken) payload.confirmToken = confirmToken
-            const r = await fetch('/api/domains/register', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify(payload),
-            })
-            const j = await r.json().catch(() => null)
-            if (!j) return `The purchase endpoint returned ${r.status} with no readable answer. Nothing was bought.`
-            if (!j.ok) return j.spoken || j.error || 'Registration failed. Nothing was bought.'
-            if (j.phase === 'quote') {
-              if (confirm === true || String(confirm).toLowerCase() === 'yes') {
-                // Carl already said yes in the same breath — close the loop now.
-                return await clientToolsRef.current?.register_domain?.({ domain, years: payload.years, privacy: payload.privacy, confirmToken: j.confirmToken })
-              }
-              return `${j.spoken} [confirmToken=${j.confirmToken}] — say the price out loud, wait for a yes, then call register_domain again with that exact confirmToken.`
-            }
-            return j.spoken || `${j.domain} registered.`
-          } catch (e) { return `Registration failed: ${e.message}. Nothing was bought.` }
-        },
+        register_domain: async (args) => requestDomainRegistration(args),
         open_record: async ({ query, type, subTab, itemQuery }) => {
           try {
             const normalizedType = String(type || '').toLowerCase().trim()
@@ -4255,16 +4575,17 @@ function VoiceButton({ activeContext, activeSection }) {
             return `Done. Created "${job.title || 'content draft'}" as a ${job.workflowLabel || job.workflow || 'content'} draft in Content Lab.`
           } catch (e) { return `Content draft failed: ${e.message}` }
         },
-        generate_image: async ({ prompt, title, folder }) => {
+        generate_image: async ({ prompt, title, folder, provider, size, websiteUrl, referenceImageUrl, referenceMediaId, logoRequired, logoImageUrl, logoMediaId }) => {
           try {
             if (!prompt) return `I need a prompt — describe what to generate.`
             const r = await fetch('/api/media', {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'generate', prompt, title: title || prompt.slice(0, 60), folder: folder || 'unsorted' }),
+              body: JSON.stringify({ action: 'generate', prompt, title: title || prompt.slice(0, 60), folder: folder || 'unsorted', provider: provider || 'openai', size, websiteUrl, referenceImageUrl, referenceMediaId, logoRequired, logoImageUrl, logoMediaId }),
             }).then(r => r.json())
             if (r.error) return `Image gen failed: ${r.error}`
             const folderName = folder || 'unsorted'
-            return `Done. Saved as "${r.item.title}" in the ${folderName} folder. Tell Carl it's ready in the media library.`
+            if (!r.ok || !r.item?.id || !r.item?.url) return 'Image generation did not return a saved image. Do not claim it is ready.'
+            return `Saved "${r.item.title}" in ${folderName} using ${r.item.provider} (${r.item.model}). Image: ${r.item.url}. Give Carl the finished caption and this link.`
           } catch (e) { return `Image gen failed: ${e.message}` }
         },
         list_media: async ({ folder, clientName, q } = {}) => {
@@ -4425,6 +4746,27 @@ function VoiceButton({ activeContext, activeSection }) {
       clientTools.fcc_navigate_to = async ({ target, tabId, page, section, name } = {}) => (
         clientTools.navigate_to({ section: target || tabId || page || section || name || '' })
       )
+      // Deep research runs in the background on the server: these only start, poll
+      // and cancel a job. action/agentId are set last so tool arguments cannot override them.
+      const callResearchJobs = async (action, args) => {
+        try {
+          const response = await fetch('/api/voice/research-jobs', {
+            method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...args, action, agentId: resolved?.id || targetAgentId }),
+          })
+          const data = await response.json().catch(() => ({}))
+          if (!response.ok || data?.ok === false) return { text: `Research ${action} failed: ${data?.error || response.status}` }
+          return { data, text: String(data?.message || 'Done.') }
+        } catch (e) { return { text: `Research ${action} failed: ${e?.message || e}` } }
+      }
+      clientTools.start_deep_research = async ({ target, context, subjectType } = {}) => (await callResearchJobs('start', { target, context, subjectType })).text
+      clientTools.research_status = async ({ jobId } = {}) => {
+        const { data, text } = await callResearchJobs('status', { jobId })
+        const jobs = data ? [data.job, ...(data.jobs || []).filter(job => job?.id !== data.job?.id)].filter(Boolean) : []
+        if (!jobs.length) return text
+        return jobs.map(job => `${job.target || 'Research'}: ${job.status}${job.status === 'done' && job.spokenSummary ? `. ${job.spokenSummary}` : ''}${job.status === 'failed' && job.error ? `. ${job.error}` : ''}`).join(' | ').slice(0, 2000)
+      }
+      clientTools.cancel_research = async ({ jobId } = {}) => (await callResearchJobs('cancel', { jobId })).text
       clientTools._voiceMeta = {
         agentId: resolved.id || agentIdOpt || '',
         agentName: resolved.firstName || resolved.name || '',
@@ -4434,6 +4776,36 @@ function VoiceButton({ activeContext, activeSection }) {
       // dispatches through. Done before startSession so any tool the agent
       // calls in its very first turn finds a live implementation.
       clientToolsRef.current = clientTools
+      if (useLabLiveVoice) {
+        // Started here, not earlier: a Gemini agent that calls transfer_to_agent,
+        // daily_briefing or any other client tool must find it in clientToolsRef.
+        await startLabLiveSession({
+          agent: labAgent,
+          provider: selectedVoiceProvider,
+          model: selectedVoiceProfile.model || selectedVoiceProfile.geminiModel || selectedRosterAgent?.model || selectedRosterAgent?.geminiModel || '',
+          voiceName: selectedVoiceProfile.voiceName || selectedVoiceProfile.geminiVoice || selectedRosterAgent?.voiceName || selectedRosterAgent?.geminiVoice || '',
+          micStream,
+          silent,
+          initialText: startOpts.initialText || '',
+          audioRuntime: geminiAudio,
+          requestController: geminiRequestController,
+          tokenRequest: geminiTokenRequest,
+          runId: labRun.runId,
+          context: {
+            sectionId: activeSection || '',
+            sectionLabel: activeSection ? (labelForCommandCenterTab(activeSection) || activeSection) : '',
+            record: compactContext(activeContext),
+          },
+        })
+        logVoiceTransferEvent({
+          stage: 'lab-live-started',
+          to: labAgent?.firstName || labAgent?.name || agentIdOpt || selectedAgentId,
+          agentId: agentIdOpt || selectedAgentId,
+          provider: selectedVoiceProvider,
+          elapsedMs: Date.now() - voiceStartAt,
+        })
+        return true
+      }
       // Every live voice session gets the current Command Center transfer rules.
       // This prevents stored provider prompts from asking Carl for a transfer reason.
       const isCraig = (resolved.id === 'coding') || String(resolved.firstName || resolved.name || '').toLowerCase() === 'craig'
@@ -4458,8 +4830,53 @@ function VoiceButton({ activeContext, activeSection }) {
       }
       if (useOpenAiVoice) {
         try { conversation.endSession() } catch {}
-        const connected = await startOpenAiSession({ agentId: resolved.id || agentIdOpt || 'matilda', micStream, clientTools, firstMessage, silent, labRun: resolvedLabRun })
-        if (!connected) return false
+        const openAiAgentId = resolved.id || agentIdOpt || 'matilda'
+        const openAiAgentName = gptLiveAgentName(resolved, openAiAgentId)
+        // GPT-Live is primary for this agent; one retry on Gemini Live is allowed.
+        const canFallBackToGemini = shouldFallbackToGemini(selectedRosterAgent, startOpts)
+        let connected = false
+        let openAiStartError = null
+        try {
+          connected = await startOpenAiSession({ agentId: openAiAgentId, agentName: openAiAgentName, micStream, clientTools, firstMessage, silent, promptOverride, labRun: resolvedLabRun, deferStartErrors: canFallBackToGemini, context: { section: activeSection, accountId: activeContext?.accountId, clientId: activeContext?.clientId, leadId: activeContext?.leadId, contactId: activeContext?.contactId } })
+        } catch (openAiError) {
+          openAiStartError = openAiError
+        }
+        if (!connected) {
+          if (slowStartTimer) window.clearTimeout(slowStartTimer)
+          // A Stop or a replacement start clears/changes the attempt: never retry then.
+          const retryStart = startRef.current
+          if (canFallBackToGemini && voiceStartAttemptRef.current === startAttempt && typeof retryStart === 'function') {
+            const fallbackReason = String(openAiStartError?.message || gptLiveStartErrorRef.current || 'GPT-Live did not connect').slice(0, 220)
+            logVoiceTransferEvent({ stage: 'gpt-live-fallback-gemini', agentId: openAiAgentId, provider: 'gemini', reason: fallbackReason })
+            setLastEvent(`${openAiAgentName} is reconnecting on the backup voice`)
+            // Release whatever the failed attempt still holds; the retry re-acquires
+            // the microphone with the Gemini constraints.
+            try { micStream.getTracks().forEach(track => track.stop()) } catch {}
+            try { window.__fccMicStreams?.delete(micStream) } catch {}
+            setOpenAiStatus('idle')
+            setError(null)
+            // Why a recursive start() is safe here (no await between the reset below and
+            // the call, so nothing can interleave): (1) the in-flight guard passes because
+            // the slot is released first; (2) the 1600 ms duplicate guard passes because
+            // startKey includes forceProvider; (3) the retry sets its own
+            // voiceStartAttemptRef/startInFlightRef/__fccVoiceStarting before its first
+            // await, so when this attempt's finally runs it sees a different attempt object
+            // and leaves the retry's state alone; (4) fallbackFrom makes a second fallback
+            // impossible, and a Stop (attempt ref cleared) is re-checked by the retry itself.
+            voiceStartAttemptRef.current = null
+            startInFlightRef.current = false
+            if (typeof window !== 'undefined') window.__fccVoiceStarting = false
+            return retryStart(targetAgentId, { ...startOpts, forceProvider: 'gemini', fallbackFrom: 'gpt-live' })
+          }
+          if (openAiStartError) throw openAiStartError
+          // No retry was possible: the deferred start error must still reach the user.
+          if (canFallBackToGemini && voiceStartAttemptRef.current === startAttempt && gptLiveStartErrorRef.current) {
+            const message = gptLiveStartErrorRef.current
+            setError(message)
+            window.dispatchEvent(new CustomEvent('fcc:voice-error', { detail: { message, agentId: openAiAgentId } }))
+          }
+          return false
+        }
       } else {
         endOpenAiSession()
         try { conversation.setVolume({ volume: 1 }) } catch {}
@@ -4482,6 +4899,18 @@ function VoiceButton({ activeContext, activeSection }) {
       })
       return true
     } catch (e) {
+      if (geminiPendingState) {
+        const ownsSession = labLiveRef.current === geminiPendingState || (geminiAudio && labLiveRef.current?.audioRuntime === geminiAudio)
+        if (ownsSession) endLabLiveSession({ reason: 'Gemini Live start failed' })
+        else {
+          geminiAudio?.close()
+          try { micStream?.getTracks().forEach(track => track.stop()) } catch {}
+        }
+        // A user stop/replacement must not surface a late request as a new error.
+        if (!ownsSession) return false
+      }
+      if (voiceStartAttemptRef.current !== startAttempt) return false
+      if (!openAiRef.current?.pc) setOpenAiStatus('idle')
       console.log('[voice] start error', e)
       const message = e.message || 'Could not start voice session'
       setError(message)
@@ -4502,10 +4931,13 @@ function VoiceButton({ activeContext, activeSection }) {
       })
       return false
     } finally {
-      startInFlightRef.current = false
-      if (typeof window !== 'undefined') {
-        window.__fccVoiceStarting = false
-        window.dispatchEvent(new CustomEvent('fcc:voice-starting', { detail: { starting: false } }))
+      if (voiceStartAttemptRef.current === startAttempt) {
+        voiceStartAttemptRef.current = null
+        startInFlightRef.current = false
+        if (typeof window !== 'undefined') {
+          window.__fccVoiceStarting = false
+          window.dispatchEvent(new CustomEvent('fcc:voice-starting', { detail: { starting: false } }))
+        }
       }
     }
   }, [conversation, activeContext, activeSection, roster, selectedAgentId, startOpenAiSession, startLabLiveSession, startChirpTurnSession, endOpenAiSession, endLabLiveSession, hardStopVoiceSession, warmSignedUrl])
@@ -4570,8 +5002,11 @@ function VoiceButton({ activeContext, activeSection }) {
         setError(null)
         setWakeOn(true)
       } else {
+        setListenArmed(false)
         setWakeOn(false)
-        setError('Wake word is not available in this browser. Tap the live equalizer avatar and pick an agent.')
+        const message = 'Wake listening is not available in this browser.'
+        setError(message)
+        window.dispatchEvent(new CustomEvent('fcc:voice-error', { detail: { message } }))
       }
     }
     const onStop = () => {
@@ -4589,14 +5024,12 @@ function VoiceButton({ activeContext, activeSection }) {
     }
   }, [hardStopVoiceSession, wakeSupported])
 
-  // Broadcast the armed-listening state so the header equalizer shows even before any
-  // agent connects.
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const listening = isOpenOcti() ? wakeListening : listenArmed
-    window.__fccVoiceListening = listening
-    window.dispatchEvent(new CustomEvent('fcc:voice-listening', { detail: listening }))
-  }, [listenArmed, wakeListening])
+  // Keep established header controls steady through brief recognizer renewals.
+  // The raw wakeListening value still describes capture and OpenOcti status.
+  useWakeListeningIndicator({
+    listening: wakeListening,
+    enabled: Boolean(wakeOn && wakeSupported && (!isMobileOrTabletDevice() || listenArmed)),
+  })
 
   useEffect(() => {
     if (!isOpenOcti()) return

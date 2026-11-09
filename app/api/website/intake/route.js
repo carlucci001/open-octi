@@ -11,6 +11,12 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+import { findDuplicateLead, submissionIdFromRequest } from '@/lib/intakeDedupe'
+import { assessSubmission, normalizeEmailForLimits } from '@/lib/intakeSpamGuard'
+import { fakeEntityId, recordQuarantine } from '@/lib/intakeQuarantine'
+import { resolveClientMeta } from '@/lib/intakeClientMeta'
+import { INTAKE_FORM_RATE_LIMITS, consumeEmailQuota, consumeIntakeClientQuota, consumeIntakeGlobalQuota } from '@/lib/public-endpoint-rate-limit'
+
 const REPLAY_WINDOW_MS = 10 * 60 * 1000
 
 function corsHeaders() {
@@ -38,33 +44,6 @@ function budgetValue(budget) {
   if (/\$150k/i.test(text)) return 150000
   if (/\$50k|50k/i.test(text)) return 50000
   return 0
-}
-
-function submissionIdFrom(request, body) {
-  const raw = body.submissionId || body.externalId || body.idempotencyKey || request.headers.get('idempotency-key')
-  return clean(raw, 160).replace(/[^a-zA-Z0-9_-]/g, '')
-}
-
-function existingSubmission({ submissionId, email, source, productOpportunity }) {
-  const leads = loadAll('leads') || []
-  if (submissionId) {
-    const exact = leads.find(lead =>
-      lead.externalId === submissionId ||
-      lead.bookingId === submissionId ||
-      lead.submissionId === submissionId
-    )
-    if (exact) return exact
-  }
-
-  const cutoff = Date.now() - REPLAY_WINDOW_MS
-  return leads.find(lead => {
-    const createdAt = Date.parse(lead.createdAt || lead.inboundReceivedAt || '')
-    return Number.isFinite(createdAt) &&
-      createdAt >= cutoff &&
-      clean(lead.email, 180).toLowerCase() === email &&
-      clean(lead.source, 80) === source &&
-      clean(lead.productOpportunity, 180) === productOpportunity
-  })
 }
 
 function duplicateResponse(lead, submissionId) {
@@ -103,15 +82,68 @@ export async function POST(request) {
   const source = clean(body.source || 'fd-website', 80)
   const ref = clean(body.ref, 80)
   const productOpportunity = clean(body.productOpportunity || 'Your organization Project Intake', 180)
-  const submissionId = submissionIdFrom(request, body)
+  const submissionId = submissionIdFromRequest(request, body)
   const serviceLine = clean(
     body.serviceLine ||
       (/command center/i.test(productOpportunity) ? 'Your organization - Command Center' : 'Your organization Services'),
     180
   )
 
-  const duplicate = existingSubmission({ submissionId, email, source, productOpportunity })
+  const duplicate = findDuplicateLead({ submissionId, email, source, productOpportunity })
   if (duplicate) return duplicateResponse(duplicate, submissionId)
+  const normalizedEmail = normalizeEmailForLimits(email)
+  const clientMeta = resolveClientMeta(request, body)
+
+  // Global quota only, before spam assessment: even a spam-flagged relay
+  // burst still counts against the route-wide ceiling, but must NOT be able
+  // to consume the per-client or per-email budget a legitimate submission
+  // right behind it needs (website/intake is a relay target — most traffic
+  // arrives from the marketing site's Vercel functions under one client
+  // bucket when PUBLIC_RATE_LIMIT_TRUST_PROXY is off).
+  const globalLimit = consumeIntakeGlobalQuota(request, INTAKE_FORM_RATE_LIMITS.websiteIntake)
+  if (globalLimit.limited) {
+    return NextResponse.json({ ok: false, error: 'Too many requests' }, { status: 429, headers: corsHeaders() })
+  }
+
+  const descriptionText = clean(body.description || body.message, 2000)
+  const roleText = clean(body.role, 140)
+  const spamAssessment = assessSubmission({
+    fields: { name, company, role: roleText, notes: clean(body.notes, 2000), description: descriptionText, email },
+    honeypot: body.website_url,
+    elapsedMs: body.elapsedMs,
+    upstreamGuard: body.guard,
+  })
+
+  if (spamAssessment.verdict === 'spam') {
+    recordQuarantine({
+      route: 'website-intake',
+      reasons: spamAssessment.reasons,
+      score: spamAssessment.score,
+      fields: { name, email, company, phone, role: roleText, source, productOpportunity, description: descriptionText },
+      clientMeta,
+    })
+    return NextResponse.json({
+      ok: true,
+      deduplicated: false,
+      submissionId: submissionId || null,
+      leadId: fakeEntityId('ld'),
+      accountId: fakeEntityId('ac'),
+      contactId: fakeEntityId('ct'),
+      opportunityId: fakeEntityId('op'),
+    }, { headers: corsHeaders() })
+  }
+
+  // Per-client and per-email quotas only run once a submission has cleared
+  // spam assessment, so spam never burns the budget a legitimate submission
+  // needs.
+  const clientLimit = consumeIntakeClientQuota(request, INTAKE_FORM_RATE_LIMITS.websiteIntake)
+  if (clientLimit.limited) {
+    return NextResponse.json({ ok: false, error: 'Too many requests' }, { status: 429, headers: corsHeaders() })
+  }
+  const emailLimit = consumeEmailQuota(normalizedEmail, { namespace: 'intake-website' })
+  if (emailLimit.limited) {
+    return NextResponse.json({ ok: false, error: 'Too many requests' }, { status: 429, headers: corsHeaders() })
+  }
 
   const pipelineId = 'farrington_dev'
   const stageId = stageForPipeline(pipelineId, 'discovery')
@@ -233,7 +265,7 @@ export async function POST(request) {
           to: ['personal@example.invalid'],
           reply_to: email,
           subject: `New lead: ${name} — ${company} [${source}]`,
-          text: `New website lead captured in Command Center.\n\nName: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone || '(none)'}\n\n${notes}\n\nOpportunity: ${opportunity.name}\nOpen FCC: https://crm.company.example.com`,
+          text: `New website lead captured in Command Center.\n\nName: ${name}\nCompany: ${company}\nEmail: ${email}\nPhone: ${phone || '(none)'}\n\n${notes}\n\nIP: ${clientMeta.ip || '(unknown)'}\nUser-Agent: ${clientMeta.userAgent || '(unknown)'}\n\nOpportunity: ${opportunity.name}\nOpen FCC: https://crm.company.example.com`,
         }),
       })
     } catch (err) { console.warn('intake notify email failed:', err?.message) }

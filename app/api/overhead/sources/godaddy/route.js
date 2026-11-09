@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { findCredential } from '@/lib/vault'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -10,8 +11,7 @@ function getCredentials() {
   const secret = process.env.GODADDY_API_SECRET
   if (key && secret) return { key, secret }
   try {
-    const vault = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'credentials.json'), 'utf8'))
-    const entry = vault.credentials?.find(c => /godaddy/i.test(c.name))
+    const entry = findCredential(/godaddy/i)
     if (entry) {
       const k = entry.fields?.find(f => /api key/i.test(f.label))?.value
       const s = entry.fields?.find(f => /api secret/i.test(f.label))?.value

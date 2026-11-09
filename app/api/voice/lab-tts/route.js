@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
 import { NextResponse } from 'next/server'
 import { getCred } from '@/lib/agent-creds'
 import { readData } from '@/lib/dataStore'
@@ -14,7 +17,7 @@ export const dynamic = 'force-dynamic'
 
 const GEMINI_MODELS = ['gemini-2.5-pro-preview-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts']
 const GEMINI_CHIRP_TTS_MODEL = 'gemini-2.5-flash-preview-tts'
-const GEMINI_VOICES = ['Kore', 'Charon', 'Puck', 'Orus', 'Algenib', 'Gacrux', 'Schedar', 'Sulafat', 'Achird', 'Vindemiatrix', 'Zephyr', 'Aoede', 'Algieba', 'Despina', 'Rasalgethi']
+const GEMINI_VOICES = ['Kore', 'Leda', 'Charon', 'Puck', 'Orus', 'Algenib', 'Gacrux', 'Schedar', 'Sulafat', 'Achird', 'Vindemiatrix', 'Zephyr', 'Aoede', 'Algieba', 'Despina', 'Rasalgethi']
 const ELEVEN_MODELS = ['eleven_multilingual_v2', 'eleven_turbo_v2_5']
 const VIBEVOICE_VOICES = ['default', 'internal-test']
 
@@ -91,6 +94,95 @@ function resolveElevenVoice(agentId) {
   }
   const binding = roster[agentId]
   return { voiceId: binding?.voiceId, voiceName: binding?.voiceName || binding?.firstName || binding?.name || agentId }
+}
+
+// A login greeting is one of three fixed sentences per person, and Gemini
+// speech takes about three seconds to generate one. A greeting that has been
+// generated once is served from disk; the key covers everything that shapes
+// the audio, so a changed voice, model or agent profile produces a new clip.
+const LOGIN_WELCOME_CACHE_DIR = path.join(process.cwd(), 'data', 'voice-sample-cache', 'login-welcome')
+const LOGIN_WELCOME_CACHE_LIMIT = 300
+const LOGIN_WELCOME_PATTERN = /^Good (morning|afternoon|evening) ([^\n]{1,120})$/
+const LOGIN_WELCOME_WARM_DELAY_MS = 25000
+
+function isLoginWelcomeText(text) {
+  return LOGIN_WELCOME_PATTERN.test(text)
+}
+
+function loginWelcomeCacheFile({ text, model, voiceName, agentId }) {
+  const key = createHash('sha256')
+    .update(JSON.stringify([model, voiceName, agentId, getAgentStyle(agentId), text]))
+    .digest('hex')
+  return path.join(LOGIN_WELCOME_CACHE_DIR, `${key}.wav`)
+}
+
+function storeLoginWelcome(file, wav) {
+  try {
+    fs.mkdirSync(LOGIN_WELCOME_CACHE_DIR, { recursive: true })
+    const partial = `${file}.${process.pid}.partial`
+    fs.writeFileSync(partial, wav)
+    fs.renameSync(partial, file)
+    const clips = fs.readdirSync(LOGIN_WELCOME_CACHE_DIR).filter(name => name.endsWith('.wav'))
+    if (clips.length <= LOGIN_WELCOME_CACHE_LIMIT) return
+    clips
+      .map(name => ({ name, at: fs.statSync(path.join(LOGIN_WELCOME_CACHE_DIR, name)).mtimeMs }))
+      .sort((a, b) => a.at - b.at)
+      .slice(0, clips.length - LOGIN_WELCOME_CACHE_LIMIT)
+      .forEach(clip => fs.rmSync(path.join(LOGIN_WELCOME_CACHE_DIR, clip.name), { force: true }))
+  } catch {
+    // The cache is an optimisation. A full or read-only disk must not break the greeting.
+  }
+}
+
+async function renderLoginWelcome(request, file) {
+  const response = await generateGemini(request)
+  if (response.status !== 200) return response
+  const wav = Buffer.from(await response.arrayBuffer())
+  storeLoginWelcome(file, wav)
+  return new NextResponse(wav, { headers: response.headers })
+}
+
+// Once one time-of-day greeting exists for a person, quietly prepare the other
+// two so the first morning or evening sign-in is not the slow one. Spaced out
+// to stay inside the speech provider's per-minute limit.
+function warmOtherLoginWelcomes(request) {
+  const match = LOGIN_WELCOME_PATTERN.exec(request.text)
+  if (!match) return
+  const others = ['morning', 'afternoon', 'evening'].filter(part => part !== match[1])
+  others.forEach((part, index) => {
+    const sibling = { ...request, text: `Good ${part} ${match[2]}` }
+    const timer = setTimeout(() => {
+      const file = loginWelcomeCacheFile(sibling)
+      if (fs.existsSync(file)) return
+      renderLoginWelcome(sibling, file).catch(() => {})
+    }, LOGIN_WELCOME_WARM_DELAY_MS * (index + 1))
+    timer.unref?.()
+  })
+}
+
+async function generateCachedLoginWelcome(request) {
+  const file = loginWelcomeCacheFile(request)
+  try {
+    const wav = fs.readFileSync(file)
+    if (wav.length > 44) {
+      return new NextResponse(wav, {
+        headers: {
+          'Content-Type': 'audio/wav',
+          'Content-Length': String(wav.length),
+          'Cache-Control': 'no-store',
+          'X-Voice-Lab-Provider': 'gemini',
+          'X-Voice-Lab-Model': request.model,
+          'X-Voice-Lab-Voice': request.voiceName,
+          'X-Voice-Lab-Cache': 'hit',
+        },
+      })
+    }
+  } catch {
+    // Not generated yet.
+  }
+  const response = await renderLoginWelcome(request, file)
+  if (response.status === 200) warmOtherLoginWelcomes(request)
+  return response
 }
 
 async function generateGemini({ text, model, voiceName, agentId, usageProvider = 'gemini', displayVoiceName = voiceName }) {
@@ -257,12 +349,13 @@ export async function POST(request) {
   if (!text) return jsonError('text is required', 400)
   const agentId = cleanText(body.agentId || '')
   if (provider === 'gemini') {
-    return generateGemini({
+    const geminiRequest = {
       text,
       agentId,
       model: GEMINI_MODELS.includes(body.model) ? body.model : GEMINI_MODELS[0],
       voiceName: GEMINI_VOICES.includes(body.voiceName) ? body.voiceName : 'Kore',
-    })
+    }
+    return isLoginWelcomeText(text) ? generateCachedLoginWelcome(geminiRequest) : generateGemini(geminiRequest)
   }
   if (provider === 'elevenlabs') {
     return generateElevenLabs({

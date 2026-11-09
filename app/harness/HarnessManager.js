@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import { isOpenOcti } from '../../lib/edition'
 import HarnessSupport, { getHarnessReleaseInfo } from './HarnessSupport'
-import { Activity, Bot, Cable, Code2, ExternalLink, GitCompare, RefreshCw, Send, ShieldCheck, Terminal, Wrench } from 'lucide-react'
+import { Activity, Bot, Cable, Code2, ExternalLink, FlaskConical, GitCompare, RefreshCw, Send, ShieldCheck, Terminal, Wrench } from 'lucide-react'
 
 const COMMANDS = ['help', 'status', 'agents', 'tools', 'routes', 'pricing', 'health']
 
@@ -463,7 +463,7 @@ export default function HarnessManager() {
   if (loading) {
     return (
       <div className="harness-workspace command-workspace lab-mobile-dense p-6">
-        <PageHeader icon={<Cable size={20} />} title="Harness" subtitle="Loading runtime checks..." />
+        <PageHeader icon={<FlaskConical size={20} />} title="Harness" subtitle="Loading runtime checks..." />
       </div>
     )
   }
@@ -471,7 +471,7 @@ export default function HarnessManager() {
   return (
     <div className="harness-workspace command-workspace lab-mobile-dense p-6">
       <PageHeader
-        icon={<Cable size={20} />}
+        icon={<FlaskConical size={20} />}
         title="Harness"
         subtitle="Runtime, route, tool, and private gateway checks."
         actions={

@@ -4,6 +4,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
+import { navigationDestinationsFor } from '../lib/navigation-manifest.js'
 
 const SOURCE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx'])
 const HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'])
@@ -134,25 +135,22 @@ function laneForNavigation(id, label) {
   return { lane, section: lane, screen: label }
 }
 
-function scanNavigation(root) {
-  const relative = 'lib/commandCenterNavigation.js'
-  const { ast } = sourceFile(root, relative)
-  const initializer = variableInitializer(ast, 'COMMAND_CENTER_SECTIONS')
-  if (!initializer || !ts.isArrayLiteralExpression(initializer)) throw new Error('COMMAND_CENTER_SECTIONS array was not found')
-  return initializer.elements
-    .filter(ts.isObjectLiteralExpression)
-    .map(element => {
-      const values = objectRecord(element)
-      const id = String(values.id || '')
-      const label = String(values.label || id)
-      const gatingFlags = element.properties
-        .filter(property => ts.isPropertyAssignment(property) && /gate|flag|visible|enabled|condition/i.test(propertyName(property)))
-        .map(property => ({ name: propertyName(property), value: staticValue(property.initializer) ?? property.initializer.getText(ast) }))
-        .sort((a, b) => sortText(a.name, b.name))
+export function navigationInventoryEntries(destinations = navigationDestinationsFor({ FCC_EDITION: 'commandcenter' })) {
+  return destinations
+    .filter(destination => destination.commandCenter && destination.routable)
+    .map(destination => {
+      const id = String(destination.id || '')
+      const label = String(destination.label || id)
+      const gatingFlags = Array.isArray(destination.gatingFlags)
+        ? destination.gatingFlags
+          .map(flag => ({ name: String(flag.name || ''), value: flag.value }))
+          .filter(flag => flag.name)
+          .sort((a, b) => sortText(a.name, b.name))
+        : []
       return {
         id,
         label,
-        path: typeof values.path === 'string' ? values.path : `/?tab=${encodeURIComponent(id)}`,
+        path: typeof destination.path === 'string' ? destination.path : `/?tab=${encodeURIComponent(id)}`,
         ...laneForNavigation(id, label),
         gated: gatingFlags.length > 0,
         gatingFlags,
@@ -290,8 +288,8 @@ function objectKeys(root, relative, variableName) {
   return initializer.properties.map(propertyName).filter(Boolean).sort(sortText)
 }
 
-export function buildInventory(root = process.cwd()) {
-  const navigation = scanNavigation(root)
+export function buildInventory(root = process.cwd(), options = {}) {
+  const navigation = navigationInventoryEntries(options.navigationDestinations)
   return {
     schemaVersion: 1,
     routes: scanRoutes(root),

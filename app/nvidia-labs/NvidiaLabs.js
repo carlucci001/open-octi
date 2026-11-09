@@ -303,7 +303,6 @@ export default function NvidiaLabs() {
         icon={<FlaskConical size={20} />}
         title="AI Lab"
         subtitle="Model command bench"
-        viewToggle={<ViewToggle view={tab} setView={setTab} options={TABS} />}
         actions={(
           <div style={heroActionsStyle}>
             <button type="button" onClick={() => load({ refresh: true })} disabled={busy || refreshing} style={buttonStyle('secondary')}>
@@ -321,6 +320,10 @@ export default function NvidiaLabs() {
           <StatusDot tone={prompt.trim() ? 'ok' : 'warn'} label={prompt.trim() ? 'Prompt loaded' : 'Prompt needed'} />
         </div>
       </PageHeader>
+
+      <div className="command-toolbar flex items-center flex-wrap gap-2 mb-4">
+        <ViewToggle view={tab} setView={setTab} options={TABS} />
+      </div>
 
       {error && <div role="alert" style={noticeStyle('warn')}><AlertTriangle size={16} /> {error}</div>}
       {lastRefreshedAt && (

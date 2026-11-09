@@ -147,6 +147,9 @@ export async function POST(request) {
     let account = null
     if (accountIdHint) account = findAccount(accountIdHint)
     if (!account && clientNameHint) account = findAccount(clientNameHint)
+    if (!account && !clientNameHint && !accountIdHint) {
+      return NextResponse.json({ ok: false, error: 'No client named. Ask which client to track time against, then start the timer with clientName.' }, { status: 400 })
+    }
     if (!account) return NextResponse.json({ ok: false, error: `No account matched: "${clientNameHint || accountIdHint || ''}"` }, { status: 404 })
 
     // If a session is already running for a DIFFERENT client, refuse — Carl has to stop or discard first

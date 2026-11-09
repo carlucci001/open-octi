@@ -1,6 +1,6 @@
 'use client'
 import ThemedSelect from '../components/ThemedSelect'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { Fragment, useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { marked } from 'marked'
 import PageHeader from '../components/PageHeader'
 import ViewModeToggle from '../components/ViewModeToggle'
@@ -8,7 +8,8 @@ import ComponentSettings, { useComponentSettings } from '../components/Component
 import { Paginator, usePagination } from '../components/Paginator'
 import BulkActionsMenu from '../components/BulkActionsMenu'
 import ItemActionsMenu from '../components/ItemActionsMenu'
-import { Code2, Copy as CopyIcon, Download, ExternalLink, FileSignature, FileText, Pencil, Send, Trash2 } from 'lucide-react'
+import InlineRecordDrawer from '../components/InlineRecordDrawer'
+import { Code2, Copy as CopyIcon, Download, ExternalLink, FileSignature, FileText, Mail, Paperclip, Pencil, Send, Trash2 } from 'lucide-react'
 import { isOpenOcti } from '@/lib/edition'
 import { OpenOctiConfigurationLinks } from '../components/OpenOctiConfigurationNotice'
 
@@ -239,6 +240,113 @@ const LABELS = {
   breach_notice_hours: 'Breach notice (hours)',
   return_delete_days: 'Return/delete timing (days)',
   audit_terms: 'Audit terms',
+  acceptance_criteria: 'Acceptance criteria',
+  additional_terms: 'Additional terms',
+  after_hours_terms: 'After-hours terms',
+  agreement_reference: 'Governing agreement / SOW reference',
+  background_technology: 'Developer background technology',
+  backup_policy: 'Backup policy',
+  change_description: 'Change description',
+  change_order_number: 'Change order #',
+  change_request_process: 'Change request process',
+  client_business_address: 'Client business address',
+  client_materials: 'Client-provided materials',
+  client_representative: 'Client representative',
+  client_responsibilities: 'Client responsibilities',
+  confidentiality_survival_years: 'Confidentiality survival (years)',
+  contractor_address: 'Contractor address',
+  contractor_email: 'Contractor email',
+  contractor_name: 'Contractor name',
+  contractor_rate: 'Contractor rate',
+  contractor_signer_name: 'Contractor signer name',
+  contractor_signer_title: 'Contractor signer title',
+  dependencies_and_access_notes: 'Dependencies & access notes',
+  domain_name: 'Domain name',
+  end_date: 'End date',
+  escalation_contact: 'Escalation contact',
+  expenses_terms: 'Expenses terms',
+  impact_on_fee: 'Impact on fee',
+  impact_on_scope: 'Impact on scope',
+  impact_on_timeline: 'Impact on timeline',
+  in_scope_detail: 'In-scope detail',
+  initial_term_months: 'Initial term (months)',
+  out_of_scope: 'Out of scope',
+  project_background: 'Project background',
+  project_manager: 'Project manager',
+  project_objectives: 'Project objectives',
+  project_team: 'Project team',
+  reason_for_change: 'Reason for change',
+  revised_completion_date: 'Revised completion date',
+  revised_total_fee: 'Revised total fee',
+  service_name: 'Service name',
+  severity_matrix: 'Severity matrix',
+  sow_number: 'SOW #',
+  start_date: 'Start date',
+  support_window: 'Support window',
+  target_keywords: 'Target keywords',
+  target_website_url: 'Target website URL',
+  assumed_liabilities: 'Assumed liabilities',
+  business_description: 'Business description',
+  capital_contributions: 'Capital contributions',
+  closing_date: 'Closing date',
+  counterparty_address: 'Counterparty address',
+  counterparty_email: 'Counterparty email',
+  counterparty_entity_type: 'Counterparty entity type (e.g. "a North Carolina LLC")',
+  counterparty_name: 'Counterparty name',
+  counterparty_signer_name: 'Counterparty signer name',
+  counterparty_signer_title: 'Counterparty signer title',
+  deposit: 'Deposit',
+  each_party_responsibilities: 'Each party\'s responsibilities',
+  excluded_assets: 'Excluded assets',
+  exclusivity: 'Exclusivity (e.g. non-exclusive)',
+  exclusivity_days: 'Exclusivity period (days)',
+  farrington_address: 'OpenOcti entity address',
+  farrington_entity: 'OpenOcti entity (your LLC)',
+  farrington_entity_state: 'OpenOcti entity state',
+  formation_date: 'Formation date',
+  initial_capital_contribution: 'Initial capital contribution',
+  key_risks: 'Key risks',
+  license_fee_structure: 'License fee structure',
+  licensee_brand_name: 'Licensee brand name',
+  llc_name: 'LLC name',
+  llc_state: 'LLC state',
+  management_structure: 'Management structure',
+  member_1_name: 'Member 1 name',
+  member_1_percent: 'Member 1 %',
+  member_2_name: 'Member 2 name',
+  member_2_percent: 'Member 2 %',
+  member_name: 'Member name',
+  minimum_commitment: 'Minimum commitment',
+  mou_purpose: 'MOU purpose',
+  ownership_split: 'Ownership split',
+  partnership_name: 'Partnership name',
+  partnership_purpose: 'Partnership purpose',
+  percent_of_outstanding: '% of outstanding shares',
+  principal_office: 'Principal office',
+  product_name: 'Product name',
+  profit_distribution: 'Profit distribution',
+  project_sponsor: 'Project sponsor',
+  proposed_closing_date: 'Proposed closing date',
+  proposed_purchase_price: 'Proposed purchase price',
+  proposed_structure: 'Proposed structure (asset / stock)',
+  purchase_price: 'Purchase price',
+  purchase_price_allocation: 'Purchase price allocation',
+  purchased_assets: 'Purchased assets',
+  referral_fee: 'Referral fee',
+  referral_term_months: 'Referral term (months)',
+  registered_agent: 'Registered agent',
+  scope_of_collaboration: 'Scope of collaboration',
+  shares_purchased: 'Shares purchased',
+  stakeholders: 'Stakeholders',
+  success_criteria: 'Success criteria',
+  target_business: 'Target business',
+  target_company: 'Target company',
+  target_company_state: 'Target company state',
+  term_months: 'Term (months)',
+  territory: 'Territory',
+  venture_name: 'Venture name',
+  venture_purpose: 'Venture purpose',
+  wholesale_discount: 'Wholesale discount',
 }
 
 const SCOPE_KEYS = ['scope_of_work','scope_of_services']
@@ -293,8 +401,12 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [viewDoc, setViewDoc] = useState(null)
+  const lastDocumentTriggerRef = useRef(null)
   const [viewMode, setViewMode] = useState('formatted') // 'formatted' | 'raw'
   const [sendingDoc, setSendingDoc] = useState(false)
+  const [attaching, setAttaching] = useState(false)
+  const [emailComposer, setEmailComposer] = useState(null) // { docId, to, note, toTouched }
+  const attachInputRef = useRef(null)
   const [signingDocId, setSigningDocId] = useState('')
   const [lastSignaturePayload, setLastSignaturePayload] = useState(null)
   const [signatureRequestOpen, setSignatureRequestOpen] = useState(false)
@@ -466,6 +578,11 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
       client_phone: selectedClient?.phone || '',
       client_business_name: selectedClient?.name || '',
       contact_email: selectedClient?.email || '',
+      // Business-deal / entity templates: OpenOcti's own side and entity defaults
+      farrington_entity: 'Your organization',
+      farrington_entity_state: 'Wyoming',
+      farrington_address: '279 Paragon Parkway, #208, Clyde, NC 28721',
+      llc_state: 'Wyoming',
     }
     const next = {}
     for (const p of selectedTemplate.placeholders) {
@@ -880,24 +997,84 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
     setTplWizardAiBusy(false)
   }
 
-  const sendDoc = async (doc) => {
-    const client = clients.find(c => c.id === doc.clientId)
-    const email = client?.email || doc.values?.client_email
-    if (!email) { flash('No email address on file for this client', 'error'); return }
+  // "Email to client" opens a small composer in the document drawer (To + optional note); Send
+  // has the server email the document on the letterhead with its PDF (a filed PDF, otherwise the
+  // document rendered as a PDF). No confirm dialogs.
+  const canEmailDoc = (doc) => !!doc?.id && !!(doc.clientId || doc.values?.client_email)
+
+  // Same order the server uses: account email, then the account's primary contact, then the
+  // document's client_email.
+  const openEmailComposer = async (doc) => {
+    if (viewDoc?.id !== doc.id && openSavedDoc(doc) === false) return
+    const accountEmail = String(clients.find(c => c.id === doc.clientId)?.email || '').trim()
+    const valuesEmail = String(doc.values?.client_email || '').trim()
+    setEmailComposer(c => (c && c.docId === doc.id ? c : { docId: doc.id, to: accountEmail || (doc.clientId ? '' : valuesEmail), note: '', toTouched: false }))
+    if (accountEmail || !doc.clientId) return
+    let to = valuesEmail
+    try {
+      const r = await fetch(`/api/contacts?accountId=${encodeURIComponent(doc.clientId)}`).then(res => res.json())
+      const withEmail = (r?.contacts || []).filter(c => String(c.email || '').trim())
+      to = String((withEmail.find(c => c.primary) || withEmail[0])?.email || '').trim() || valuesEmail
+    } catch {}
+    setEmailComposer(c => (c && c.docId === doc.id && !c.toTouched ? { ...c, to } : c))
+  }
+
+  const sendDoc = async (doc, { to, note } = {}) => {
     setSendingDoc(true)
     try {
-      const html = /^\s*</.test(doc.body || '') ? doc.body : renderEmailHtml(doc.body, doc.title)
-      const r = await fetch('/api/tools/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: email, subject: doc.title, html }),
-      }).then(r => r.json())
-      if (!r.ok) { flash(r.error || 'Send failed', 'error'); setSendingDoc(false); return }
-      await setStatus(doc.id, 'sent')
-      setViewDoc(d => d ? { ...d, status: 'sent' } : null)
-      flash(`Sent to ${email}`, 'success')
+      const r = await api({ action: 'email', id: doc.id, to, note })
+      if (!r.ok) { flash(r.error || 'Send failed', 'error'); setSendingDoc(false); return false }
+      if (r.document) {
+        setDocuments(ds => ds.map(d => d.id === doc.id ? r.document : d))
+        setViewDoc(v => (v && v.id === doc.id ? r.document : v))
+      }
+      const count = r.attachments?.length || 0
+      flash(`Sent to ${r.to} with ${count} attachment${count === 1 ? '' : 's'}`, 'success')
+      setSendingDoc(false)
+      return true
     } catch(e) { flash(e.message, 'error') }
     setSendingDoc(false)
+    return false
+  }
+
+  const submitEmailComposer = async () => {
+    if (!emailComposer || sendingDoc) return
+    const doc = documents.find(d => d.id === emailComposer.docId) || (viewDoc?.id === emailComposer.docId ? viewDoc : null)
+    if (!doc) return
+    // A blank To lets the server resolve the address itself (and report if none is on file).
+    const to = emailComposer.to.trim() || undefined
+    if (await sendDoc(doc, { to, note: emailComposer.note.trim() })) setEmailComposer(null)
+  }
+
+  const attachFile = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !viewDoc) return
+    const docId = viewDoc.id
+    setAttaching(true)
+    try {
+      const form = new FormData()
+      form.append('action', 'attach_file')
+      form.append('documentId', docId)
+      form.append('file', file)
+      const r = await fetch('/api/documents', { method: 'POST', body: form }).then(res => res.json())
+      if (!r.ok) { flash(r.error || 'Attach failed', 'error'); setAttaching(false); return }
+      setDocuments(ds => ds.map(d => d.id === docId ? r.document : d))
+      setViewDoc(v => (v && v.id === docId ? r.document : v))
+      flash(`Attached ${r.attachment?.name || file.name}`, 'success')
+    } catch(e) { flash(e.message, 'error') }
+    setAttaching(false)
+  }
+
+  const removeAttachment = async (attachment) => {
+    if (!viewDoc) return
+    if (!confirm(`Remove ${attachment.name} from this document?`)) return
+    const docId = viewDoc.id
+    const r = await api({ action: 'remove_attachment', documentId: docId, attachmentId: attachment.id })
+    if (!r.ok) { flash(r.error || 'Remove failed', 'error'); return }
+    setDocuments(ds => ds.map(d => d.id === docId ? r.document : d))
+    setViewDoc(v => (v && v.id === docId ? r.document : v))
+    flash('Attachment removed', 'success')
   }
 
   const sendSignatureRequest = async (doc, options = {}) => {
@@ -934,23 +1111,32 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
     flash('Document saved', 'success')
   }
 
-  const openSavedDoc = (doc) => {
+  const closeSavedDoc = () => {
+    if (docEditMode && docDraftBody !== (viewDoc?.body || '') && !confirm('Discard your unsaved document changes?')) return false
+    setViewDoc(null)
+    setEmailComposer(null)
+    setDocEditMode(false)
+    requestAnimationFrame(() => lastDocumentTriggerRef.current?.focus?.({ preventScroll: true }))
+    return true
+  }
+
+  const openSavedDoc = useCallback((doc, trigger = null) => {
+    if (viewDoc?.id !== doc.id && docEditMode && docDraftBody !== (viewDoc?.body || '') && !confirm('Discard your unsaved document changes?')) return false
+    lastDocumentTriggerRef.current = trigger || document.querySelector(`[data-document-trigger="${doc.id}"]`)
     setViewDoc(doc)
+    setEmailComposer(c => (c && c.docId !== doc.id ? null : c))
     setLastSignaturePayload(null)
     setDocDraftBody(doc.body || '')
     setDocEditMode(false)
     setDocAiInstruction('')
     setDocSel({ start: 0, end: 0 })
     setViewMode('formatted')
-  }
+    return true
+  }, [viewDoc, docEditMode, docDraftBody])
 
   const openDocForEdit = (doc) => {
-    setViewDoc(doc)
-    setLastSignaturePayload(null)
-    setDocDraftBody(doc.body || '')
+    if (openSavedDoc(doc) === false) return
     setDocEditMode(true)
-    setDocAiInstruction('')
-    setDocSel({ start: 0, end: 0 })
     setViewMode('raw')
   }
 
@@ -959,7 +1145,6 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
       const detail = event.detail || {}
       const documentId = typeof detail === 'string' ? detail : detail.documentId
       if (!documentId) return
-      setViewTab(detail.view || detail.tab || 'documents')
       let doc = documents.find(d => d.id === documentId)
       if (!doc) {
         const qs = lockClient && lockedClientId ? `?clientId=${encodeURIComponent(lockedClientId)}` : ''
@@ -968,12 +1153,15 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
         if (nextDocs.length) setDocuments(nextDocs)
         doc = nextDocs.find(d => d.id === documentId)
       }
-      if (doc) openSavedDoc(doc)
+      if (doc) {
+        const opened = openSavedDoc(doc)
+        if (opened !== false) setViewTab(detail.view || detail.tab || 'documents')
+      }
       else flash('Linked document was not found in this view', 'error')
     }
     window.addEventListener('fcc:open-document', handler)
     return () => window.removeEventListener('fcc:open-document', handler)
-  }, [documents, lockClient, lockedClientId])
+  }, [documents, lockClient, lockedClientId, openSavedDoc])
 
   useEffect(() => {
     const handler = (event) => {
@@ -1101,7 +1289,14 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
   const documentCount = documents.length
   const eSignatureCount = signatureQueueDocs.length
   const documentTypes = useMemo(() => Array.from(new Set(documents.map(docTypeLabel))).filter(Boolean).sort(), [documents])
-  const { page, setPage, pageSize, setPageSize, paginated: pagedDocuments } = usePagination(filtered, 25)
+  const visibleDocuments = useMemo(() => viewDoc && !filtered.some(document => document.id === viewDoc.id) ? [viewDoc, ...filtered] : filtered, [filtered, viewDoc])
+  const { page, setPage, pageSize, setPageSize, paginated: pagedDocuments } = usePagination(visibleDocuments, 25)
+
+  useEffect(() => {
+    if (!viewDoc) return
+    const index = visibleDocuments.findIndex(document => document.id === viewDoc.id)
+    if (index >= 0) setPage(Math.floor(index / pageSize) + 1)
+  }, [viewDoc, visibleDocuments, pageSize, setPage])
 
   // Component configuration layer: configured defaults for the documents list.
   const docListPrefs = useComponentSettings('documents.list')
@@ -1172,6 +1367,94 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
 
   const is = { background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: 8, fontSize: 13, outline: 'none', width: '100%' }
 
+  const documentDetail = viewDoc ? (
+    <InlineRecordDrawer id={`document-detail-${viewDoc.id}`} label={`${viewDoc.title} document details`} onClose={closeSavedDoc} className="document-inline-drawer">
+      <div className="flex justify-between items-start mb-4 gap-3 flex-wrap">
+        <div>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>{viewDoc.title}</h2>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{viewDoc.templateName} · {viewDoc.clientName} · Created {fmtDate(viewDoc.createdAt)}</p>
+        </div>
+        <div className="document-detail-actions flex gap-2 flex-wrap">
+          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+            <button className="px-3 text-sm font-medium" style={{ background: viewMode === 'formatted' ? 'var(--accent)' : 'var(--surface)', color: viewMode === 'formatted' ? 'var(--accent-text)' : 'var(--text-muted)', minHeight: 48 }} onClick={() => setViewMode('formatted')}>Formatted</button>
+            <button className="px-3 text-sm font-medium" style={{ background: viewMode === 'raw' ? 'var(--accent)' : 'var(--surface)', color: viewMode === 'raw' ? 'var(--accent-text)' : 'var(--text-muted)', minHeight: 48 }} onClick={() => setViewMode('raw')}>Raw</button>
+          </div>
+          <button className="px-4 rounded-lg text-sm font-semibold" style={{ background: viewDoc.portalVisible === true ? 'var(--green)' : 'var(--surface)', color: viewDoc.portalVisible === true ? 'var(--accent-text)' : 'var(--text-muted)', minHeight: 48, border: '1px solid var(--border)' }} onClick={() => setPortalShare(viewDoc, viewDoc.portalVisible !== true)}>{viewDoc.portalVisible === true ? 'Shared with client' : 'Not shared'}</button>
+          {docNeedsSignature(viewDoc) && viewDoc.status !== 'signed' && <button className="px-4 rounded-lg text-sm font-semibold" style={{ background: 'var(--amber)', color: 'var(--accent-text)', minHeight: 48, opacity: signingDocId === viewDoc.id ? 0.6 : 1 }} onClick={() => sendSignatureRequest(viewDoc)} disabled={signingDocId === viewDoc.id}>{signingDocId === viewDoc.id ? 'Sending...' : 'Sign'}</button>}
+          {docEditMode
+            ? <button className="px-4 rounded-lg text-sm font-semibold" style={{ background: 'var(--green)', color: 'var(--accent-text)', minHeight: 48, opacity: docSaving ? 0.6 : 1 }} onClick={saveDocEdits} disabled={docSaving}>{docSaving ? 'Saving...' : 'Save'}</button>
+            : <button className="px-4 rounded-lg text-sm font-medium" style={{ background: 'var(--surface)', color: 'var(--accent)', minHeight: 48, border: '1px solid var(--border)' }} onClick={() => { setDocDraftBody(viewDoc.body || ''); setDocEditMode(true) }}>Edit</button>}
+          <button className="px-4 rounded-lg text-sm font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-text)', minHeight: 48, opacity: sendingDoc ? 0.6 : 1 }} onClick={() => openEmailComposer(viewDoc)} disabled={sendingDoc}><Mail size={15} strokeWidth={2.1} aria-hidden="true" style={{ display: 'inline', marginRight: 6, verticalAlign: '-2px' }} />{sendingDoc ? 'Sending...' : 'Email to client'}</button>
+          <button className="px-4 rounded-lg text-sm font-medium" style={{ background: 'var(--green)', color: 'var(--accent-text)', minHeight: 48 }} onClick={() => copyHtml(viewDoc.body, viewDoc.title)}>Copy</button>
+          <button className="px-4 rounded-lg text-sm font-medium" style={{ background: 'var(--surface)', color: 'var(--text-muted)', minHeight: 48, border: '1px solid var(--border)' }} onClick={() => downloadPdf(viewDoc.id)}>PDF</button>
+          <button className="px-4 rounded-lg text-sm" style={{ background: 'var(--surface)', color: 'var(--text-muted)', minHeight: 48, border: '1px solid var(--border)' }} onClick={closeSavedDoc}>Close</button>
+        </div>
+      </div>
+      {emailComposer?.docId === viewDoc.id && (() => {
+        const pdfCount = (viewDoc.attachments || []).filter(a => String(a.ext || '').toLowerCase() === 'pdf').length
+        return (
+          <div role="group" aria-label="Email to client" className="rounded-lg p-3 mb-3 grid gap-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Email to client</div>
+            <label className="grid gap-1 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+              To
+              <input type="email" autoFocus value={emailComposer.to} onChange={e => setEmailComposer(c => c ? { ...c, to: e.target.value, toTouched: true } : c)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitEmailComposer() } }} style={is} />
+            </label>
+            <label className="grid gap-1 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+              Note (optional)
+              <textarea rows={3} placeholder="Anything you want to say in the email" value={emailComposer.note} onChange={e => setEmailComposer(c => c ? { ...c, note: e.target.value } : c)} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitEmailComposer() } }} style={{ ...is, minHeight: 84, resize: 'vertical', fontWeight: 400 }} />
+            </label>
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{pdfCount > 0 ? `Attached: ${pdfCount} PDF${pdfCount === 1 ? '' : 's'}` : 'Attached: rendered letterhead PDF'}</div>
+            <div className="flex gap-2 flex-wrap">
+              <button type="button" className="px-4 rounded-lg text-sm font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-text)', minHeight: 44, opacity: sendingDoc ? 0.6 : 1 }} onClick={submitEmailComposer} disabled={sendingDoc}>{sendingDoc ? 'Sending...' : 'Send'}</button>
+              <button type="button" className="px-4 rounded-lg text-sm font-medium" style={{ background: 'var(--surface)', color: 'var(--text-muted)', minHeight: 44, border: '1px solid var(--border)' }} onClick={() => setEmailComposer(null)} disabled={sendingDoc}>Cancel</button>
+            </div>
+          </div>
+        )
+      })()}
+      {docNeedsSignature(viewDoc) && (
+        <div className="rounded-lg p-3 mb-3 text-sm" style={{ background: viewDoc.status === 'signed' ? 'rgba(166,227,161,0.12)' : 'rgba(245,158,11,0.12)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+          Signature: {viewDoc.signature?.status === 'pending' ? `link sent to ${viewDoc.signature.signerEmail}` : viewDoc.signature?.status === 'signed' ? `signed by ${viewDoc.signature.signerName} on ${fmtDate(viewDoc.signature.signedAt)}` : 'required'}
+          {viewDoc.signature?.documentHash && <div className="text-xs mt-1 font-mono" style={{ color: 'var(--text-muted)' }}>SHA-256 {viewDoc.signature.documentHash}</div>}
+          {(viewDoc.signature?.signUrl || lastSignaturePayload?.signUrl) && <div className="mt-2 flex gap-2 flex-wrap"><button className="px-3 rounded-lg text-xs font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-text)', minHeight: 48 }} onClick={() => copyText(viewDoc.signature?.signUrl || lastSignaturePayload?.signUrl, 'Signing link copied')}>Copy signing link</button><button className="px-3 rounded-lg text-xs font-semibold" style={{ background: 'var(--surface)', color: 'var(--accent)', border: '1px solid var(--border)', minHeight: 48 }} onClick={() => window.open(viewDoc.signature?.signUrl || lastSignaturePayload?.signUrl, '_blank', 'noopener,noreferrer')}>Open signing link</button></div>}
+        </div>
+      )}
+      <div className="rounded-lg p-3 mb-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Attachments{viewDoc.attachments?.length ? ` (${viewDoc.attachments.length})` : ''}</div>
+          <button type="button" className="px-3 rounded-lg text-xs font-semibold" style={{ background: 'var(--surface2)', color: 'var(--accent)', border: '1px solid var(--border)', minHeight: 40, opacity: attaching ? 0.6 : 1 }} onClick={() => attachInputRef.current?.click()} disabled={attaching}><Paperclip size={14} strokeWidth={2.1} aria-hidden="true" style={{ display: 'inline', marginRight: 6, verticalAlign: '-2px' }} />{attaching ? 'Uploading...' : 'Attach PDF'}</button>
+          <input ref={attachInputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt,.csv" style={{ display: 'none' }} onChange={attachFile} />
+        </div>
+        {viewDoc.attachments?.length > 0 ? (
+          <div className="mt-2 grid gap-2">
+            {viewDoc.attachments.map(a => (
+              <div key={a.id} className="flex items-center gap-3 flex-wrap text-sm" style={{ borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                <span className="min-w-0 truncate" style={{ color: 'var(--text)', flex: '1 1 160px' }} title={a.name}>{a.name}</span>
+                <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{Math.max(1, Math.round((a.sizeBytes || 0) / 1024))} KB</span>
+                <a href={a.url} target="_blank" rel="noopener noreferrer" className="px-3 rounded-lg text-xs font-semibold inline-flex items-center" style={{ background: 'var(--surface2)', color: 'var(--accent)', border: '1px solid var(--border)', minHeight: 40 }}>Open</a>
+                <button type="button" className="px-3 rounded-lg text-xs font-semibold" style={{ background: 'var(--surface2)', color: 'var(--red)', border: '1px solid var(--border)', minHeight: 40 }} onClick={() => removeAttachment(a)}>Remove</button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>No files filed on this document. A PDF attached here is what "Email to client" sends.</div>
+        )}
+      </div>
+      {docEditMode ? (
+        <div>
+          <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid var(--border)' }}>
+            <div className="flex gap-2 items-center flex-wrap"><input value={docAiInstruction} onChange={e => setDocAiInstruction(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !docAiBusy) { e.preventDefault(); applyDocAI() } }} placeholder="Tell AI what to change. Highlight text first to change only that part." style={{ flex: 1, minWidth: 240, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 6, fontSize: 14, outline: 'none', minHeight: 48 }} disabled={docAiBusy} /><button onClick={applyDocAI} disabled={docAiBusy || !docAiInstruction.trim()} className="px-5 rounded-lg text-sm font-semibold" style={{ background: docAiBusy || !docAiInstruction.trim() ? 'var(--surface)' : 'var(--purple, #a855f7)', color: docAiBusy || !docAiInstruction.trim() ? 'var(--text-muted)' : 'white', minHeight: 48, minWidth: 96 }}>{docAiBusy ? 'Applying...' : 'Apply'}</button></div>
+            <div className="text-[10px] mt-2" style={{ color: 'var(--text-muted)' }}>{docSel.start !== docSel.end ? `${docSel.end - docSel.start} chars selected - AI changes only that section.` : 'No text selected - AI applies your instruction to the whole document.'}</div>
+          </div>
+          <textarea ref={docTextareaRef} style={{ ...is, minHeight: '42vh', background: '#ffffff', color: '#111', fontFamily: 'ui-monospace, monospace', fontSize: 12, lineHeight: 1.5 }} value={docDraftBody} onChange={e => setDocDraftBody(e.target.value)} onSelect={e => setDocSel({ start: e.target.selectionStart, end: e.target.selectionEnd })} onBlur={e => setDocSel({ start: e.target.selectionStart, end: e.target.selectionEnd })} />
+        </div>
+      ) : viewMode === 'formatted' ? (
+        <div className="rounded-lg p-4 sm:p-6" style={{ background: '#ffffff', color: '#111', maxHeight: '55vh', overflow: 'auto' }} dangerouslySetInnerHTML={{ __html: /^\s*</.test(viewDoc.body || '') ? viewDoc.body : renderEmailHtml(viewDoc.body, viewDoc.title) }} />
+      ) : (
+        <pre className="rounded-lg p-4 whitespace-pre-wrap font-mono text-xs leading-relaxed" style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', maxHeight: '55vh', overflow: 'auto' }}>{viewDoc.body}</pre>
+      )}
+    </InlineRecordDrawer>
+  ) : null
+
   return (
     <div className="command-workspace p-6">
       {toast.msg && (
@@ -1188,8 +1471,6 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
         icon={<FileText size={20} />}
         title="Documents"
         subtitle="Templates, documents, e-signatures, embeddable forms, transcript records, and client document history"
-        viewToggle={viewTab !== 'esignatures' ? <ViewModeToggle value={documentView} onChange={setDocumentView} modes={['list', 'card']} /> : null}
-        controls={viewTab !== 'esignatures' ? <ComponentSettings componentId="documents.list" title="Documents list settings" onApplied={(id, v) => { setDocumentView(v.view); setPageSize(v.pageSize) }} /> : null}
         actions={
           <div className="flex gap-2 items-center flex-wrap">
             <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
@@ -1229,6 +1510,8 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
 
       <div style={{ display: viewTab === 'documents' || viewTab === 'transcripts' || viewTab === 'esignatures' ? 'block' : 'none' }}>
       <div className="command-toolbar flex gap-2 mb-4 flex-wrap items-center rounded-lg p-3">
+        {viewTab !== 'esignatures' && <ViewModeToggle value={documentView} onChange={setDocumentView} modes={['list', 'card']} />}
+        {viewTab !== 'esignatures' && <ComponentSettings componentId="documents.list" title="Documents list settings" onApplied={(id, v) => { setDocumentView(v.view); setPageSize(v.pageSize) }} />}
         <input className="flex-1" style={{ ...is, minWidth: 180 }} placeholder={viewTab === 'transcripts' ? 'Search transcripts, speakers, clients, decisions...' : viewTab === 'esignatures' ? 'Search signature requests, signers, clients...' : 'Search documents, clients, templates...'} value={search} onChange={e => setSearch(e.target.value)} />
         <ThemedSelect style={{ ...is, width: 'auto', minWidth: 140 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           {viewTab === 'esignatures' ? (
@@ -1308,7 +1591,7 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
         </div>
       )}
       {loading ? <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>Loading...</div> :
-        filtered.length === 0 ? (
+        visibleDocuments.length === 0 ? (
           <div className="text-center py-16">
             <p style={{ color: 'var(--text-muted)' }}>{viewTab === 'esignatures' ? 'No e-signature requests match this view. Start one from Request Signature.' : documents.length === 0 ? 'No documents yet. Click "New Document" to create one from a template.' : 'No documents match your filter.'}</p>
           </div>
@@ -1333,11 +1616,14 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
                 const state = signatureWorkflowState(d)
                 const sc = STATUS_COLORS[state] || STATUS_COLORS.not_requested
                 const signUrl = d.signature?.signUrl || ''
+                const detailOpen = viewDoc?.id === d.id
+                const drawerId = `document-detail-${d.id}`
                 return (
-                  <div key={d.id} className="grid gap-3 items-center px-4 py-3" style={{ gridTemplateColumns: '46px minmax(0, 1.4fr) minmax(130px, 0.7fr) minmax(140px, 0.8fr) minmax(110px, 0.6fr) auto', borderBottom: '1px solid var(--border)' }}>
+                  <Fragment key={d.id}>
+                  <div data-record-container="document" className="document-signature-row grid gap-3 items-center px-4 py-3" style={{ gridTemplateColumns: '46px minmax(0, 1.4fr) minmax(130px, 0.7fr) minmax(140px, 0.8fr) minmax(110px, 0.6fr) auto', borderBottom: '1px solid var(--border)' }}>
                     <DocumentThumb doc={d} compact />
                     <div className="min-w-0">
-                      <button className="font-semibold truncate text-left block w-full" style={{ color: 'var(--text)', background: 'transparent', border: 0, padding: 0 }} onClick={() => openSavedDoc(d)}>{d.title}</button>
+                      <button type="button" data-document-trigger={d.id} aria-label={`Open ${d.title} document details`} aria-expanded={detailOpen} aria-controls={detailOpen ? drawerId : undefined} className="font-semibold truncate text-left block w-full" style={{ color: 'var(--text)', background: 'transparent', border: 0, padding: 0, minHeight: 48 }} onClick={event => openSavedDoc(d, event.currentTarget)}>{d.title}</button>
                       <div className="text-xs truncate mt-1" style={{ color: 'var(--text-muted)' }}>{docTypeLabel(d)} - {d.clientName || 'Global document'}</div>
                     </div>
                     <span className="text-xs px-2 py-1 rounded-full text-center font-medium" style={{ background: sc.bg, color: sc.fg }}>{signatureStatusLabel(state)}</span>
@@ -1349,13 +1635,16 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
                       {d.signature?.signedAt ? fmtDate(d.signature.signedAt) : d.signature?.requestedAt ? fmtDate(d.signature.requestedAt) : fmtDate(d.updatedAt || d.createdAt)}
                     </div>
                     <div className="flex gap-1 justify-end flex-nowrap">
-                      <ActionIconButton label="Open document" icon={ExternalLink} onClick={() => openSavedDoc(d)} tone="accent" />
+                      <ActionIconButton label="Open document" icon={ExternalLink} onClick={event => openSavedDoc(d, event.currentTarget)} tone="accent" />
                       <ActionIconButton label={d.signature?.status === 'pending' ? 'Resend signature request' : 'Request signature'} icon={Send} onClick={() => openSignatureRequest(d)} tone="amber" disabled={signingDocId === d.id} />
+                      {canEmailDoc(d) && <ActionIconButton label="Email to client" icon={Mail} onClick={() => openEmailComposer(d)} tone="accent" disabled={sendingDoc} />}
                       <ActionIconButton label="Download PDF" icon={Download} onClick={() => downloadPdf(d.id)} tone="muted" />
                       {signUrl && <ActionIconButton label="Copy signing link" icon={CopyIcon} onClick={() => copyText(signUrl, 'Signing link copied')} tone="accent" />}
                       {signUrl && <ActionIconButton label="Open signing link" icon={ExternalLink} onClick={() => window.open(signUrl, '_blank', 'noopener,noreferrer')} tone="accent" />}
                     </div>
                   </div>
+                  {detailOpen && documentDetail}
+                  </Fragment>
                 )
               })}
             </div>
@@ -1364,8 +1653,11 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
           <div className="rounded-xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             {pagedDocuments.map(d => {
               const sc = STATUS_COLORS[d.status] || STATUS_COLORS.draft
+              const detailOpen = viewDoc?.id === d.id
+              const drawerId = `document-detail-${d.id}`
               return (
-                <div key={d.id} className="document-list-row grid gap-3 items-center px-4 py-3 cursor-pointer" style={{ gridTemplateColumns: '28px 46px minmax(0, 1.5fr) minmax(120px, 0.7fr) 92px 90px auto', borderBottom: '1px solid var(--border)' }} onClick={() => openSavedDoc(d)}>
+                <Fragment key={d.id}>
+                <div data-record-container="document" className="document-list-row grid gap-3 items-center px-4 py-3 cursor-pointer" style={{ gridTemplateColumns: '28px 46px minmax(0, 1.5fr) minmax(120px, 0.7fr) 92px 90px auto', borderBottom: '1px solid var(--border)' }} onClick={event => { if (event.target.closest('button, input, a, select, textarea')) return; openSavedDoc(d, event.currentTarget.querySelector('[data-document-trigger]')) }}>
                   <input
                     type="checkbox"
                     checked={selectedDocs.includes(d.id)}
@@ -1376,7 +1668,8 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
                   <DocumentThumb doc={d} compact />
                   <div className="min-w-0" style={{ display: 'grid', gap: 4 }}>
                     <div className="flex items-center gap-2 min-w-0">
-                      <button className="font-semibold truncate text-left" style={{ color: 'var(--text)', background: 'transparent', border: 0, padding: 0, minWidth: 0 }} onClick={e => { e.stopPropagation(); openSavedDoc(d) }}>{d.title}</button>
+                      <button type="button" data-document-trigger={d.id} aria-label={`Open ${d.title} document details`} aria-expanded={detailOpen} aria-controls={detailOpen ? drawerId : undefined} className="font-semibold truncate text-left" style={{ color: 'var(--text)', background: 'transparent', border: 0, padding: 0, minWidth: 0 }} onClick={event => { event.stopPropagation(); openSavedDoc(d, event.currentTarget) }}>{d.title}</button>
+                      {d.attachments?.length > 0 && <span className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: 'var(--text-muted)', flex: '0 0 auto' }} title={`${d.attachments.length} attached file${d.attachments.length === 1 ? '' : 's'}`}><Paperclip size={12} strokeWidth={2.1} aria-hidden="true" />{d.attachments.length}</span>}
                       {d.type === 'transcript' && <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>Transcript</span>}
                       <button className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: 'var(--surface2)', color: 'var(--accent)', border: '1px solid var(--border)', flex: '0 0 auto' }} onClick={e => { e.stopPropagation(); openDocForEdit(d) }}>Edit</button>
                       <button className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: d.portalVisible === true ? 'var(--accent-soft)' : 'var(--surface2)', color: d.portalVisible === true ? 'var(--accent)' : 'var(--text-muted)', border: '1px solid var(--border)', flex: '0 0 auto' }} title={d.portalVisible === true ? 'Visible in the client portal' : 'Hidden from the client portal'} onClick={e => { e.stopPropagation(); setPortalShare(d, d.portalVisible !== true) }}>{d.portalVisible === true ? 'Shared with client' : 'Not shared'}</button>
@@ -1387,11 +1680,13 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
                   <span className="text-xs px-2 py-1 rounded-full text-center font-medium" style={{ background: sc.bg, color: sc.fg }}>{d.status}</span>
                   <div className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{fmtDate(d.createdAt)}</div>
                   <div className="flex gap-1 justify-end flex-nowrap" onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                    {canEmailDoc(d) && <ActionIconButton label="Email to client" icon={Mail} onClick={() => openEmailComposer(d)} tone="accent" disabled={sendingDoc} />}
                     <ItemActionsMenu
                       label={`Actions for ${d.title}`}
                       actions={[
                         { label: 'Edit document', onClick: () => openDocForEdit(d) },
                         { label: 'Open document', onClick: () => openSavedDoc(d) },
+                        canEmailDoc(d) ? { label: 'Email to client', disabled: sendingDoc, onClick: () => openEmailComposer(d) } : null,
                         { label: 'Download PDF', onClick: () => downloadPdf(d.id) },
                         { label: 'Copy document', onClick: () => duplicateDoc(d.id) },
                         { label: d.portalVisible === true ? 'Stop sharing with client' : 'Share with client', onClick: () => setPortalShare(d, d.portalVisible !== true) },
@@ -1401,6 +1696,8 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
                     />
                   </div>
                 </div>
+                {detailOpen && documentDetail}
+                </Fragment>
               )
             })}
           </div>
@@ -1409,9 +1706,12 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
             {pagedDocuments.map(d => {
               const sc = STATUS_COLORS[d.status] || STATUS_COLORS.draft
               const snippet = docSnippet(d)
+              const detailOpen = viewDoc?.id === d.id
+              const drawerId = `document-detail-${d.id}`
               return (
-                <div key={d.id} className="rounded-lg flex flex-col" style={{ background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'box-shadow 0.15s', padding: 12, gap: 10, minHeight: 0 }}
-                  onClick={() => openSavedDoc(d)}>
+                <Fragment key={d.id}>
+                <div data-record-container="document" className="rounded-lg flex flex-col" style={{ background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'box-shadow 0.15s', padding: 12, gap: 10, minHeight: 0 }}
+                  onClick={event => { if (event.target.closest('button, input, a, select, textarea')) return; openSavedDoc(d, event.currentTarget.querySelector('[data-document-trigger]')) }}>
                   <div className="flex gap-3 min-w-0">
                     <input
                       type="checkbox"
@@ -1427,7 +1727,7 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
                         <span className="text-[11px] uppercase font-semibold truncate" style={{ color: 'var(--text-muted)', letterSpacing: 0 }}>{docTypeLabel(d)}</span>
                         {d.type === 'transcript' && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>Transcript</span>}
                       </div>
-                      <div className="font-semibold text-sm leading-tight truncate" style={{ color: 'var(--text)' }} title={d.title}>{d.title}</div>
+                      <button type="button" data-document-trigger={d.id} aria-label={`Open ${d.title} document details`} aria-expanded={detailOpen} aria-controls={detailOpen ? drawerId : undefined} className="font-semibold text-sm leading-tight truncate text-left block w-full" style={{ color: 'var(--text)', background: 'transparent', border: 0, padding: 0 }} title={d.title} onClick={event => { event.stopPropagation(); openSavedDoc(d, event.currentTarget) }}>{d.title}</button>
                       <div className="text-xs truncate mt-1" style={{ color: 'var(--text-muted)' }}>{d.clientName || 'Global document'} · {fmtDate(d.createdAt)}</div>
                     </div>
                   </div>
@@ -1439,10 +1739,12 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
                     {docNeedsSignature(d) && signatureState(d) !== 'signed' && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--amber)' }}>sign</span>}
                   </div>
                   <div className="flex gap-1 pt-1 flex-nowrap" onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                    {canEmailDoc(d) && <ActionIconButton label="Email to client" icon={Mail} onClick={() => openEmailComposer(d)} tone="accent" disabled={sendingDoc} />}
                     <ItemActionsMenu
                       label={`Actions for ${d.title}`}
                       actions={[
                         { label: 'Open document', onClick: () => openSavedDoc(d) },
+                        canEmailDoc(d) ? { label: 'Email to client', disabled: sendingDoc, onClick: () => openEmailComposer(d) } : null,
                         { label: 'Download PDF', onClick: () => downloadPdf(d.id) },
                         { label: 'Edit document', onClick: () => openDocForEdit(d) },
                         { label: 'Copy document', onClick: () => duplicateDoc(d.id) },
@@ -1453,13 +1755,15 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
                     />
                   </div>
                 </div>
+                {detailOpen && documentDetail}
+                </Fragment>
               )
             })}
           </div>
         )
       }
-      {filtered.length > 0 && (
-        <Paginator total={filtered.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label={viewTab === 'transcripts' ? 'transcripts' : viewTab === 'esignatures' ? 'signature requests' : 'documents'} />
+      {visibleDocuments.length > 0 && (
+        <Paginator total={visibleDocuments.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label={viewTab === 'transcripts' ? 'transcripts' : viewTab === 'esignatures' ? 'signature requests' : 'documents'} />
       )}
 
       </div>
@@ -2099,84 +2403,6 @@ export default function DocumentsManager({ clientId: lockedClientId = '', lockCl
         </div>
       )}
 
-      {viewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={() => { setViewDoc(null); setDocEditMode(false) }}>
-          <div className="w-full max-w-3xl rounded-xl p-6 max-h-[92vh] overflow-auto" style={{ background: 'var(--surface)', border: '1px solid #2a2d42' }} onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-4 gap-3 flex-wrap">
-              <div>
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>{viewDoc.title}</h2>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{viewDoc.templateName} · {viewDoc.clientName} · Created {fmtDate(viewDoc.createdAt)}</p>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-                  <button className="px-3 text-sm font-medium" style={{ background: viewMode === 'formatted' ? 'var(--accent)' : 'var(--surface2)', color: viewMode === 'formatted' ? 'var(--accent-text)' : 'var(--text-muted)', minHeight: 48 }} onClick={() => setViewMode('formatted')}>Formatted</button>
-                  <button className="px-3 text-sm font-medium" style={{ background: viewMode === 'raw' ? 'var(--accent)' : 'var(--surface2)', color: viewMode === 'raw' ? 'var(--accent-text)' : 'var(--text-muted)', minHeight: 48 }} onClick={() => setViewMode('raw')}>Raw</button>
-                </div>
-                <button className="px-4 rounded-lg text-base font-semibold" style={{ background: viewDoc.portalVisible === true ? 'var(--green)' : 'var(--surface2)', color: viewDoc.portalVisible === true ? 'var(--accent-text)' : 'var(--text-muted)', minHeight: 48, border: '1px solid var(--border)' }} title={viewDoc.portalVisible === true ? 'Visible in the client portal' : 'Hidden from the client portal'} onClick={() => setPortalShare(viewDoc, viewDoc.portalVisible !== true)}>{viewDoc.portalVisible === true ? 'Shared with client' : 'Not shared'}</button>
-                {docNeedsSignature(viewDoc) && viewDoc.status !== 'signed' && (
-                  <button className="px-4 rounded-lg text-base font-semibold" style={{ background: 'var(--amber)', color: 'var(--accent-text)', minHeight: 48, opacity: signingDocId === viewDoc.id ? 0.6 : 1 }} onClick={() => sendSignatureRequest(viewDoc)} disabled={signingDocId === viewDoc.id}>{signingDocId === viewDoc.id ? 'Sending...' : 'Sign'}</button>
-                )}
-                {docEditMode ? (
-                  <button className="px-4 rounded-lg text-base font-semibold" style={{ background: 'var(--green)', color: 'var(--accent-text)', minHeight: 48, opacity: docSaving ? 0.6 : 1 }} onClick={saveDocEdits} disabled={docSaving}>{docSaving ? 'Saving...' : 'Save'}</button>
-                ) : (
-                  <button className="px-4 rounded-lg text-base font-medium" style={{ background: 'var(--surface2)', color: 'var(--accent)', minHeight: 48, border: '1px solid var(--border)' }} onClick={() => { setDocDraftBody(viewDoc.body || ''); setDocEditMode(true) }}>Edit</button>
-                )}
-                <button className="px-4 rounded-lg text-base font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-text)', minHeight: 48, opacity: sendingDoc ? 0.6 : 1 }} onClick={() => sendDoc(viewDoc)} disabled={sendingDoc}>{sendingDoc ? 'Sending...' : 'Send'}</button>
-                <button className="px-4 rounded-lg text-base font-medium" style={{ background: 'var(--green)', color: 'var(--accent-text)', minHeight: 48 }} onClick={() => copyHtml(viewDoc.body, viewDoc.title)}>Copy</button>
-                <button className="px-4 rounded-lg text-base font-medium" style={{ background: 'var(--surface2)', color: 'var(--text-muted)', minHeight: 48 }} onClick={() => downloadPdf(viewDoc.id)}>PDF</button>
-                <button className="px-4 rounded-lg text-base" style={{ background: 'var(--surface2)', color: 'var(--text-muted)', minHeight: 48 }} onClick={() => { setViewDoc(null); setDocEditMode(false) }}>Close</button>
-              </div>
-            </div>
-            {docNeedsSignature(viewDoc) && (
-              <div className="rounded-lg p-3 mb-3 text-sm" style={{ background: viewDoc.status === 'signed' ? 'rgba(166,227,161,0.12)' : 'rgba(245,158,11,0.12)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-                Signature: {viewDoc.signature?.status === 'pending' ? `link sent to ${viewDoc.signature.signerEmail}` : viewDoc.signature?.status === 'signed' ? `signed by ${viewDoc.signature.signerName} on ${fmtDate(viewDoc.signature.signedAt)}` : 'required'}
-                {viewDoc.signature?.documentHash && <div className="text-xs mt-1 font-mono" style={{ color: 'var(--text-muted)' }}>SHA-256 {viewDoc.signature.documentHash}</div>}
-                {(viewDoc.signature?.signUrl || lastSignaturePayload?.signUrl) && (
-                  <div className="mt-3 rounded-lg p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                    <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>E-sign payload</div>
-                    <div className="grid gap-2 text-xs">
-                      <div><strong>Signer:</strong> {viewDoc.signature?.signerName || lastSignaturePayload?.signerName || ''} &lt;{viewDoc.signature?.signerEmail || lastSignaturePayload?.signerEmail || ''}&gt;</div>
-                      {viewDoc.signature?.requestedAt && <div><strong>Requested:</strong> {new Date(viewDoc.signature.requestedAt).toLocaleString()}</div>}
-                      {viewDoc.signature?.expiresAt && <div><strong>Expires:</strong> {new Date(viewDoc.signature.expiresAt).toLocaleString()}</div>}
-                      <div className="font-mono break-all rounded p-2" style={{ background: 'var(--surface2)', color: 'var(--text)' }}>{viewDoc.signature?.signUrl || lastSignaturePayload?.signUrl}</div>
-                      <div className="flex gap-2 flex-wrap">
-                        <button className="px-3 rounded-lg text-xs font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-text)', minHeight: 36 }} onClick={() => copyText(viewDoc.signature?.signUrl || lastSignaturePayload?.signUrl, 'Signing link copied')}>Copy Link</button>
-                        <button className="px-3 rounded-lg text-xs font-semibold" style={{ background: 'var(--surface2)', color: 'var(--accent)', border: '1px solid var(--border)', minHeight: 36 }} onClick={() => window.open(viewDoc.signature?.signUrl || lastSignaturePayload?.signUrl, '_blank', 'noopener,noreferrer')}>Open Link</button>
-                        <button className="px-3 rounded-lg text-xs font-semibold" style={{ background: 'var(--surface2)', color: 'var(--text-muted)', border: '1px solid var(--border)', minHeight: 36 }} onClick={() => copyText(JSON.stringify(lastSignaturePayload || {
-                          documentId: viewDoc.id,
-                          title: viewDoc.title,
-                          signerName: viewDoc.signature?.signerName,
-                          signerEmail: viewDoc.signature?.signerEmail,
-                          signUrl: viewDoc.signature?.signUrl,
-                          expiresAt: viewDoc.signature?.expiresAt,
-                          documentHash: viewDoc.signature?.documentHash,
-                          consentVersion: viewDoc.signature?.consentVersion,
-                        }, null, 2), 'E-sign payload copied')}>Copy Payload</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {docEditMode ? (
-              <div>
-                <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid var(--border)' }}>
-                  <div className="flex gap-2 items-center flex-wrap">
-                    <input value={docAiInstruction} onChange={e => setDocAiInstruction(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !docAiBusy) { e.preventDefault(); applyDocAI() } }} placeholder="Tell AI what to change. Highlight text first to change only that part." style={{ flex: 1, minWidth: 240, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 6, fontSize: 14, outline: 'none', minHeight: 44 }} disabled={docAiBusy} />
-                    <button onClick={applyDocAI} disabled={docAiBusy || !docAiInstruction.trim()} className="px-5 rounded-lg text-sm font-semibold" style={{ background: docAiBusy || !docAiInstruction.trim() ? 'var(--surface)' : 'var(--purple, #a855f7)', color: docAiBusy || !docAiInstruction.trim() ? 'var(--text-muted)' : 'white', minHeight: 44, minWidth: 96 }}>{docAiBusy ? 'Applying...' : 'Apply'}</button>
-                  </div>
-                  <div className="text-[10px] mt-2" style={{ color: 'var(--text-muted)' }}>{docSel.start !== docSel.end ? `${docSel.end - docSel.start} chars selected - AI changes only that section.` : 'No text selected - AI applies your instruction to the whole document.'}</div>
-                </div>
-                <textarea ref={docTextareaRef} style={{ ...is, minHeight: '58vh', background: '#ffffff', color: '#111', fontFamily: 'ui-monospace, monospace', fontSize: 12, lineHeight: 1.5 }} value={docDraftBody} onChange={e => setDocDraftBody(e.target.value)} onSelect={e => setDocSel({ start: e.target.selectionStart, end: e.target.selectionEnd })} onBlur={e => setDocSel({ start: e.target.selectionStart, end: e.target.selectionEnd })} />
-              </div>
-            ) : viewMode === 'formatted' ? (
-              <div className="rounded-lg p-6" style={{ background: '#ffffff', color: '#111', maxHeight: '65vh', overflow: 'auto' }} dangerouslySetInnerHTML={{ __html: /^\s*</.test(viewDoc.body || '') ? viewDoc.body : renderEmailHtml(viewDoc.body, viewDoc.title) }} />
-            ) : (
-              <pre className="rounded-lg p-4 whitespace-pre-wrap font-mono text-xs leading-relaxed" style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', maxHeight: '65vh', overflow: 'auto' }}>{viewDoc.body}</pre>
-            )}
-          </div>
-        </div>
-      )}
 
     </div>
   )

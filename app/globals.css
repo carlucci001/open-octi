@@ -295,6 +295,11 @@ code, pre, .font-mono {
   text-align: center;
   gap: 0;
   line-height: 1.25;
+  flex-shrink: 0;
+  margin-top: auto;
+  padding: 8px 20px;
+  font-size: 10px;
+  color: var(--text-muted);
 }
 
 .sidebar-footer-block > div {
@@ -306,7 +311,7 @@ code, pre, .font-mono {
   display: block;
   width: min(100%, 154px);
   height: auto;
-  margin: 14px auto 6px;
+  margin: 0 auto 6px;
   opacity: 0.5;
   filter: saturate(1.08);
   pointer-events: none;
@@ -315,8 +320,141 @@ code, pre, .font-mono {
 
 .sidebar-footer-logo.openocti-sidebar-footer-logo {
   width: min(100%, 190px);
-  margin: 10px auto 4px;
+  margin: 0 auto 4px;
   opacity: 1;
+}
+
+.sidebar-footer-metadata {
+  overflow-wrap: anywhere;
+}
+
+.sidebar-footer-copyright {
+  margin-top: 3px;
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+
+.header-approvals-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.header-approvals-trigger[data-active="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.header-approvals-trigger:focus-visible,
+.header-approvals-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.header-approvals-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--base);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.header-approvals-panel {
+  position: fixed;
+  z-index: 73;
+  display: grid;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.24);
+}
+
+.header-approvals-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.header-approvals-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.sidebar-compact-navigation,
+.workspace-section-navigation {
+  min-height: 0;
+}
+
+.sidebar-compact-navigation {
+  flex: 1 1 0;
+  overflow-y: auto;
+}
+
+.sidebar-compact-navigation > button,
+.app-sidebar > .ws-topstrip,
+.app-sidebar > .workspace-nav-heading {
+  flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+  .sidebar-compact .sidebar-footer-block {
+    padding-inline: 8px;
+  }
+
+  .sidebar-compact .sidebar-footer-logo {
+    width: 56px;
+  }
+
+  .sidebar-compact .sidebar-footer-edition {
+    display: none;
+  }
+
+  .sidebar-compact .sidebar-footer-metadata {
+    font-size: 9px;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 700px) {
+  .sidebar-footer-logo {
+    max-height: 72px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  .sidebar-footer-block {
+    padding-block: 4px;
+  }
 }
 
 [data-theme="command"] body {
@@ -681,6 +819,41 @@ code, pre, .font-mono {
 .openocti-brand-loader .command-dashboard-loader-logo {
   mix-blend-mode: normal;
   filter: drop-shadow(0 0 18px rgba(48, 192, 240, 0.24));
+}
+
+.octicc-brand-loader .command-dashboard-loader-stage {
+  aspect-ratio: 5 / 4;
+  overflow: visible;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.octicc-brand-loader .command-dashboard-loader-logo {
+  inset: 0 8% 22%;
+  width: 84%;
+  height: 72%;
+  mix-blend-mode: normal;
+  filter: drop-shadow(0 0 20px rgba(48, 192, 240, 0.24));
+}
+
+.octicc-login-wordmark {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 96%;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: clamp(1.3rem, 4.6vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  line-height: 1;
+  white-space: nowrap;
+  background: linear-gradient(90deg, #0070d0, #30c0f0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px rgba(48, 192, 240, 0.18));
 }
 
 .command-dashboard-loader-radar {
@@ -2336,7 +2509,8 @@ code, pre, .font-mono {
 }
 
 .mobile-workspace-row button {
-  height: 36px;
+  min-width: 48px;
+  height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2350,6 +2524,145 @@ code, pre, .font-mono {
   color: var(--accent);
   border-color: var(--accent);
   background: var(--accent-soft);
+}
+
+.workspace-navigation-group + .workspace-navigation-group {
+  margin-top: 10px;
+}
+
+.workspace-navigation-group-label {
+  padding: 7px 10px 4px;
+  color: var(--text-muted);
+  font-family: 'Inter Tight', 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* Phase 2 record-detail drawers stay in collection flow and never widen the viewport. */
+.inline-record-drawer {
+  grid-column: 1 / -1;
+  min-width: 0;
+  max-width: 100%;
+  scroll-margin-block: 16px;
+}
+
+[data-account-trigger]:focus-visible,
+[data-project-trigger]:focus-visible,
+[data-document-trigger]:focus-visible,
+.inline-record-drawer:focus,
+.inline-record-drawer:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  body[data-inline-drawer-visible="true"] .api-spend-floating {
+    display: none !important;
+  }
+
+  .operator-workspace-main {
+    padding-bottom: 88px;
+    scroll-padding-bottom: 88px;
+  }
+
+  .command-workspace {
+    padding-inline: 12px !important;
+  }
+
+  .command-toolbar button,
+  .command-toolbar input,
+  .command-toolbar select,
+  [data-account-trigger],
+  [data-project-trigger],
+  [data-document-trigger],
+  .inline-record-drawer button,
+  .document-detail-actions button {
+    min-height: 48px !important;
+  }
+
+  .inline-record-drawer button[aria-label] {
+    min-width: 48px;
+  }
+
+  .inline-record-drawer button {
+    min-width: 48px;
+  }
+
+  .account-collection-table,
+  .project-collection-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed;
+  }
+
+  .account-collection-table thead tr > :nth-child(3),
+  .account-collection-table thead tr > :nth-child(4),
+  .account-collection-table thead tr > :nth-child(5),
+  .account-collection-table tbody tr[data-record-container="account"] > :nth-child(3),
+  .account-collection-table tbody tr[data-record-container="account"] > :nth-child(4),
+  .account-collection-table tbody tr[data-record-container="account"] > :nth-child(5),
+  .project-collection-table thead tr > :nth-child(n+3):not(:last-child),
+  .project-collection-table tbody tr[data-record-container="project"] > :nth-child(n+3):not(:last-child) {
+    display: none;
+  }
+
+  .account-collection-table thead tr > :first-child,
+  .project-collection-table thead tr > :first-child {
+    width: 44px !important;
+  }
+
+  .account-collection-table thead tr > :last-child,
+  .project-collection-table thead tr > :last-child {
+    width: 56px !important;
+  }
+
+  .account-detail-drawer-row > td,
+  .project-detail-drawer-row > td {
+    padding: 0 !important;
+  }
+
+  .project-detail-header .project-detail-identity {
+    order: 3;
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .project-detail-header .project-detail-identity > :first-child {
+    overflow-wrap: anywhere;
+  }
+
+  .document-list-row {
+    grid-template-columns: 28px 40px minmax(0, 1fr) auto !important;
+  }
+
+  .document-list-row > :nth-child(4),
+  .document-list-row > :nth-child(5),
+  .document-list-row > :nth-child(6) {
+    display: none;
+  }
+
+  .document-signature-row {
+    grid-template-columns: 40px minmax(0, 1fr) auto !important;
+  }
+
+  .document-signature-row > :nth-child(3),
+  .document-signature-row > :nth-child(4),
+  .document-signature-row > :nth-child(5) {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .app-sidebar.mobile-nav-closed {
+    visibility: hidden;
+  }
+
+  .app-sidebar.mobile-nav-open {
+    visibility: visible;
+  }
 }
 
 .automation-list-shell {

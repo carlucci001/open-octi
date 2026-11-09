@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import PageHeader from '../components/PageHeader'
 import { Activity, Hash, RefreshCw, Send } from 'lucide-react'
+import { ActivityInlineItem, useActivityDrawer, activityDocumentId, isTranscriptActivity, relTime } from '../components/ActivityInlineList'
 
 // Filter pills for the rolling timeline. "All" shows posts + activities mixed by time.
 const FILTERS = [
@@ -11,20 +12,23 @@ const FILTERS = [
   { id: 'mine',       label: 'Mine',        match: (it, meId) => it.kind === 'post' && it.authorId === meId },
 ]
 
-function activityDocumentId(activity = {}) {
-  return activity.linkedTo?.documentId || activity.meta?.documentId || ''
-}
-
-function isTranscriptActivity(activity = {}) {
-  return activity.type === 'transcript' || activity.source === 'maggie-live-transcription' || /transcription|transcript/i.test(activity.subject || '')
-}
-
 export default function Feed({ onNavigate }) {
   const [me, setMe] = useState(null)
   const [users, setUsers] = useState([])
   const [activities, setActivities] = useState([])
   const [posts, setPosts] = useState([])
   const [filter, setFilter] = useState('all')
+  const [deletingActivityIds, setDeletingActivityIds] = useState([])
+  const [activityError, setActivityError] = useState('')
+  const [clearingFeed, setClearingFeed] = useState(false)
+  const [feedClearError, setFeedClearError] = useState('')
+  const [feedClearWarning, setFeedClearWarning] = useState('')
+  const [feedClearMessage, setFeedClearMessage] = useState('')
+  const clearFeedPending = useRef(false)
+  const pendingActivityDeletes = useRef(new Set())
+  const deletedActivityIds = useRef(new Set())
+  const deletedPostIds = useRef(new Set())
+  const activityDrawer = useActivityDrawer()  // one inline Activity drawer open at a time across the timeline
   // Legacy hidden markup remains below for compatibility; messaging now lives in Communications.
   const inbox = []
   const activeUserId = null
@@ -68,8 +72,9 @@ export default function Feed({ onNavigate }) {
         if (stop) return
         setMe(rMe.user || null)
         setUsers(rUsers.users || [])
-        setActivities(Array.isArray(rActs.activities) ? rActs.activities : (rActs.items || []))
-        setPosts(rPosts.posts || [])
+        const nextActivities = Array.isArray(rActs.activities) ? rActs.activities : (rActs.items || [])
+        setActivities(nextActivities.filter(activity => !deletedActivityIds.current.has(activity.id)))
+        setPosts((rPosts.posts || []).filter(post => !deletedPostIds.current.has(post.id)))
       } catch {}
     }
     tick()
@@ -150,12 +155,67 @@ export default function Feed({ onNavigate }) {
     setPosts(prev => prev.filter(p => p.id !== id))
   }
 
+  const deleteActivity = async (activity) => {
+    const id = activity.id
+    if (!id || pendingActivityDeletes.current.has(id)) return
+    if (!confirm(`Delete activity "${activity.subject || activity.type || 'Untitled activity'}"? This removes this activity entry. Linked records and documents will remain.`)) return
+    pendingActivityDeletes.current.add(id)
+    setDeletingActivityIds([...pendingActivityDeletes.current])
+    setActivityError('')
+    try {
+      const response = await fetch('/api/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.ok) throw new Error(result.error || 'Could not delete this activity. Please try again.')
+      deletedActivityIds.current.add(id)
+      activityDrawer.close('a_' + id)
+      setActivities(current => current.filter(item => item.id !== id))
+    } catch (error) {
+      setActivityError(error.message || 'Could not delete this activity. Please try again.')
+    } finally {
+      pendingActivityDeletes.current.delete(id)
+      setDeletingActivityIds([...pendingActivityDeletes.current])
+    }
+  }
+
   const clearFeed = async () => {
-    if (!confirm('Clear the ENTIRE feed? This deletes every post and every attached file. Activities (call logs, etc.) are not affected. This cannot be undone.')) return
-    const r = await fetch('/api/feed/posts', { method: 'DELETE' })
-    const j = await r.json()
-    if (!j.ok) { alert(j.error || 'clear failed'); return }
-    setPosts([])
+    if (clearFeedPending.current) return
+    if (!confirm('Clear the entire feed? This deletes all team posts, their attached files, and activity history across the CRM, including entries outside the current filter. Linked leads, accounts, contacts, and documents will remain. This cannot be undone.')) return
+    clearFeedPending.current = true
+    setClearingFeed(true)
+    setFeedClearError('')
+    setFeedClearWarning('')
+    setFeedClearMessage('')
+    try {
+      const response = await fetch('/api/feed/posts?scope=all', { method: 'DELETE' })
+      const result = await response.json()
+      if (!response.ok || !result.ok) throw new Error(result.error || 'Could not clear the feed. Please try again.')
+      if (!Array.isArray(result.deletedPostIds) || !Array.isArray(result.deletedActivityIds)
+        || !Number.isInteger(result.removedPosts) || !Number.isInteger(result.removedActivities)) {
+        throw new Error('The server did not confirm clearing the full feed. Please refresh and try again.')
+      }
+      result.deletedPostIds.forEach(id => deletedPostIds.current.add(id))
+      result.deletedActivityIds.forEach(id => deletedActivityIds.current.add(id))
+      if (result.deletedActivityIds.some(id => activityDrawer.openKey === 'a_' + id)) {
+        activityDrawer.close(activityDrawer.openKey)
+      }
+      setPosts(current => current.filter(post => !deletedPostIds.current.has(post.id)))
+      setActivities(current => current.filter(activity => !deletedActivityIds.current.has(activity.id)))
+      setActivityError('')
+      setFeedClearWarning(result.warning || '')
+      const { removedPosts, removedActivities } = result
+      setFeedClearMessage(removedPosts + removedActivities === 0
+        ? 'The feed is already empty.'
+        : `Removed ${removedPosts} team ${removedPosts === 1 ? 'post' : 'posts'} and ${removedActivities} ${removedActivities === 1 ? 'activity' : 'activities'}.`)
+    } catch (error) {
+      setFeedClearError(error.message || 'Could not clear the feed. Please try again.')
+    } finally {
+      clearFeedPending.current = false
+      setClearingFeed(false)
+    }
   }
 
   const submitPost = async (e) => {
@@ -171,7 +231,9 @@ export default function Feed({ onNavigate }) {
       })
       const j = await r.json()
       if (!j.ok) { alert(j.error || 'failed to post'); return }
-      setPosts(prev => [j.post, ...prev])
+      setPosts(prev => deletedPostIds.current.has(j.post.id)
+        ? prev
+        : [j.post, ...prev.filter(post => post.id !== j.post.id)])
       setDraft('')
       setPending([])
     } finally {
@@ -183,7 +245,7 @@ export default function Feed({ onNavigate }) {
   // Merge posts + activities into a single rolling timeline, sorted by time desc.
   const timeline = [
     ...posts.map(p => ({ kind: 'post', id: 'p_' + p.id, at: p.at, post: p, authorId: p.authorId })),
-    ...activities.map(a => ({ kind: 'activity', id: 'a_' + a.id, at: a.at, activity: a })),
+    ...activities.map(a => ({ kind: 'activity', id: 'a_' + a.id, at: a.at || a.createdAt, activity: a })),
   ]
     .filter(it => (FILTERS.find(f => f.id === filter) || FILTERS[0]).match(it, me?.id))
     .sort((a, b) => (b.at || '').localeCompare(a.at || ''))
@@ -295,22 +357,26 @@ export default function Feed({ onNavigate }) {
             {(me?.role === 'owner' || me?.role === 'admin') && (
               <>
                 <div style={{ flex: 1 }} />
-                <button onClick={clearFeed} title="Delete every post and attached file. Activity entries are not affected." style={{
+                <button onClick={clearFeed} disabled={clearingFeed} aria-busy={clearingFeed} title="Delete all team posts, post attachments, and activity history across every feed filter. Linked records and documents remain." style={{
                   padding: '8px 14px', minHeight: 40, fontSize: 13, fontWeight: 500,
                   background: 'rgba(239,68,68,0.1)', color: '#ef4444',
-                  border: '1px solid rgba(239,68,68,0.3)', borderRadius: 999, cursor: 'pointer',
-                }}>🗑 Clear feed</button>
+                  border: '1px solid rgba(239,68,68,0.3)', borderRadius: 999, cursor: clearingFeed ? 'wait' : 'pointer',
+                }}>{clearingFeed ? 'Clearing feed…' : '🗑 Clear feed'}</button>
               </>
             )}
           </div>
 
           {/* Timeline */}
+          {feedClearMessage && <div role="status" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{feedClearMessage}</div>}
+          {feedClearWarning && <div role="alert" style={{ color: 'var(--warning, #b45309)', fontSize: 13 }}>{feedClearWarning}</div>}
+          {feedClearError && <div role="alert" style={{ color: 'var(--danger, #ef4444)', fontSize: 13 }}>{feedClearError}</div>}
+          {activityError && <div role="alert" style={{ color: 'var(--danger, #ef4444)', fontSize: 13 }}>{activityError}</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {timeline.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: 14, padding: 20, textAlign: 'center' }}>Nothing in the feed yet. Be the first to post.</div>}
             {timeline.map(it => it.kind === 'post' ? (
               <PostRow key={it.id} post={it.post} me={me} onDelete={deletePost} onEdit={editPost} />
             ) : (
-              <ActivityRow key={it.id} a={it.activity} onOpenDocument={openActivityDocument} />
+              <ActivityInlineItem key={it.id} itemKey={it.id} activity={it.activity} variant="feed" drawer={activityDrawer} onOpenDocument={openActivityDocument} onDelete={me ? deleteActivity : undefined} deleting={deletingActivityIds.includes(it.activity.id)} />
             ))}
           </div>
         </div>
@@ -552,60 +618,6 @@ function Attachment({ a }) {
   )
 }
 
-function ActivityRow({ a, onOpenDocument }) {
-  const docId = activityDocumentId(a)
-  const transcript = isTranscriptActivity(a)
-  const canOpen = Boolean(docId)
-  return (
-    <div
-      role={canOpen ? 'button' : undefined}
-      tabIndex={canOpen ? 0 : undefined}
-      onClick={canOpen ? () => onOpenDocument?.(a) : undefined}
-      onKeyDown={canOpen ? (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onOpenDocument?.(a)
-        }
-      } : undefined}
-      style={{
-        padding: '10px 12px',
-        background: transcript ? 'var(--surface)' : 'var(--surface2)',
-        border: transcript ? '1px solid var(--accent)' : '1px solid var(--border)',
-        borderRadius: 8,
-        cursor: canOpen ? 'pointer' : 'default',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 2 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-          {iconFor(a.type)} {a.subject || a.type}
-          {canOpen && <span style={{ marginLeft: 8, color: 'var(--accent)', fontSize: 12 }}>Open {transcript ? 'transcript' : 'document'}</span>}
-        </span>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{relTime(a.at)}</span>
-      </div>
-      {a.body && <div style={{ fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'pre-wrap' }}>{a.body.slice(0, 240)}{a.body.length > 240 ? '…' : ''}</div>}
-    </div>
-  )
-}
-
-function iconFor(t) {
-  if (!t) return '•'
-  if (/call|phone/i.test(t)) return '📞'
-  if (/email/i.test(t)) return '✉️'
-  if (/note/i.test(t)) return '📝'
-  if (/lead/i.test(t)) return '🌱'
-  if (/deal|opportunit/i.test(t)) return '🎯'
-  if (/task/i.test(t)) return '✅'
-  if (/payment|invoice|finance/i.test(t)) return '💰'
-  return '•'
-}
-function relTime(iso) {
-  if (!iso) return ''
-  const ms = Date.now() - new Date(iso).getTime()
-  if (ms < 60000) return 'just now'
-  if (ms < 3600000) return Math.floor(ms / 60000) + 'm ago'
-  if (ms < 86400000) return Math.floor(ms / 3600000) + 'h ago'
-  return Math.floor(ms / 86400000) + 'd ago'
-}
 function formatBytes(b) {
   if (!b) return ''
   if (b < 1024) return b + ' B'

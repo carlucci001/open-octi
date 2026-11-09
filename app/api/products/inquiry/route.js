@@ -9,6 +9,12 @@ import {
   logActivity,
   update,
 } from '@/lib/entityStore'
+import { findDuplicateLead, submissionIdFromRequest } from '@/lib/intakeDedupe'
+import { farringtonInboundClassification } from '@/lib/inboundLeadClassification'
+import { assessSubmission, normalizeEmailForLimits } from '@/lib/intakeSpamGuard'
+import { fakeEntityId, recordQuarantine } from '@/lib/intakeQuarantine'
+import { resolveClientMeta } from '@/lib/intakeClientMeta'
+import { INTAKE_FORM_RATE_LIMITS, consumeEmailQuota, consumeIntakeClientQuota, consumeIntakeGlobalQuota } from '@/lib/public-endpoint-rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -55,7 +61,7 @@ function detailRows(rows) {
   </table>`
 }
 
-async function sendProductInquiryEmails({ buyer, company, productName, offerName, estimatedLow, estimatedHigh, dueToday, qualification, notes, lead, opportunity }) {
+async function sendProductInquiryEmails({ buyer, company, productName, offerName, estimatedLow, estimatedHigh, dueToday, qualification, notes, lead, opportunity, clientMeta = {} }) {
   const resendKey = process.env.RESEND_API_KEY
   if (!resendKey) return { ok: false, skipped: true, reason: 'RESEND_API_KEY not set' }
 
@@ -82,6 +88,8 @@ async function sendProductInquiryEmails({ buyer, company, productName, offerName
       ['Opportunity focus', qualification.opportunityFocus],
       ['Lead ID', lead.id],
       ['Opportunity ID', opportunity.id],
+      ['IP', clientMeta.ip],
+      ['User-Agent', clientMeta.userAgent],
       ['Notes', notes],
     ])}
   `
@@ -159,6 +167,70 @@ export async function POST(request) {
   const quoteFlags = Array.isArray(body.quoteFlags) ? body.quoteFlags.map(v => clean(v, 80)).filter(Boolean) : []
   const modules = Array.isArray(body.modules) ? body.modules.map(v => clean(v, 80)).filter(Boolean) : []
 
+  const submissionId = submissionIdFromRequest(request, body)
+  // Exact submissionId match first; a retry with no id still collapses onto the
+  // existing lead when the same email + source + product arrives inside the
+  // replay window (lib/intakeDedupe REPLAY_WINDOW_MS).
+  const duplicate = findDuplicateLead({ submissionId, email, source, productOpportunity: productName, useFallbackMatch: true })
+  if (duplicate) {
+    return NextResponse.json({
+      ok: true,
+      deduplicated: true,
+      leadId: duplicate.id,
+      accountId: duplicate.convertedToAccountId || duplicate.accountId || null,
+      contactId: duplicate.convertedToContactId || duplicate.contactId || null,
+      opportunityId: duplicate.convertedToOpportunityId || duplicate.opportunityId || null,
+      emailNotice: { ok: false, skipped: true },
+    }, { headers: corsHeaders() })
+  }
+
+  const normalizedEmail = normalizeEmailForLimits(email)
+  const clientMeta = resolveClientMeta(request, body)
+
+  // Global quota only, before spam assessment — see websiteIntake's route
+  // comment: spam must never be able to burn the per-client/per-email
+  // budget a legitimate submission right behind it needs.
+  const globalLimit = consumeIntakeGlobalQuota(request, INTAKE_FORM_RATE_LIMITS.productsInquiry)
+  if (globalLimit.limited) {
+    return NextResponse.json({ ok: false, error: 'Too many requests' }, { status: 429, headers: corsHeaders() })
+  }
+
+  const spamAssessment = assessSubmission({
+    fields: { name, company, notes: clean(body.notes, 1200), email },
+    honeypot: body.website_url,
+    elapsedMs: body.elapsedMs,
+    upstreamGuard: body.guard,
+  })
+
+  if (spamAssessment.verdict === 'spam') {
+    recordQuarantine({
+      route: 'products-inquiry',
+      reasons: spamAssessment.reasons,
+      score: spamAssessment.score,
+      fields: { name, email, company, phone, source, productOpportunity: productName, notes: clean(body.notes, 1200) },
+      clientMeta,
+    })
+    return NextResponse.json({
+      ok: true,
+      leadId: fakeEntityId('ld'),
+      accountId: fakeEntityId('ac'),
+      contactId: fakeEntityId('ct'),
+      opportunityId: fakeEntityId('op'),
+      emailNotice: { ok: false, skipped: true },
+    }, { headers: corsHeaders() })
+  }
+
+  // Per-client and per-email quotas only run once a submission has cleared
+  // spam assessment.
+  const clientLimit = consumeIntakeClientQuota(request, INTAKE_FORM_RATE_LIMITS.productsInquiry)
+  if (clientLimit.limited) {
+    return NextResponse.json({ ok: false, error: 'Too many requests' }, { status: 429, headers: corsHeaders() })
+  }
+  const emailLimit = consumeEmailQuota(normalizedEmail, { namespace: 'intake-products-inquiry' })
+  if (emailLimit.limited) {
+    return NextResponse.json({ ok: false, error: 'Too many requests' }, { status: 429, headers: corsHeaders() })
+  }
+
   const notes = [
     clean(body.notes, 1200),
     `Service line: ${serviceLine}`,
@@ -195,7 +267,10 @@ export async function POST(request) {
     source,
     status: 'new',
     notes,
-    tags,
+    ...farringtonInboundClassification({ source, tags }),
+    inboundReceivedAt: new Date().toISOString(),
+    submissionId: submissionId || null,
+    externalId: submissionId || null,
     productOpportunity: productName,
     serviceLine,
     suggestedPipelineId: stageId ? pipelineId : null,
@@ -206,6 +281,12 @@ export async function POST(request) {
     dueToday,
     qualification,
   })
+
+  // API success must mean the Lead is durably readable back from the store.
+  if (!loadAll('leads').some(item => item.id === lead?.id)) {
+    console.error('Product inquiry lead was not persisted', { leadId: lead?.id || null, source })
+    return NextResponse.json({ ok: false, error: 'lead_not_persisted' }, { status: 500, headers: corsHeaders() })
+  }
 
   const matches = findAccountMatches({ name: company, email })
   const account = matches?.[0]?.account || create('accounts', {
@@ -280,6 +361,7 @@ export async function POST(request) {
       notes,
       lead,
       opportunity,
+      clientMeta,
     })
     if (!emailNotice.ok) console.warn('Product inquiry email notice failed', emailNotice)
   } catch (error) {

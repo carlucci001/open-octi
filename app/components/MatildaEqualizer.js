@@ -15,11 +15,35 @@ const PUMPKIN_BRIGHT = '#ffb15c'
 const IDLE_BAR = 'rgba(120,120,128,0.5)'
 const MENU_CLOSE_DELAY_MS = 700
 const AVATAR_CACHE_BUST = 'restored-20260621'
+// The agent the header shows while the ear is open and nobody is connected yet.
+const DEFAULT_AGENT_ID = 'main'
 
 function avatarAssetUrl(url) {
   if (!url) return ''
   const separator = String(url).includes('?') ? '&' : '?'
   return `${url}${separator}v=${AVATAR_CACHE_BUST}`
+}
+
+// Bars that move like speech, for a voice no analyser is listening to.
+function speechRhythm(targets, beat) {
+  for (let b = 0; b < BARS; b++) {
+    const syllable = 0.5 + 0.5 * Math.sin(beat * 9 + b * 1.7)
+    const phrase = 0.6 + 0.4 * Math.sin(beat * 2.3 + b * 0.4)
+    targets[b] = 0.18 + 0.62 * syllable * phrase
+  }
+}
+
+// The voice session rebroadcasts its roster without photos or departments.
+// Keep what an earlier load already resolved so a rebroadcast cannot blank them.
+function keepKnownFaces(previous, incoming) {
+  const next = Array.isArray(incoming) ? incoming : []
+  if (!next.length || !previous?.length) return next
+  const known = new Map(previous.map(entry => [entry.id, entry]))
+  return next.map(entry => {
+    const before = known.get(entry.id)
+    if (!before) return entry
+    return { ...before, ...entry, avatar: entry.avatar || before.avatar || null, department: entry.department || before.department || '' }
+  })
 }
 
 export default function MatildaEqualizer() {
@@ -32,6 +56,11 @@ export default function MatildaEqualizer() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [listening, setListening] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState({})
+  // { id, name } of the agent speaking the login greeting, while it plays.
+  const [greeting, setGreeting] = useState(null)
+  const [avatarById, setAvatarById] = useState({})
+  const [rosterRequest, setRosterRequest] = useState(0)
+  const greetingOn = Boolean(greeting)
   const closeTimer = useRef(null)
 
   useEffect(() => {
@@ -46,13 +75,20 @@ export default function MatildaEqualizer() {
     const onActive = (e) => { setActive(!!e.detail); if (!e.detail) setMenuOpen(false) }
     const onSpeak = (e) => { speakingRef.current = !!e.detail }
     const onAgent = (e) => setAgent(e.detail || null)
-    const onRoster = (e) => setRoster(e.detail || [])
+    const onRoster = (e) => setRoster(previous => keepKnownFaces(previous, e.detail))
+    const onGreeting = (e) => {
+      const detail = e.detail || {}
+      if (detail.phase === 'queued') setRosterRequest(count => count + 1)
+      else if (detail.phase === 'playing') setGreeting({ id: detail.agentId || DEFAULT_AGENT_ID, name: detail.name || '' })
+      else setGreeting(null)
+    }
     const onListening = (e) => { setListening(!!e.detail); if (!e.detail) setMenuOpen(false) }
     window.addEventListener('fcc:voice-active', onActive)
     window.addEventListener('fcc:voice-speaking', onSpeak)
     window.addEventListener('fcc:voice-agent', onAgent)
     window.addEventListener('fcc:voice-roster', onRoster)
     window.addEventListener('fcc:voice-listening', onListening)
+    window.addEventListener('fcc:voice-greeting', onGreeting)
     window.addEventListener('openocti:voice-status', onVoiceStatus)
     return () => {
       window.removeEventListener('fcc:voice-active', onActive)
@@ -60,6 +96,7 @@ export default function MatildaEqualizer() {
       window.removeEventListener('fcc:voice-agent', onAgent)
       window.removeEventListener('fcc:voice-roster', onRoster)
       window.removeEventListener('fcc:voice-listening', onListening)
+      window.removeEventListener('fcc:voice-greeting', onGreeting)
       window.removeEventListener('openocti:voice-status', onVoiceStatus)
     }
   }, [])
@@ -72,7 +109,7 @@ export default function MatildaEqualizer() {
   // Live preview). Before this merge the switcher only ever listed OpenClaw
   // agents, so the Gemini preview could never appear here at all.
   useEffect(() => {
-    if (!active && !listening) return
+    if (!active && !listening && !greetingOn && !rosterRequest) return
     let cancelled = false
     Promise.all([
       fetch('/api/openclaw/agents', { cache: 'no-store' }).then(r => r.json()).catch(() => null),
@@ -105,13 +142,23 @@ export default function MatildaEqualizer() {
       // Voice-only entries (e.g. Matilda Gemini preview) go FIRST — buried at
       // the bottom of a 20+ agent scroll list they are effectively invisible.
       const list = [...voiceOnly, ...merged]
-      if (list.length) setRoster(list)
+      if (list.length) {
+        setRoster(list)
+        setAvatarById(previous => {
+          const next = { ...previous }
+          for (const entry of list) if (entry.avatar) next[entry.id] = entry.avatar
+          return next
+        })
+        // Warm the default agent's photo so it is on screen the moment she speaks.
+        const defaultFace = (list.find(entry => entry.id === DEFAULT_AGENT_ID) || {}).avatar
+        if (defaultFace && typeof Image !== 'undefined') { const warm = new Image(); warm.src = avatarAssetUrl(defaultFace) }
+      }
     })
     return () => { cancelled = true }
-  }, [active, listening])
+  }, [active, listening, greetingOn, rosterRequest])
 
   useEffect(() => {
-    if (!active && !listening) return
+    if (!active && !listening && !greetingOn) return
     let raf = 0
     const start = performance.now()
 
@@ -142,7 +189,12 @@ export default function MatildaEqualizer() {
             const boost = 1 + mid * 0.4
             targets[b] = Math.min(1, avg * 2.0 * boost)
           }
+        } else if (speakingRef.current) {
+          // The agent is talking but this provider gave us nothing to measure.
+          speechRhythm(targets, (t - start) / 1000)
         }
+      } else if (active && speakingRef.current) {
+        speechRhythm(targets, (t - start) / 1000)
       } else {
         // Idle: a very faint rolling wave so the pill reads as "alive" without distracting.
         const phase = (t - start) / 900
@@ -152,6 +204,12 @@ export default function MatildaEqualizer() {
       }
 
       // Smooth — fast attack, slower release feels musical.
+      if (!active && greetingOn) {
+        // The login greeting is a plain audio clip with no analyser behind it,
+        // so move the bars with a speech-like rhythm while it plays.
+        speechRhythm(targets, (t - start) / 1000)
+      }
+
       const h = heightsRef.current
       for (let b = 0; b < BARS; b++) {
         const k = targets[b] > h[b] ? 0.55 : 0.18
@@ -162,15 +220,15 @@ export default function MatildaEqualizer() {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [active, listening])
+  }, [active, listening, greetingOn])
 
   useEffect(() => () => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
   }, [])
 
-  if (!active && !listening && !voiceStatus.error) return null
+  if (!active && !listening && !greetingOn && !voiceStatus.error) return null
 
-  const speaking = speakingRef.current
+  const speaking = speakingRef.current || (!active && greetingOn)
   const heights = heightsRef.current
 
   const turnOff = () => {
@@ -190,7 +248,12 @@ export default function MatildaEqualizer() {
 
   // The connected agent's photo — prefer the broadcast, fall back to the roster entry
   // (which always carries the resolved avatar) so we never drop to a bare initial.
-  const agentAvatar = avatarAssetUrl((agent && (agent.avatar || (roster.find(r => r.id === agent.id) || {}).avatar)) || '')
+  const faceFor = entry => (entry && (entry.avatar || avatarById[entry.id] || (roster.find(r => r.id === entry.id) || {}).avatar)) || ''
+  // Who the pill shows: the connected agent, else whoever is speaking the login
+  // greeting, else the default agent while the ear is open. A known agent is
+  // never replaced by an anonymous placeholder.
+  const shownAgent = agent || greeting || (listening ? roster.find(r => r.id === DEFAULT_AGENT_ID) || null : null)
+  const agentAvatar = avatarAssetUrl(faceFor(shownAgent))
   const others = (roster || []).filter(a => a.id !== agent?.id)
 
   return (
@@ -263,8 +326,8 @@ export default function MatildaEqualizer() {
         >
           {agentAvatar ? (
             <img src={agentAvatar} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', display: 'block', border: '1px solid rgba(255,255,255,0.45)' }} />
-          ) : agent?.name ? (
-            <span style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, background: 'var(--accent, #c15f3c)', color: '#fff' }}>{agent.name.charAt(0).toUpperCase()}</span>
+          ) : shownAgent?.name ? (
+            <span style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, background: 'var(--accent, #c15f3c)', color: '#fff' }}>{shownAgent.name.charAt(0).toUpperCase()}</span>
           ) : (
             <span style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent, #c15f3c)', color: '#fff' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -350,8 +413,8 @@ export default function MatildaEqualizer() {
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2, #efebe1)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
-              {a.avatar
-                ? <img src={avatarAssetUrl(a.avatar)} alt="" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              {faceFor(a)
+                ? <img src={avatarAssetUrl(faceFor(a))} alt="" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                 : <span style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: 'var(--accent, #c15f3c)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{(a.name || '?').charAt(0).toUpperCase()}</span>}
               <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1, lineHeight: 1.15 }}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13.5, fontWeight: 700 }}>{a.name}</span>

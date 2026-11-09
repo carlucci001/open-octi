@@ -2,17 +2,19 @@ import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import nextEnv from '@next/env'
-import { isOpenOcti } from '../lib/edition.js'
+import { isOctiCc, isOpenOcti } from '../lib/edition.js'
 import { ensureMachineSecrets, machineSecretsPath } from './machine-secrets.mjs'
 import { ensureSessionSecret } from './session-secret.mjs'
 import { ensureStarterVault } from './starter-vault.mjs'
+import { ensureNativeOctiCcKnowledge } from './native-knowledge.mjs'
 
 // Load the same .env files as Next before preparing the child process environment.
 nextEnv.loadEnvConfig(process.cwd(), false)
-if (isOpenOcti()) {
+if (isOpenOcti() || isOctiCc()) {
   try {
     process.env.CRM_SESSION_SECRET = ensureSessionSecret()
     ensureStarterVault()
+    if (isOctiCc()) ensureNativeOctiCcKnowledge()
     const result = ensureMachineSecrets(machineSecretsPath())
     Object.assign(process.env, result.secrets)
     if (result.persisted) console.log(`OpenOcti machine secrets: ${result.file}`)
